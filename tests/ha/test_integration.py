@@ -56,7 +56,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.3.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.4.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -278,3 +278,119 @@ async def test_floors_deleted_areas_and_persistent_reload(host):
     stored=await Store(hass,1,DOMAIN+'.household').async_load();assert stored==saved
     ar.async_get(hass).async_delete(bed.id)
     assert any(i['code']=='missing_area' for i in issues(stored,inventory(hass)))
+
+
+def wizard_room(base, status='ready', service=False, home=False, timing=None):
+    return {**base, 'setup': {'status':status,'service':service,'home':home,'bathroom_timing':timing or {}}}
+
+
+@pytest.mark.asyncio
+async def test_wizard_migration_drafts_and_dependencies(host):
+    from custom_components.shabbat_flow.household import migrate_settings
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    old={**empty_settings(),'rooms':{bed.id:room(['sleeping'],[light.id],[bath.id]),bath.id:room(lights=[shared.id])}}
+    upgraded=migrate_settings(old)
+    assert 'setup' not in old['rooms'][bed.id]
+    assert upgraded['schema_version']==2 and upgraded['rooms'][bed.id]['setup']['bathroom_timing']=={bath.id:'use_window'}
+    assert migrate_settings(upgraded)==upgraded
+    rooms=upgraded['rooms'];rooms[bed.id]['setup']['status']='draft'
+    rooms[bed.id]['roles']['main_lights']=['removed-reference']
+    rooms[bath.id]['setup']['home']=True
+    saved={**upgraded,'bindings':validate_settings(rooms,inv)}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    bundle=workspace(saved,inv,snap)
+    assert len(bundle['config']['loads'])==1 and not bundle['config']['profiles']
+    rooms[bed.id]['roles']['main_lights']=[light.id];rooms[bed.id]['setup']['status']='ready';rooms[bath.id]['setup']['status']='draft'
+    with pytest.raises(ValueError):validate_settings(rooms,inv)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('timing',['use_window','whole_observance'])
+@pytest.mark.parametrize('days',[1,2,3])
+async def test_wizard_bathroom_union_and_period_policy(host,timing,days):
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;bed,bath,light,shared=fixtures(hass);second=ar.async_get(hass).async_create('Example second bedroom');inv=inventory(hass)
+    rooms={bed.id:wizard_room(room(['sleeping'],shared=[bath.id]),timing={bath.id:timing}),
+           second.id:wizard_room(room(['sleeping'],shared=[bath.id]),timing={bath.id:timing}),
+           bath.id:wizard_room(room(lights=[shared.id]),service=True)}
+    saved={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['segments']=snap['segments'][:days];snap['end']=snap['segments'][-1]['end'];bundle=workspace(saved,inv,snap);plan=bundle['plan']
+    plan['availability'][0]['state']='home'
+    for m in plan['meals']:m['choice']='none'
+    for i,aid in enumerate((bed.id,second.id)):
+        rid=internal_id('room_',aid);pid=next(k for k,p in bundle['config']['profiles'].items() if p['room']==rid)
+        plan['room_uses'].append({'id':'use_'+str(i),'room':rid,'purpose':'sleeping','control':'planner','profile':pid,'segment':snap['segments'][0]['id'],
+                                 'start':f'2027-01-07T{21+i:02}:00:00+02:00','end':f'2027-01-08T{7+i:02}:00:00+02:00'})
+    result=compile_schedule(bundle['config'],plan)
+    assert result['complete'] and len(result['events'])==2
+    assert result['events'][0]['local']==(snap['start'] if timing=='whole_observance' else '2027-01-07T21:00:00+02:00')
+    assert result['events'][1]['local']==(snap['end'] if timing=='whole_observance' else '2027-01-08T08:00:00+02:00')
+
+
+@pytest.mark.asyncio
+async def test_wizard_home_lights_follow_explicit_availability(host):
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    rooms={bath.id:wizard_room(room(lights=[shared.id]),service=True,home=True)}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    bundle=workspace({**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)},inv,snap);p=bundle['plan']
+    for m in p['meals']:m['choice']='none'
+    assert not compile_schedule(bundle['config'],p)['complete']
+    p['availability'][0]['state']='away';assert compile_schedule(bundle['config'],p)['events']==[]
+    p['availability']=[{'id':'away','start':snap['preparation_start'],'end':'2027-01-07T20:00:00+02:00','state':'away'},
+                       {'id':'home','start':'2027-01-07T20:00:00+02:00','end':snap['end'],'state':'home'}]
+    result=compile_schedule(bundle['config'],p);assert len(result['events'])==2
+    assert result['events'][0]['local']=='2027-01-07T20:00:00+02:00'
+
+
+@pytest.mark.asyncio
+async def test_current_hvac_is_sanitized_nonstructural_telemetry(host):
+    hass,_=host;reg=er.async_get(hass);climate=reg.async_get_or_create('climate','test','example-current')
+    attrs={'hvac_modes':['off','heat','cool'],'fan_modes':['auto'],'min_temp':16,'max_temp':30,'temperature':22,'fan_mode':'auto','secret':'not-exported'}
+    hass.states.async_set(climate.entity_id,'heat',attrs);first=inventory(hass)
+    current=first['entities'][0]['current'];assert current['mode']=='heat' and current['temperature']==22
+    assert 'secret' not in json.dumps(first)
+    hass.states.async_set(climate.entity_id,'cool',{**attrs,'temperature':24});second=inventory(hass)
+    assert first['revision']==second['revision'] and second['entities'][0]['current']['temperature']==24
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('second_start,expected_count',[('2027-01-08T07:00:00+02:00',2),('2027-01-08T08:00:00+02:00',4)])
+async def test_wizard_bathroom_touching_and_disjoint_demands(host,second_start,expected_count):
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    rooms={bed.id:wizard_room(room(['sleeping'],shared=[bath.id])),bath.id:wizard_room(room(lights=[shared.id]),service=True)}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    b=workspace({**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)},inv,snap)
+    p=b['plan'];p['availability'][0]['state']='home'
+    for m in p['meals']:m['choice']='none'
+    pid=next(iter(b['config']['profiles']))
+    for i,(start,end) in enumerate([('2027-01-07T21:00:00+02:00','2027-01-08T07:00:00+02:00'),(second_start,'2027-01-08T10:00:00+02:00')]):
+        p['room_uses'].append({'id':f'use_{i}','room':internal_id('room_',bed.id),'purpose':'sleeping','control':'planner','profile':pid,'segment':snap['segments'][0]['id'],'start':start,'end':end})
+    result=compile_schedule(b['config'],p);assert result['complete'] and len(result['events'])==expected_count
+
+
+@pytest.mark.asyncio
+async def test_wizard_draft_persists_through_integration_reload(host):
+    hass,entry=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    pending=wizard_room(room(['sleeping'],[light.id],[bath.id]),status='draft',timing={bath.id:'whole_observance'})
+    payload={'revision':0,'inventory_revision':inv['revision'],'rooms':{bed.id:pending,bath.id:wizard_room(room(lights=[shared.id]),status='draft',service=True)}}
+    response=await HouseholdView(hass).post(Request(json.dumps(payload).encode()))
+    assert response.status==200 and decoded(response)['settings']['rooms'][bed.id]==pending
+    await async_unload_entry(hass,entry);hass.data[DOMAIN].pop('household')
+    await async_setup_entry(hass,entry)
+    stored=hass.data[DOMAIN]['household'];assert stored['schema_version']==2 and stored['rooms'][bed.id]==pending
+    assert stored['revision']==1 and not issues(stored,inventory(hass))
+
+
+@pytest.mark.asyncio
+async def test_legacy_selection_without_devices_resumes_unfinished(host):
+    from custom_components.shabbat_flow.household import migrate_settings
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    old={**empty_settings(),'rooms':{bed.id:room(['sleeping']),bath.id:room()}}
+    migrated=migrate_settings(old)
+    assert all(r['enabled'] and r['setup']['status']=='draft' for r in migrated['rooms'].values())
+    validate_settings(migrated['rooms'],inventory(hass))
+    old['rooms'][bed.id]['shared_areas']=[bath.id]
+    migrated=migrate_settings(old)
+    assert migrated['rooms'][bed.id]['setup']['status']=='draft'

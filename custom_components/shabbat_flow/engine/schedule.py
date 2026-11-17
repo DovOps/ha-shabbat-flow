@@ -94,7 +94,9 @@ def validate_configuration(config):
         prior = physical.setdefault(load['physical_id'], identity)
         require(prior == identity, 'invalid_mapping')
     for group in config['groups'].values():
-        keys(group, {'label', 'track_only', 'rules'})
+        keys(group, {'label', 'track_only', 'rules'} | ({'activation'} if 'activation' in group else set()))
+        if 'activation' in group:
+            choice(group['activation'], ('home',))
         labels(group['label'])
         require(type(group['track_only']) is bool)
         bounded_list(group['rules'], 50)
@@ -224,7 +226,20 @@ def compile_schedule(config, plan):
         keys(item, {'id', 'segment', 'group', 'start', 'end'})
         identifier(item['id'])
         require(item['id'] not in seen, 'invalid_mapping'); seen.add(item['id'])
+        require(config['groups'].get(item['group'], {}).get('activation') != 'home', 'invalid_mapping')
         selection(item, [item['group']], 'group')
+    # Home policies follow explicit availability, never inferred occupancy.
+    for gid, group in config['groups'].items():
+        if group.get('activation') != 'home':
+            continue
+        for index, (start, end, state) in enumerate(availability):
+            if state != 'home':
+                continue
+            for sid, seg in calendar['segments'].items():
+                a, b = max(start, seg['start']), min(end, seg['end'])
+                if a < b:
+                    selections.append({'id': 'home_' + str(index), 'kind': 'group', 'segment': sid,
+                                       'group': gid, 'use_start': a, 'use_end': b})
     # Canonicalize unordered input collections, preserving ordered calendar segments.
     clean_config = json.loads(canonical(config))
     for load in clean_config['loads'].values():
@@ -244,7 +259,7 @@ def compile_schedule(config, plan):
     for meal in clean_plan['meals']:
         meal['groups'].sort()
     result = {'preview_only': True, 'complete': not issues, 'issues': issues,
-              'digest': digest({'compiler': 'generic-v2.1', 'config': clean_config, 'plan': clean_plan}),
+              'digest': digest({'compiler': 'generic-v2.2', 'config': clean_config, 'plan': clean_plan}),
               'events': []}
     if issues:
         result['issues'] = sorted(issues, key=canonical)

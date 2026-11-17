@@ -1,10 +1,10 @@
-# Installable preview 0.3.0
+# Installable preview 0.4.0
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.3.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.4.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
 4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
@@ -49,4 +49,16 @@ Room mappings persist in HA across restarts. Weekly workspace choices remain bro
 
 Upgrade an existing entry by replacing the package and restarting; do not add a duplicate integration. Static asset paths include the release version to avoid mixed cached files. Back up the integration directory and ShabbatFlow storage before upgrades. Removal of the config entry does not erase household storage automatically.
 
-גרסה 0.3.0 מציגה אוטומטית את השבת או החג הקרובים שטרם התחילו, עם זמני הדלקת נרות וזריחה לכל יום והבדלה סופית. יש להפעיל את היומנים היומי והשנתי של Jewish Calendar ואת האירועים המתאימים. הזנה ידנית זמינה בהגדרות מתקדמות בלבד ואינה נדרסת ברענון.
+גרסה 0.4.0 מציגה אוטומטית את השבת או החג הקרובים שטרם התחילו, עם זמני הדלקת נרות וזריחה לכל יום והבדלה סופית. יש להפעיל את היומנים היומי והשנתי של Jewish Calendar ואת האירועים המתאימים. הזנה ידנית זמינה בהגדרות מתקדמות בלבד ואינה נדרסת ברענון.
+
+
+## Guided room setup (0.4.0)
+Choose HA rooms, then configure one room at a time. Save & next marks a valid room ready; Save progress and Save unfinished & skip retain drafts. Reload resumes the first unfinished selected room. Ready rooms appear in the final summary; dated room use and meals are still chosen in the planner.
+
+Link bathrooms explicitly. Configure their lights once, then reuse the same area from other rooms. A link can follow room-use windows or the full continuous observance when the linked room is used. Shared-area lights can also follow explicit home intervals. Editing a bathroom makes dependent rooms unfinished until reviewed again. Skipped rooms create no direct or shared demands. Identical overlapping/touching lighting demands merge; disjoint demands remain separate.
+
+HVAC supports copying an available device's current heat/cool target and fan settings, or choosing supported settings manually. Multiple selected devices must agree for copying. Missing/unsupported fan metadata, off state or incompatible devices require adjustment or leaving existing control. No device is commanded. Recent-use ranking is deferred.
+
+Existing schema-1 room mappings are migrated in memory with their original use-window semantics and persisted as schema 2 on the next successful settings save. The HA Store envelope stays version 1; the payload owns the household schema version. Back up both the integration and its own Store before upgrade. To roll back after saving new-format settings, restore both copies while HA is stopped.
+
+בחרו חדרים, הגדירו כל חדר בנפרד ושמרו להמשך. ניתן לקשר חדר רחצה משותף ולהגדיר את התאורה פעם אחת. חדרים שטרם הושלמו אינם יוצרים פעולות בתכנון. הגדרות מיזוג נוכחיות מועתקות לבדיקה בלבד; אין הפעלת מכשירים.

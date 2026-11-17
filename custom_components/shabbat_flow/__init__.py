@@ -2,7 +2,7 @@
 import json
 from asyncio import Lock
 from homeassistant.helpers.storage import Store
-from .household import empty_settings
+from .household import empty_settings, migrate_settings
 from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
@@ -23,7 +23,7 @@ async def async_setup_entry(hass, entry):
     data = hass.data.setdefault(DOMAIN, {})
     if "household" not in data:
         data["household_store"] = Store(hass, 1, DOMAIN + ".household")
-        data["household"] = await data["household_store"].async_load() or empty_settings()
+        data["household"] = migrate_settings(await data["household_store"].async_load() or empty_settings())
         data["household_lock"] = Lock()
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)

@@ -171,7 +171,7 @@ class HouseholdView(BaseView):
                 if payload["revision"] != data["household"]["revision"] or payload["inventory_revision"] != inv["revision"]:
                     return self.response({"error": "stale_household"}, 409)
                 bindings = validate_settings(payload["rooms"], inv)
-                saved = {"schema_version": 1, "revision": payload["revision"] + 1, "rooms": payload["rooms"], "bindings": bindings}
+                saved = {"schema_version": 2, "revision": payload["revision"] + 1, "rooms": payload["rooms"], "bindings": bindings}
                 await data["household_store"].async_save(saved)
                 data["household"] = saved
         except PlanError as exc:

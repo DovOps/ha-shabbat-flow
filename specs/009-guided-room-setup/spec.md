@@ -1,11 +1,11 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Specified; implementation pending.
+**Status:** Implemented in preview 0.4.0; verification recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
 
-This feature builds on 007 (live HA household inventory) and 008 (automatic Jewish Calendar dates). It changes permanent household setup, not weekly occupancy decisions. The installed sample remains preview-only. Requirements below describe the target behavior, not capabilities already delivered.
+This feature builds on 007 (live HA household inventory) and 008 (automatic Jewish Calendar dates). It changes permanent household setup, not weekly occupancy decisions. The installed sample remains preview-only. Verification and remaining limitations are recorded in `verification.md`.
 
 ## User stories and acceptance scenarios
 

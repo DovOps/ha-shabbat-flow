@@ -1,6 +1,6 @@
 """Live HA inventory and explicitly reviewed household intent; no actuators."""
 from copy import deepcopy
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from hashlib import sha256
 import json
 import math
@@ -57,19 +57,46 @@ def inventory(hass):
                          'area_source': 'entity' if e.area_id else ('device' if device and device.area_id else 'unassigned'),
                          'disabled': e.disabled_by is not None,
                          'available': bool(state and state.state not in ('unknown', 'unavailable') and e.disabled_by is None),
-                         'capabilities': caps})
+                         'capabilities': caps,
+                         'current': {'mode': state.state if state else None,
+                                     'temperature': attrs.get('temperature') if finite(attrs.get('temperature')) else None,
+                                     'fan_mode': attrs.get('fan_mode') if attrs.get('fan_mode') in caps.get('fan_modes', []) else None,
+                                     'observed_at': datetime.now(timezone.utc).isoformat()} if domain == 'climate' else None})
     used_devices = {e['device_id'] for e in entities}
     result = {'floors': sorted(floors, key=lambda v: v['id']), 'areas': sorted(areas, key=lambda v: v['id']),
               'devices': sorted([{'id': d.id, 'name': d.name_by_user or d.name or d.id, 'area_id': d.area_id}
                                  for d in devices.values() if d.id in used_devices], key=lambda v: v['id']),
               'entities': sorted(entities, key=lambda v: v['id']), 'timezone': hass.config.time_zone}
     # Availability is live telemetry; renames/moves/capability changes affect the structural revision.
-    result['revision'] = digest({**result, 'entities': [{k: v for k, v in e.items() if k != 'available'} for e in result['entities']]})
+    result['revision'] = digest({**result, 'entities': [{k: v for k, v in e.items() if k not in ('available', 'current')} for e in result['entities']]})
     return result
 
 
 def empty_settings():
     return {'schema_version': 1, 'revision': 0, 'rooms': {}, 'bindings': {}}
+
+
+def ready(room):
+    return room.get('enabled', False) and room.get('setup', {}).get('status', 'ready') == 'ready'
+
+
+def migrate_settings(saved):
+    result = deepcopy(saved)
+    require(result.get('schema_version') in (1, 2), 'invalid_mapping')
+    if result['schema_version'] == 1:
+        for room in result['rooms'].values():
+            has_lights = bool(room['roles']['main_lights'] or room['roles']['night_lights'])
+            has_hvac = bool(room['roles']['hvac'] and room['hvac']['mode'] != 'none')
+            schedulable = has_lights or has_hvac or bool(room['shared_areas'])
+            room['setup'] = {'status': 'ready' if room['enabled'] and schedulable else 'draft',
+                             'service': not bool(room['purposes']), 'home': False,
+                             'bathroom_timing': {a: 'use_window' for a in room['shared_areas']}}
+        # A selected-but-unconfigured shared area cannot make a dependent room ready.
+        for room in result['rooms'].values():
+            if any(not ready(result['rooms'].get(a, {})) for a in room['shared_areas']):
+                room['setup']['status'] = 'draft'
+        result['schema_version'] = 2
+    return result
 
 
 def binding(entity):
@@ -81,12 +108,12 @@ def issues(settings, inv):
     areas = {a['id'] for a in inv['areas']}
     result = []
     for area_id, room in settings['rooms'].items():
-        if not room['enabled']:
+        if not ready(room):
             continue
         if area_id not in areas:
             result.append({'code': 'missing_area', 'id': area_id})
         for shared in room['shared_areas']:
-            if shared not in areas or not settings['rooms'].get(shared, {}).get('enabled'):
+            if shared not in areas or not ready(settings['rooms'].get(shared, {})):
                 result.append({'code': 'missing_shared', 'id': shared})
         for ids in room['roles'].values():
             for rid in ids:
@@ -108,7 +135,13 @@ def validate_settings(rooms, inv):
     enabled = 0
     for aid, room in rooms.items():
         require(isinstance(aid, str) and len(aid) <= 100 and type(room) is dict)
-        require(set(room) == {'enabled', 'purposes', 'roles', 'shared_areas', 'hvac'})
+        require(set(room) == {'enabled', 'purposes', 'roles', 'shared_areas', 'hvac'} | ({'setup'} if 'setup' in room else set()))
+        setup = room.get('setup')
+        if setup is not None:
+            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'})
+            require(setup['status'] in ('draft', 'ready') and type(setup['service']) is bool and type(setup['home']) is bool)
+            require(type(setup['bathroom_timing']) is dict and len(setup['bathroom_timing']) <= 20)
+            require(all(isinstance(k, str) and len(k) <= 100 and v in ('use_window', 'whole_observance') for k,v in setup['bathroom_timing'].items()))
         require(type(room['enabled']) is bool)
         require(type(room['purposes']) is list and len(room['purposes']) == len(set(room['purposes']))
                 and all(p in ('sleeping', 'recreation') for p in room['purposes']))
@@ -124,11 +157,20 @@ def validate_settings(rooms, inv):
         if room['enabled']:
             enabled += 1
             require(aid in areas, 'invalid_mapping')
-            require(all(a != aid and a in areas and rooms.get(a, {}).get('enabled') for a in room['shared_areas']), 'invalid_mapping')
+            if ready(room):
+                require(all(a != aid and a in areas and ready(rooms.get(a, {})) for a in room['shared_areas']), 'missing_shared')
+                if setup:
+                    require(bool(room['purposes']) or setup['service'], 'needs_purpose')
+                    require(bool(room['roles']['main_lights'] or room['roles']['night_lights'] or room['shared_areas']) or bool(room['roles']['hvac'] and hvac['mode'] != 'none'), 'needs_roles')
+                    require(not setup['service'] or bool(room['roles']['main_lights'] or room['roles']['night_lights']), 'needs_roles')
+                    require(not setup['home'] or setup['service'], 'invalid_mapping')
+                    require(not setup['service'] or not room['shared_areas'], 'invalid_mapping')
+                    require(all(not rooms[a]['shared_areas'] for a in room['shared_areas']), 'invalid_mapping')
+                    require(all(rooms[a]['roles']['main_lights'] or rooms[a]['roles']['night_lights'] for a in room['shared_areas']), 'missing_shared')
         for role, ids in room['roles'].items():
             require(type(ids) is list and len(ids) <= 100 and all(isinstance(i, str) and len(i) <= 100 for i in ids))
             require(len(ids) == len(set(ids)))
-            if not room['enabled']:
+            if not ready(room):
                 continue
             for rid in ids:
                 e = entities.get(rid)
@@ -158,7 +200,7 @@ def workspace(settings, inv, snapshot):
     areas = {a['id']: a for a in inv['areas']}
     config = {'schema_version': 2, 'rooms': {}, 'loads': {}, 'groups': {}, 'profiles': {}}
     label = lambda text: {'en': text[:100], 'he': text[:100]}
-    rooms = {a: r for a, r in settings['rooms'].items() if r['enabled']}
+    rooms = {a: r for a, r in settings['rooms'].items() if ready(r)}
 
     def targets(aid, role):
         result = []
@@ -189,8 +231,11 @@ def workspace(settings, inv, snapshot):
             rule(main, start, None if purpose == 'sleeping' else end, off if purpose == 'sleeping' else on, None if purpose == 'sleeping' else off)
             night = targets(aid, 'night_lights')
             for shared in room['shared_areas']:
-                night.extend(targets(shared, 'night_lights'))
-                night.extend(targets(shared, 'main_lights'))
+                shared_targets = targets(shared, 'night_lights') + targets(shared, 'main_lights')
+                if room.get('setup', {}).get('bathroom_timing', {}).get(shared) == 'whole_observance':
+                    rule(shared_targets, {'at': snapshot['start']}, {'at': snapshot['end']}, on, off)
+                else:
+                    night.extend(shared_targets)
             rule(night, start, end, on, off)
             for lid in targets(aid, 'hvac'):
                 h = room['hvac']; c = config['loads'][lid]['capabilities']
@@ -204,8 +249,17 @@ def workspace(settings, inv, snapshot):
                           'end': {'anchor': 'sunrise' if purpose == 'sleeping' else 'candle_lighting', 'offset_minutes': duration}}
                 config['profiles'][internal_id('profile_', aid + purpose + name)] = {'label': {'en': en, 'he': he}, 'room': room_id,
                     'purpose': purpose, 'groups': [gid], 'window': window}
+        if room.get('setup', {}).get('home'):
+            ids = targets(aid, 'main_lights') + targets(aid, 'night_lights')
+            require(bool(ids), 'needs_roles')
+            config['groups'][internal_id('home_', aid)] = {
+                'label': label(areas[aid]['name']), 'track_only': False, 'activation': 'home',
+                'rules': [{'id': 'home_lights', 'targets': sorted(set(ids)),
+                           'start': {'anchor': 'use_start', 'offset_minutes': 0},
+                           'end': {'anchor': 'use_end', 'offset_minutes': 0},
+                           'action': {'type': 'state', 'state': 'on'}, 'release': {'type': 'state', 'state': 'off'}}]}
     # Explicit zero-target groups are valid, but compiler requires at least one mapped load.
-    require(bool(config['loads']) and bool(config['profiles']), 'invalid_mapping')
+    require(bool(config['loads']) and (bool(config['profiles']) or any(g.get('activation') == 'home' for g in config['groups'].values())), 'invalid_mapping')
     validate_configuration(config)
     plan = {'schema_version': 2, 'language': 'en', 'snapshot': deepcopy(snapshot),
             'availability': [{'id': 'home_1', 'start': snapshot['preparation_start'], 'end': snapshot['end'], 'state': 'unset'}],
