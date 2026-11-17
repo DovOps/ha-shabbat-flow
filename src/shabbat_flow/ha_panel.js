@@ -12,7 +12,7 @@ class ShabbatFlowPanel extends HTMLElement{
   _render(){
     if(!this.isConnected||!this._hass)return;
     if(this._frame)return;
-    const style=document.createElement('style');style.textContent=':host{display:flex;flex-direction:column;height:100%;min-height:0}header{display:flex;align-items:center;padding:8px 12px;gap:12px;background:var(--primary-background-color);color:var(--primary-text-color)}button{font:inherit;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}iframe{flex:1;width:100%;min-height:0;border:0;background:white}';
+    const style=document.createElement('style');style.textContent=':host{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:0}header{display:flex;align-items:center;padding:8px 12px;gap:12px;background:var(--primary-background-color);color:var(--primary-text-color)}button{font:inherit;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}iframe{flex:1;width:100%;min-height:0;border:0;background:white}';
     const header=document.createElement('header'),button=document.createElement('button');button.textContent='☰';button.setAttribute('aria-label',this._hass.language==='he'?'פתיחת תפריט':'Open sidebar');
     button.onclick=()=>this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true}));
     const title=document.createElement('span');title.textContent=this._hass.language==='he'?'ShabbatFlow — תצוגה מקדימה':'ShabbatFlow Preview';header.append(button,title);
