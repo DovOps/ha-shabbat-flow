@@ -4,3 +4,5 @@
 - [x] S004 Personalized dated planner workspace.
 - [x] S005 Compatibility and regression tests.
 - [x] S006 Versioned package, live upgrade and verification.
+- [x] S007 Reproduce invisible button feedback; add localized, focused inline prerequisites and request lifecycle tests.
+- [x] S008 Deploy frontend correction and verify installed feedback.
