@@ -21,3 +21,9 @@
 ## Remaining acceptance work
 
 Live installation/version inspection is unavailable in this session because configured HA authentication is not accessible. No household installation, restart or device changes occurred. Browser visual, keyboard, RTL and Companion interaction checks remain pending. Full future calendar acquisition, non-admin family access, persistent shared plans, execution, feedback and MCP remain future iterations. Current sensor reads must not be presented as complete multi-day coverage.
+
+## Installation smoke test
+
+An authorized installation on HA 2026.8.2 completed through the normal config flow. The sidebar panel loaded, produced the 25-event fictional preview, and discovered all four Jewish Calendar source values. No planner execution or household mapping was activated. The same six HA compatibility tests also passed locally against 2026.8.2.
+
+Visual inspection exposed a 150px embedded frame caused by percentage height without a definite parent height. The panel now sets viewport height (with a dynamic-viewport override); the corrected deployed file hash matched the generated source. Chrome continued using the cached previous script, and the browser connection was subsequently lost, so final visual confirmation of the correction and Hebrew interaction remain pending. Reload ignoring cached assets is required for a browser that loaded the previous script. Companion testing remains pending.
