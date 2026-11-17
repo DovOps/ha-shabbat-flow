@@ -1,0 +1,4 @@
+- [x] C001 Provider/event adapter and snapshot validation.
+- [x] C002 API/bridge and automatic/manual UI.
+- [x] C003 Localization and regression/compatibility checks.
+- [x] C004 Package, backed-up deployment and live verification.

@@ -1,13 +1,13 @@
-# Installable preview 0.2.0
+# Installable preview 0.3.0
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.2.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.3.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
-4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the dated calendar inputs and open a household plan. No device commands will be sent.
+4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
 
 No HACS installation is required or currently provided. HA package tests target **Home Assistant 2026.8.2 and 2026.11.2 / Python 3.14**. Companion-specific interaction remains unverified. Test this preview before relying on its presentation.
 
@@ -17,9 +17,13 @@ The default is the built-in [Jewish Calendar integration](https://www.home-assis
 
 Discovery uses entity-registry provider/translation keys, not display names. It looks for upcoming candle lighting, upcoming Havdalah, sunrise and `issur_melacha_in_effect`. Missing, disabled, ambiguous, unavailable and invalid values remain unresolved. Under the ShabbatFlow integration's **Options**, select explicit entities if discovery cannot resolve them, or choose **Manual date/time entry**. Manual mode remains available without Jewish Calendar; the manifest uses optional startup ordering rather than a mandatory provider dependency.
 
-In **Advanced setup → Calendar**, review dates and click **Use installed calendar value** where appropriate. Importing is explicit and never overwrites the full plan automatically. Inputs use date/time controls in the plan's displayed IANA timezone, preserving seconds. Nonexistent DST times are rejected; repeated times require an offset choice. Timestamp sensors must supply explicit UTC offsets; ordinary naive `input_datetime` states are rejected.
+House setup defaults to the **next not-yet-started Shabbat/Yom Tov**. Its daily/yearly calendar entities must be enabled, with sunrise, candle lighting and Havdalah events included. ShabbatFlow reads the provider's configured timezone and Israel/diaspora setting, and uses its location/offset calculations unchanged. No external calendar service or new runtime library is needed.
 
-**Current sensor values are not a future multi-day calendar.** Today's sunrise may not be the upcoming Shabbat's sunrise. Upcoming candle lighting and Havdalah do not necessarily describe every day of a continuous holiday. Supply and review all dated segments, room windows and meals before previewing. A full date-range provider adapter is a later iteration. The active-observance sensor is information only and does not lock or execute the plan.
+Review the local dates and each day's candle lighting, sunrise and planning-segment end. On consecutive holy days, the next candle-lighting anchor is the planning transition between daily segments; final Havdalah ends the whole period. These are planning divisions, not newly calculated halachic boundaries. The active-observance sensor remains informational.
+
+**Advanced settings → Use manual dates instead** offers deliberate override. This starts one day, with further supplied segments available in the planner's Advanced setup. The regular date/time controls preserve offsets and reject invalid DST times. Automatic refresh never replaces manual entries. Existing planner workspaces retain their copied snapshots.
+
+The adapter requires exactly one installed Jewish Calendar source and complete events within its bounded 14-day lookahead. It reports missing/disabled/unavailable/ambiguous sources instead of inventing times. An observance already underway is skipped. Manual mode remains available without the provider.
 
 ## Storage, upgrade and removal
 
@@ -41,6 +45,8 @@ Inventory refreshes every 15 seconds while visible, on focus and on manual refre
 
 Include at most 20 areas and map at most 100 loads. Sleeping and recreation are independent purposes. Shared bathrooms must be included and mapped explicitly. When HVAC scheduling is enabled, mode, temperature and fan mode must match supported device capabilities; no settings are guessed. Devices without supported fan-mode metadata are not supported by this preview yet. Generated timing profiles are starting examples to review, not household recommendations.
 
-Room mappings persist in HA across restarts. Weekly workspace choices remain browser snapshots; later registry changes do not silently rewrite them. The initial date form creates one segment; review longer observances in Advanced setup. Jewish Calendar may not expose the future sunrise needed, so supply the correct dated value. Nothing executes.
+Room mappings persist in HA across restarts. Weekly workspace choices remain browser snapshots; later registry changes do not silently rewrite them. Automatic mode reads the complete next observance, including one to three consecutive days, from the Jewish Calendar daily/yearly calendars. Missing calendar entities or events block automatic creation with guidance. Manual mode is under Advanced settings and starts a single supplied segment. Nothing executes.
 
 Upgrade an existing entry by replacing the package and restarting; do not add a duplicate integration. Static asset paths include the release version to avoid mixed cached files. Back up the integration directory and ShabbatFlow storage before upgrades. Removal of the config entry does not erase household storage automatically.
+
+גרסה 0.3.0 מציגה אוטומטית את השבת או החג הקרובים שטרם התחילו, עם זמני הדלקת נרות וזריחה לכל יום והבדלה סופית. יש להפעיל את היומנים היומי והשנתי של Jewish Calendar ואת האירועים המתאימים. הזנה ידנית זמינה בהגדרות מתקדמות בלבד ואינה נדרסת ברענון.
