@@ -1,15 +1,15 @@
-# Installable preview 0.1.0
+# Installable preview 0.2.0
 
-This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The bundled rooms and dates are fictional. It is not yet a family-access or production scheduling release.
+This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.1.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.2.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
-4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, review the fictional example, and generate a preview. No device commands will be sent.
+4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the dated calendar inputs and open a household plan. No device commands will be sent.
 
-No HACS installation is required or currently provided. HA package tests use **Home Assistant 2026.11.2 / Python 3.14**; other versions, a full HA boot, live household deployment and browser/Companion interaction have not yet been verified. Test this preview before relying on its presentation.
+No HACS installation is required or currently provided. HA package tests target **Home Assistant 2026.8.2 and 2026.11.2 / Python 3.14**. Companion-specific interaction remains unverified. Test this preview before relying on its presentation.
 
 ## Calendar source
 
@@ -23,7 +23,7 @@ In **Advanced setup → Calendar**, review dates and click **Use installed calen
 
 ## Storage, upgrade and removal
 
-The integration stores only its own options/config entry through HA. Drafts are saved explicitly in this browser's local storage; browsers/users sharing an origin can share that storage. It is not encrypted family storage or a multi-user plan database. Clear a draft using the app's delete action, and keep exports/private mappings out of the public repository.
+The integration stores its options/config entry and reviewed household mappings in its own HA Store (`shabbat_flow.household`). No registry entries or existing automations are changed. Drafts are saved explicitly in this browser's local storage; browsers/users sharing an origin can share that storage. It is not encrypted family storage or a multi-user plan database. Clear a draft using the app's delete action, and keep exports/private mappings out of the public repository.
 
 To upgrade, retain a copy of the previous integration folder, replace this folder with the new package and restart HA. To roll back, restore that folder and restart. Back up browser exports separately if needed.
 
@@ -33,4 +33,14 @@ To remove, delete the ShabbatFlow integration entry under Devices & services. Th
 
 זוהי תצוגה מקדימה ניסיונית למנהלי המערכת בלבד; אין הפעלת מכשירים או אוטומציות. חלצו את הקובץ לתיקיית ההגדרות של HA כך שהקובץ `manifest.json` יהיה בתוך `custom_components/shabbat_flow`. הפעילו מחדש את HA והוסיפו את **ShabbatFlow Preview** דרך הגדרות ← מכשירים ושירותים ← הוספת אינטגרציה. פתחו את הלוח ובחרו עברית.
 
-ברירת המחדל היא **Jewish Calendar** המובנית. באפשרויות ניתן לבחור חיישנים במפורש או להזין תאריך ושעה ידנית. בדקו את הגדרות המיקום, ישראל/חו״ל וזמני ההדלקה וההבדלה באינטגרציית המקור. זמני החיישנים הנוכחיים אינם לוח מלא לכל ימי החג: יש לבדוק את התאריכים ואת כל מקטעי התוכנית. הדוגמה בדיונית. טיוטות נשמרות בדפדפן רק לפי בקשה. להסרה, מחקו את רשומת האינטגרציה, הסירו את התיקייה והפעילו מחדש את HA.
+ברירת המחדל היא **Jewish Calendar** המובנית. באפשרויות ניתן לבחור חיישנים במפורש או להזין תאריך ושעה ידנית. בדקו את הגדרות המיקום, ישראל/חו״ל וזמני ההדלקה וההבדלה באינטגרציית המקור. זמני החיישנים הנוכחיים אינם לוח מלא לכל ימי החג: יש לבדוק את התאריכים ואת כל מקטעי התוכנית. המסך הראשי מציג אזורים ומכשירים מ־HA. בחרו מטרות שימוש, תפקידי תאורה ומיזוג וחדרי רחצה משותפים ושמרו. הדוגמה הנפרדת בדיונית. טיוטות נשמרות בדפדפן רק לפי בקשה. להסרה, מחקו את רשומת האינטגרציה, הסירו את התיקייה והפעילו מחדש את HA.
+
+## Live household setup
+
+Inventory refreshes every 15 seconds while visible, on focus and on manual refresh. Renames resolve through stable registry IDs. New devices are candidates only. Moves, missing/disabled devices and HVAC capability changes need review; unavailable mapped loads block workspace generation. Unsaved choices survive refresh, and stale saves are rejected. Choose **Reload saved choices** to discard local edits.
+
+Include at most 20 areas and map at most 100 loads. Sleeping and recreation are independent purposes. Shared bathrooms must be included and mapped explicitly. When HVAC scheduling is enabled, mode, temperature and fan mode must match supported device capabilities; no settings are guessed. Devices without supported fan-mode metadata are not supported by this preview yet. Generated timing profiles are starting examples to review, not household recommendations.
+
+Room mappings persist in HA across restarts. Weekly workspace choices remain browser snapshots; later registry changes do not silently rewrite them. The initial date form creates one segment; review longer observances in Advanced setup. Jewish Calendar may not expose the future sunrise needed, so supply the correct dated value. Nothing executes.
+
+Upgrade an existing entry by replacing the package and restarting; do not add a duplicate integration. Static asset paths include the release version to avoid mixed cached files. Back up the integration directory and ShabbatFlow storage before upgrades. Removal of the config entry does not erase household storage automatically.

@@ -1,7 +1,9 @@
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
 import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
+const householdMode=new URLSearchParams(location.search).get('household')==='1';
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
+const draftKey=householdMode?'shabbat-flow-household-draft-v2':PERIOD_DRAFT_KEY;
 const $=id=>document.getElementById(id);
 const lang=()=>bundle?.plan.language||'en';
 const t=key=>translate(catalogs,lang(),key);
@@ -78,7 +80,7 @@ function dayLabel(segment,index){
 function openAdvanced(){const details=$('advanced-setup');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});details.querySelector('summary').focus();}
 function render(){
   document.documentElement.lang=lang();document.documentElement.dir=localeMetadata[lang()].direction;$('language').value=lang();
-  document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));
+  document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(householdMode&&n.dataset.i18n==='period_notice'?'household_notice':n.dataset.i18n));
   if(lastMessage)message(lastMessage.key,lastMessage.error);
   const root=$('period-form');root.replaceChildren();
   const segments=bundle.plan.snapshot.segments;
@@ -228,12 +230,12 @@ async function boot(){
   try{
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
-    [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));initial=structuredClone(bundle);
+    [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
     $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();});
     $('preview').addEventListener('click',preview);
-    $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(PERIOD_DRAFT_KEY,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
-    $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(PERIOD_DRAFT_KEY));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
-    $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(PERIOD_DRAFT_KEY);message('deleted');}catch(e){error(e);}});
+    $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(draftKey,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
+    $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(draftKey));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
+    $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(draftKey);message('deleted');}catch(e){error(e);}});
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     render();

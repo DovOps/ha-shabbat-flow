@@ -128,3 +128,79 @@ class CalendarView(BaseView):
         return self.response({"source": mode, "provider_present": provider_present, "timezone": str(zone),
                               "observed_at": datetime.now(timezone.utc).isoformat(),
                               "coverage": "selected_values_only", "values": values})
+
+
+async def read_body(request):
+    if request.content_type != "application/json":
+        raise ValueError("invalid_request")
+    if request.content_length is not None and request.content_length > MAX_BODY:
+        raise web.HTTPRequestEntityTooLarge(max_size=MAX_BODY, actual_size=request.content_length)
+    body = bytearray()
+    async for chunk in request.content.iter_chunked(16384):
+        body.extend(chunk)
+        if len(body) > MAX_BODY:
+            raise web.HTTPRequestEntityTooLarge(max_size=MAX_BODY, actual_size=len(body))
+    value = json.loads(body, parse_constant=invalid_constant)
+    if type(value) is not dict:
+        raise ValueError("invalid_request")
+    return value
+
+
+class HouseholdView(BaseView):
+    url = "/api/shabbat_flow/household"
+    name = "api:shabbat_flow:household"
+
+    async def get(self, request):
+        from .household import inventory, issues
+        self.check(request)
+        inv = inventory(self.hass)
+        saved = self.hass.data[DOMAIN]["household"]
+        return self.response({"inventory": inv, "settings": saved, "issues": issues(saved, inv),
+                              "observed_at": datetime.now(timezone.utc).isoformat()})
+
+    async def post(self, request):
+        from .household import inventory, validate_settings
+        self.check(request)
+        try:
+            payload = await read_body(request)
+            if set(payload) != {"revision", "inventory_revision", "rooms"} or type(payload["revision"]) is not int:
+                raise ValueError("invalid_request")
+            data = self.hass.data[DOMAIN]
+            async with data["household_lock"]:
+                inv = inventory(self.hass)
+                if payload["revision"] != data["household"]["revision"] or payload["inventory_revision"] != inv["revision"]:
+                    return self.response({"error": "stale_household"}, 409)
+                bindings = validate_settings(payload["rooms"], inv)
+                saved = {"schema_version": 1, "revision": payload["revision"] + 1, "rooms": payload["rooms"], "bindings": bindings}
+                await data["household_store"].async_save(saved)
+                data["household"] = saved
+        except PlanError as exc:
+            return self.response({"error": exc.code}, 400)
+        except (ValueError, TypeError, KeyError, UnicodeDecodeError, RecursionError):
+            return self.response({"error": "invalid_request"}, 400)
+        except OSError:
+            return self.response({"error": "storage_failed"}, 500)
+        return await self.get(request)
+
+
+class HouseholdPlanView(BaseView):
+    url = "/api/shabbat_flow/household_plan"
+    name = "api:shabbat_flow:household_plan"
+
+    async def post(self, request):
+        from .household import inventory, workspace
+        self.check(request)
+        try:
+            payload = await read_body(request)
+            if set(payload) != {"revision", "inventory_revision", "snapshot"}:
+                raise ValueError("invalid_request")
+            saved = self.hass.data[DOMAIN]["household"]
+            inv = inventory(self.hass)
+            if payload["revision"] != saved["revision"] or payload["inventory_revision"] != inv["revision"]:
+                return self.response({"error": "stale_household"}, 409)
+            result = workspace(saved, inv, payload["snapshot"])
+        except PlanError as exc:
+            return self.response({"error": exc.code}, 400)
+        except (ValueError, TypeError, KeyError, UnicodeDecodeError, RecursionError):
+            return self.response({"error": "invalid_request"}, 400)
+        return self.response(result)

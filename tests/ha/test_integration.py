@@ -56,14 +56,14 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.2.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
-    assert hass.http.register_view.call_count == 4
+    assert hass.http.register_view.call_count == 6
     await async_unload_entry(hass, entry)
     assert 'shabbat-flow' not in hass.data[frontend.DATA_PANELS]
     with pytest.raises(web.HTTPServiceUnavailable): await SampleView(hass).get(Request())
     await async_setup_entry(hass, entry)
-    assert hass.http.register_view.call_count == 4  # Routes are not registered twice on reload.
+    assert hass.http.register_view.call_count == 6  # Routes are not registered twice on reload.
     assert hass.http.async_register_static_paths.await_count == 1
 
 
@@ -139,3 +139,142 @@ async def test_config_flow_and_options_schema(host):
     assert (await flow.async_step_user())['reason']=='single_instance_allowed'
     fields=schema({}).schema
     assert {'source_mode','candle_lighting','sunrise','end','active'}=={str(k) for k in fields}
+
+from copy import deepcopy
+from custom_components.shabbat_flow.household import inventory, empty_settings, validate_settings, issues, workspace, internal_id
+from custom_components.shabbat_flow.api import HouseholdView, HouseholdPlanView
+from homeassistant.helpers.storage import Store
+
+
+def room(purposes=None, lights=None, shared=None):
+    return {'enabled': True, 'purposes': purposes or [], 'roles': {'main_lights': lights or [], 'night_lights': [], 'hvac': []},
+            'shared_areas': shared or [], 'hvac': {'mode': 'none', 'temperature': None, 'fan_mode': None, 'lead_minutes': 60}}
+
+
+def fixtures(hass):
+    areas=ar.async_get(hass);reg=er.async_get(hass)
+    bed=areas.async_create('Example bedroom');bath=areas.async_create('Example bathroom')
+    light=reg.async_get_or_create('light','test','fixture-light',suggested_object_id='example_light')
+    light=reg.async_update_entity(light.entity_id,area_id=bed.id)
+    shared=reg.async_get_or_create('switch','test','fixture-shared',suggested_object_id='example_shared')
+    shared=reg.async_update_entity(shared.entity_id,area_id=bath.id)
+    for e in (light,shared):hass.states.async_set(e.entity_id,'off',{'friendly_name':'Example light','secret_attribute':'excluded'})
+    return bed,bath,light,shared
+
+
+@pytest.mark.asyncio
+async def test_inventory_identity_drift_and_no_auto_assign(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    inv=inventory(hass);rooms={bed.id:room(['sleeping','recreation'],[light.id],[bath.id]),bath.id:room(lights=[shared.id])}
+    saved={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)}
+    before=deepcopy(saved);reg=er.async_get(hass)
+    assert issues(saved,inv)==[]
+    renamed=reg.async_update_entity(light.entity_id,new_entity_id='light.renamed_example')
+    hass.states.async_set(renamed.entity_id,'off')
+    ar.async_get(hass).async_update(bed.id,name='Renamed room')
+    assert renamed.id==light.id and issues(saved,inventory(hass))==[]
+    extra=reg.async_get_or_create('light','test','new-light')
+    assert extra.id not in saved['bindings'] and saved==before
+    reg.async_update_entity(renamed.entity_id,area_id=bath.id)
+    assert any(i['code']=='binding_changed' for i in issues(saved,inventory(hass)))
+    reg.async_remove(renamed.entity_id)
+    assert any(i['code']=='missing_entity' for i in issues(saved,inventory(hass)))
+    assert 'secret_attribute' not in json.dumps(inv)
+
+
+@pytest.mark.asyncio
+async def test_store_reload_conflicts_and_authorization(host):
+    hass,entry=host;bed,bath,light,shared=fixtures(hass);view=HouseholdView(hass)
+    current=decoded(await view.get(Request()));payload={'revision':0,'inventory_revision':current['inventory']['revision'],
+      'rooms':{bed.id:room(['sleeping'],[light.id]),bath.id:room(lights=[shared.id])}}
+    raw=json.dumps(payload).encode()
+    with pytest.raises(web.HTTPForbidden):await view.post(Request(raw,admin=False))
+    result=decoded(await view.post(Request(raw)));assert result['settings']['revision']==1
+    assert (await view.post(Request(raw))).status==409
+    assert (await Store(hass,1,DOMAIN+'.household').async_load())['rooms']==payload['rooms']
+    await async_unload_entry(hass,entry);await async_setup_entry(hass,entry)
+    assert decoded(await view.get(Request()))['settings']['rooms']==payload['rooms']
+    for body in (b'null',b'[]',b'{"x":NaN}'):
+        assert (await view.post(Request(body))).status==400
+    with pytest.raises(web.HTTPRequestEntityTooLarge):await view.post(Request(b'x'*(MAX_BODY+1),length=False))
+    stale={**payload,'revision':1};ar.async_get(hass).async_update(bed.id,name='Moved name')
+    assert (await view.post(Request(json.dumps(stale).encode()))).status==409
+
+
+@pytest.mark.asyncio
+async def test_personalized_workspace_and_shared_identity(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    rooms={bed.id:room(['sleeping','recreation'],[light.id],[bath.id]),bath.id:room(lights=[shared.id])}
+    saved={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)}
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    b=workspace(saved,inv,snapshot)
+    assert 'Example bedroom' in [v['en'] for v in b['config']['rooms'].values()]
+    assert len(b['config']['loads'])==2 and len(b['config']['profiles'])==4
+    assert b['plan']['room_uses']==[] and b['plan']['availability'][0]['state']=='unset'
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    result=compile_schedule(b['config'],b['plan']);assert not result['complete']
+    b['plan']['availability'][0]['state']='home'
+    for meal in b['plan']['meals']:meal['choice']='none'
+    profile=next(k for k,p in b['config']['profiles'].items() if p['purpose']=='sleeping')
+    b['plan']['room_uses']=[{'id':'use_1','room':internal_id('room_',bed.id),'purpose':'sleeping','control':'planner',
+        'profile':profile,'segment':snapshot['segments'][0]['id'],'start':'2027-01-07T22:00:00+02:00','end':'2027-01-08T08:00:00+02:00'}]
+    result=compile_schedule(b['config'],b['plan']);assert result['complete'] and len(result['events'])==3
+    assert workspace(saved,inv,snapshot)==workspace(saved,inv,snapshot)
+    hass.states.async_set(light.entity_id,'unavailable')
+    assert any(i['code']=='unavailable_entity' for i in issues(saved,inventory(hass)))
+    with pytest.raises(ValueError):workspace(saved,inventory(hass),snapshot)
+
+
+@pytest.mark.asyncio
+async def test_storage_failure_does_not_acknowledge_save(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);view=HouseholdView(hass)
+    inv=inventory(hass);payload={'revision':0,'inventory_revision':inv['revision'],'rooms':{bed.id:room(['sleeping'],[light.id])}}
+    hass.data[DOMAIN]['household_store']=SimpleNamespace(async_save=AsyncMock(side_effect=OSError('disk error')))
+    assert (await view.post(Request(json.dumps(payload).encode()))).status==500
+    assert hass.data[DOMAIN]['household']['revision']==0
+
+
+@pytest.mark.asyncio
+async def test_inherited_area_and_explicit_hvac(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);reg=er.async_get(hass)
+    # Synthetic device registration requires a config-entry record in HA's real registry.
+    hass.config_entries.async_get_entry=Mock(return_value=SimpleNamespace(domain='test',pref_disable_new_entities=False,disabled_by=None,entry_id='fixture'))
+    device=dr.async_get(hass).async_get_or_create(config_entry_id='fixture',identifiers={('test','example-device')},name='Example HVAC')
+    dr.async_get(hass).async_update_device(device.id,area_id=bed.id)
+    climate=reg.async_get_or_create('climate','test','fixture-climate',device_id=device.id)
+    hass.states.async_set(climate.entity_id,'off',{'hvac_modes':['off','heat','cool'],'fan_modes':['auto'],'min_temp':16,'max_temp':30})
+    inv=inventory(hass);e=next(e for e in inv['entities'] if e['id']==climate.id)
+    assert e['area_id']==bed.id and e['area_source']=='device'
+    r=room(['sleeping'],[light.id]);r['roles']['hvac']=[climate.id];r['hvac'].update(mode='heat',temperature=22,fan_mode='auto')
+    validate_settings({bed.id:r},inv)
+    r['hvac']['temperature']=60
+    with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
+
+@pytest.mark.asyncio
+async def test_household_plan_api_stale_and_snapshot_unchanged(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    rooms={bed.id:room(['sleeping'],[light.id])}
+    hass.data[DOMAIN]['household']={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)}
+    payload={'revision':0,'inventory_revision':inv['revision'],'snapshot':json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']}
+    view=HouseholdPlanView(hass)
+    with pytest.raises(web.HTTPForbidden):await view.post(Request(json.dumps(payload).encode(),admin=False))
+    result=decoded(await view.post(Request(json.dumps(payload).encode())))
+    frozen=deepcopy(result)
+    ar.async_get(hass).async_update(bed.id,name='Changed label')
+    assert (await view.post(Request(json.dumps(payload).encode()))).status==409
+    assert result==frozen
+    assert (await view.post(Request(b'[]'))).status==400
+
+
+@pytest.mark.asyncio
+async def test_floors_deleted_areas_and_persistent_reload(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    floor=fr.async_get(hass).async_create('Example floor',level=1)
+    ar.async_get(hass).async_update(bed.id,floor_id=floor.floor_id)
+    inv=inventory(hass);assert any(a['floor_id']==floor.floor_id for a in inv['areas'])
+    rooms={bed.id:room(['sleeping'],[light.id])}
+    saved={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv),'revision':1}
+    await hass.data[DOMAIN]['household_store'].async_save(saved)
+    stored=await Store(hass,1,DOMAIN+'.household').async_load();assert stored==saved
+    ar.async_get(hass).async_delete(bed.id)
+    assert any(i['code']=='missing_area' for i in issues(stored,inventory(hass)))

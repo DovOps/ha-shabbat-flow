@@ -38,7 +38,7 @@ test('period UI has translated labels, issues and independent draft storage',()=
   for(const language of ['en','he']){
     const merged={...catalogs[language],...extra[language]};
     for(const [,key] of html.matchAll(/data-i18n="([^"]+)"/g))assert.ok(merged[key],key);
-    for(const [,key] of js.matchAll(/(?:t|message|field|button|section)\('([^']+)'(?=[,)])/g))assert.ok(merged[key],key);
+    for(const [,key] of js.matchAll(/\b(?:t|message|field|button|section)\('([^']+)'(?=[,)])/g))assert.ok(merged[key],key);
     for(const code of ['room_overlap','availability_unset','meal_unset','meals_missing'])assert.ok(merged['issue_'+code]);
   }
   assert.equal(PERIOD_DRAFT_KEY,'shabbat-flow-draft-v2');
@@ -124,4 +124,36 @@ test('date controls preserve seconds, reject gaps and expose both fold offsets',
   assert.deepEqual(localDateTimeCandidates('2027-10-31T01:30',zone),['2027-10-31T01:30:00+03:00','2027-10-31T01:30:00+02:00']);
   assert.deepEqual(localDateTimeCandidates('2027-02-30T12:00',zone),[]);
   assert.equal(shiftWallDays('2027-01-08T16:20:37+02:00',1,zone),'2027-01-09T16:20:37+02:00');
+});
+
+test('household setup has complete English/Hebrew catalogs and versioned bridge routes',()=>{
+  const base=new URL('../src/shabbat_flow/',import.meta.url);
+  const c=JSON.parse(fs.readFileSync(new URL('web/household-i18n.json',base)));
+  assert.deepEqual(Object.keys(c.en).sort(),Object.keys(c.he).sort());
+  const html=fs.readFileSync(new URL('web/household.html',base),'utf8');
+  const script=fs.readFileSync(new URL('web/household.mjs',base),'utf8');
+  for(const match of (html+script).matchAll(/(?:data-i18n="|t\(')([a-z_]+)(?:"|'\))/g))for(const lang of ['en','he'])assert.ok(c[lang][match[1]],match[1]);
+  const panel=fs.readFileSync(new URL('ha_panel.js',base),'utf8');
+  assert.ok(panel.includes("new URL('./household.html',import.meta.url)"));
+  assert.ok(panel.includes('POST /api/v2/household'));
+  assert.ok(!panel.includes('callService'));
+});
+
+test('household polling preserves the form-bound draft until a redraw is needed',async()=>{
+  const {runInNewContext}=await import('node:vm');
+  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
+  const refresh=source.slice(source.indexOf('async function refresh('),source.indexOf('async function save('));
+  const initial={inventory:{revision:'a'},settings:{revision:0,rooms:{}}};
+  const context={data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
+    api:async()=>structuredClone(context.next),render:()=>{context.renders++;},renderRooms:()=>{context.renders++;},updateAvailability:()=>{},syncLabel:()=>{},status:value=>{context.message=value;},renders:0};
+  runInNewContext(refresh,context);
+  const boundRoom=context.draft.room_a;
+  await context.refresh();
+  assert.equal(context.draft.room_a,boundRoom);
+  boundRoom.enabled=true;context.dirty=true;
+  context.next.inventory.revision='b';await context.refresh();
+  assert.equal(context.draft.room_a,boundRoom);assert.equal(context.needsReview,true);
+  await context.refresh(true);assert.equal(context.needsReview,false);
+  context.next.settings.revision=1;await context.refresh();
+  assert.equal(context.message,'stale_household');assert.equal(context.data.settings.revision,0);
 });

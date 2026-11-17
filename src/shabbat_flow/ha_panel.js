@@ -1,4 +1,7 @@
 const routes=new Map([
+  ['GET /api/v2/household','shabbat_flow/household'],
+  ['POST /api/v2/household','shabbat_flow/household'],
+  ['POST /api/v2/household_plan','shabbat_flow/household_plan'],
   ['GET /api/v2/example','shabbat_flow/sample'],
   ['GET /api/v2/i18n','shabbat_flow/catalog'],
   ['GET /api/v2/calendar','shabbat_flow/calendar'],
@@ -16,7 +19,7 @@ class ShabbatFlowPanel extends HTMLElement{
     const header=document.createElement('header'),button=document.createElement('button');button.textContent='☰';button.setAttribute('aria-label',this._hass.language==='he'?'פתיחת תפריט':'Open sidebar');
     button.onclick=()=>this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true}));
     const title=document.createElement('span');title.textContent=this._hass.language==='he'?'ShabbatFlow — תצוגה מקדימה':'ShabbatFlow Preview';header.append(button,title);
-    this._frame=document.createElement('iframe');this._frame.title='ShabbatFlow';this._frame.src='/shabbat_flow_static/period.html';
+    this._frame=document.createElement('iframe');this._frame.title='ShabbatFlow';this._frame.src=new URL('./household.html',import.meta.url).pathname;
     this.shadowRoot.append(style,header,this._frame);
   }
   _connect(event){

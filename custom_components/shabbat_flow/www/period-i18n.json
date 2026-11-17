@@ -106,7 +106,9 @@
     "source_invalid_time": "Timestamp needs an explicit timezone/whole-second value",
     "source_ambiguous": "Multiple candidates — select one in integration options",
     "source_on": "In effect",
-    "source_off": "Not in effect"
+    "source_off": "Not in effect",
+    "house_setup": "House setup",
+    "household_notice": "Your HA household snapshot · Supplied dates · Preview only; no devices controlled. Changes in HA do not rewrite this workspace."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -215,6 +217,8 @@
     "source_invalid_time": "נדרשת חותמת זמן עם אזור זמן ודיוק בשניות שלמות",
     "source_ambiguous": "מספר מועמדים — בחרו אחד באפשרויות האינטגרציה",
     "source_on": "בתוקף",
-    "source_off": "לא בתוקף"
+    "source_off": "לא בתוקף",
+    "house_setup": "הגדרות הבית",
+    "household_notice": "תמונת מצב של הבית מ־HA · תאריכים שסופקו · תצוגה בלבד ללא הפעלת מכשירים. שינויים ב־HA אינם משנים תוכנית זו."
   }
 }
