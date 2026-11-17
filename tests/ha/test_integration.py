@@ -56,7 +56,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.5.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.5.1/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -443,5 +443,7 @@ async def test_power_only_does_not_reinterpret_unscheduled_and_clamps_preparatio
     assert power[0]['local']==snap['preparation_start'] and power[1]['action']['state']=='off'
     r['roles']['hvac']=[]
     with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
-    r['roles']['hvac']=[climate.id];r['hvac']['mode']='profile'
+    r['roles']['hvac']=[climate.id];r['purposes']=[];r['setup']['service']=True
+    with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
+    r['purposes']=['recreation'];r['hvac']['mode']='profile'
     with pytest.raises(ValueError):validate_settings({bed.id:r},inv)

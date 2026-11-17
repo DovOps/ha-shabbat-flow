@@ -163,6 +163,7 @@ def validate_settings(rooms, inv):
             if ready(room):
                 require(hvac['mode'] != 'profile', 'hvac_profile_required')
                 require(hvac['mode'] == 'none' or bool(room['roles']['hvac']), 'needs_hvac_device')
+                require(hvac['mode'] == 'none' or bool(room['purposes']), 'needs_hvac_use')
                 require(all(a != aid and a in areas and ready(rooms.get(a, {})) for a in room['shared_areas']), 'missing_shared')
                 if setup:
                     require(bool(room['purposes']) or setup['service'], 'needs_purpose')

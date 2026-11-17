@@ -29,6 +29,7 @@ async function finishRoom(skip=false){
  if(!skip){
   if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)return wizardError('needs_roles');
   if(r.hvac.mode!=='none'&&!r.roles.hvac.length)return wizardError('needs_hvac_device');
+  if(r.hvac.mode!=='none'&&!r.purposes.length)return wizardError('needs_hvac_use');
   if(r.hvac.mode==='profile')return wizardError('hvac_profile_required');
   if(!r.purposes.length&&!s.service)return wizardError('needs_purpose');
   if(s.service&&!r.roles.main_lights.length&&!r.roles.night_lights.length)return wizardError('needs_roles');

@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Wizard plus badge and power-only HVAC follow-ups implemented in preview 0.5.0; verification recorded separately.
+**Status:** Wizard plus badge and power-only HVAC follow-ups implemented in preview 0.5.1; verification recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -106,7 +106,7 @@ The homeowner selects an HVAC device and schedules On/Off while leaving its heat
 
 | ID | Requirement |
 | --- | --- |
-| WIZ-FR-015 | Offer “Schedule On/Off only — preserve settings,” “Use a specific profile,” and “Do not schedule this HVAC” as distinct intents in setup and summary. Power-only uses the independent HVAC lead time and room-use end to generate typed HVAC On/Off events, without mode, temperature, unit or fan overrides. It works with a currently-off device and does not require target/fan metadata. |
+| WIZ-FR-015 | Offer “Schedule On/Off only — preserve settings,” “Use a specific profile,” and “Do not schedule this HVAC” as distinct intents in setup and summary. Power-only uses the independent HVAC lead time and room-use end to generate typed HVAC On/Off events, without mode, temperature, unit or fan overrides. It works with a currently-off device and does not require target/fan metadata. Require at least one selected HVAC device and a Sleeping/Recreation purpose to provide a dated use window; shared/service-only areas must receive actionable guidance instead of a silent no-op. |
 | WIZ-FR-016 | Show power-only HVAC events in the final preview, with distinct On/Off badges and a “preserve settings” explanation. Read HA's advertised turn-on/off support as diagnostic information only. Unsupported/unknown support and unverified resume semantics are visible. Never fall back to a guessed mode or treat advertised TURN_ON as proof of restoration. Future execution must verify a device-specific power/resume adapter before activation; this release emits intentions only. |
 | WIZ-NFR-011 | Test power-only versus specific-profile versus unscheduled behavior, HVAC-only rooms, currently-off devices, absent temperature/fan metadata, overlapping demands, incompatible intents, strict rejection of setting overrides in power actions, unchanged legacy settings, and multilingual summaries. No actuator or HA control service calls are introduced. |
 

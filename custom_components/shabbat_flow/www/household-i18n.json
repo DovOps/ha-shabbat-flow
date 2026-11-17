@@ -138,7 +138,8 @@
     "native_power_advertised": "HA reports On/Off support; restoring previous settings is not yet verified.",
     "native_power_unknown": "Native On/Off support is missing or unknown. This is an intention preview, not verified device compatibility.",
     "hvac_profile_required": "Choose Heating or Cooling for the specific profile, or select On/Off only.",
-    "needs_hvac_device": "Select at least one HVAC device, or choose Do not schedule this HVAC."
+    "needs_hvac_device": "Select at least one HVAC device, or choose Do not schedule this HVAC.",
+    "needs_hvac_use": "Choose Sleeping or Recreation so this area has a room-use window for HVAC. Shared/service lighting alone does not schedule HVAC."
   },
   "he": {
     "language": "שפה",
@@ -279,6 +280,7 @@
     "native_power_advertised": "HA מדווח על תמיכה בהפעלה וכיבוי; שחזור ההגדרות הקודמות טרם אומת.",
     "native_power_unknown": "תמיכה מובנית בהפעלה וכיבוי חסרה או לא ידועה. זו תצוגת כוונות בלבד, ולא אישור תאימות למכשיר.",
     "hvac_profile_required": "בחרו חימום או קירור לפרופיל המוגדר, או בחרו הפעלה וכיבוי בלבד.",
-    "needs_hvac_device": "בחרו לפחות מכשיר מיזוג אחד, או בחרו ללא תזמון למיזוג הזה."
+    "needs_hvac_device": "בחרו לפחות מכשיר מיזוג אחד, או בחרו ללא תזמון למיזוג הזה.",
+    "needs_hvac_use": "בחרו שינה או פנאי כדי להגדיר חלון שימוש למיזוג באזור זה. תאורה באזור משותף/שירות לבדה אינה מתזמנת מיזוג."
   }
 }

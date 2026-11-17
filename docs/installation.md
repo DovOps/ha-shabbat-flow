@@ -1,10 +1,10 @@
-# Installable preview 0.5.0
+# Installable preview 0.5.1
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.5.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.5.1.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
 4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
@@ -64,7 +64,7 @@ Existing schema-1 room mappings are migrated in memory with their original use-w
 בחרו חדרים, הגדירו כל חדר בנפרד ושמרו להמשך. ניתן לקשר חדר רחצה משותף ולהגדיר את התאורה פעם אחת. חדרים שטרם הושלמו אינם יוצרים פעולות בתכנון. הגדרות מיזוג נוכחיות מועתקות לבדיקה בלבד; אין הפעלת מכשירים.
 
 
-## Power-only HVAC and action badges (0.5.0)
+## Power-only HVAC and action badges (0.5.1)
 In a room's HVAC section, choose one of three scheduling intents:
 - **Schedule On/Off only — preserve settings** creates typed HVAC power intentions, with no heating/cooling mode, temperature or fan commands. It accepts currently-off units and does not require target/fan metadata. The independent lead time is bounded by the supplied preparation start.
 - **Use a specific heating/cooling profile** retains explicit validated settings and the copy-current shortcut.
