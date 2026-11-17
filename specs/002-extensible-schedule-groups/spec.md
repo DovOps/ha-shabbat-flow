@@ -1,6 +1,6 @@
 # Feature Specification: homeowner-defined schedule groups
 
-Status: V2 local preview checkpoint: calendar/room-use validation, generic binary/HVAC compiler and opt-in multilingual dashboard implemented. Scene/script adapters, migration, copy-day and browser verification remain open. Feature 001 is preserved separately. See plan.md, tasks.md and analysis.md for scope and verification.
+Status: V2 local preview checkpoint: calendar/room-use validation, generic binary/HVAC compiler and opt-in multilingual dashboard implemented. Scene/script adapters, migration and browser verification remain open. The family view now includes day tabs, room tiles and reviewed copy-day. Feature 001 is preserved separately. See plan.md, tasks.md and analysis.md for scope and verification.
 
 ## User scenarios
 US1: An installer adds a named group such as outdoor access or an additional appliance, selects available targets and previews its dated actions without changing the core engine.

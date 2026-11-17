@@ -116,7 +116,14 @@ def validate_configuration(config):
                 if rule['release'] is not None:
                     validate_action(rule['release'], config['loads'][target])
     for profile in config['profiles'].values():
-        keys(profile, {'label', 'room', 'purpose', 'groups'})
+        require(type(profile) is dict)
+        expected = {'label', 'room', 'purpose', 'groups'}
+        keys(profile, expected | ({'window'} if 'window' in profile else set()))
+        if 'window' in profile:
+            keys(profile['window'], {'start', 'end'})
+            for value in profile['window'].values():
+                validate_time(value)
+                require('at' in value or value['anchor'] in ('candle_lighting', 'sunrise'))
         labels(profile['label'])
         require(type(profile['room']) is str and profile['room'] in config['rooms'], 'invalid_mapping')
         choice(profile['purpose'], ('sleeping', 'recreation', 'other'))
@@ -141,6 +148,10 @@ def compile_schedule(config, plan):
             for time in (rule['start'], rule['end']):
                 if time is not None and 'at' in time:
                     parse_instant(time['at'], calendar['zone'])
+    for profile in config['profiles'].values():
+        for time in profile.get('window', {}).values():
+            if 'at' in time:
+                parse_instant(time['at'], calendar['zone'])
     issues, availability, selections = [], [], []
     bounded_list(plan['availability'], 100)
     cursor = calendar['preparation_start']

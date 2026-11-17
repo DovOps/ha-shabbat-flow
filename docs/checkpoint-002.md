@@ -18,3 +18,6 @@ Edit supplied calendar anchors and boundaries together when adding/removing a da
 70 automated tests pass (61 Python, 9 Node). Repository hygiene and syntax checks pass. Browser interaction, RTL and responsive visual checks remain pending after the earlier browser-access denial; these are not represented as verified. No activation or HA connection exists. See feature 002 analysis.md and tasks.md for unfinished work.
 
 User authorized continuing local checkpoint commits on this branch. Pushes remain separate. The next work is guided profile UX, copy-day/migration with review, browser verification, and feedback storage; HA provider selection/execution require their own review.
+
+## Family UX follow-up
+The new default view uses day tabs, room tiles, meal choices and a readable summary. Reviewed copy-previous-day is implemented; technical editors are collapsed under Advanced setup. Optional bedroom timing sliders remain independent and show their shared-profile scope. Logo typography emphasizes HA. 77 automated tests pass; browser verification remains pending. The user requested pushing the checkpoint and merging it to main.

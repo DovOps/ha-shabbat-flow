@@ -1,13 +1,13 @@
 import {translate,localeMetadata,localTime} from './model.mjs';
-import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId} from './period-model.mjs';
-let bundle,initial,catalogs,result=null,revision=0,lastMessage=null;
+import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime} from './period-model.mjs';
+let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null;
 const $=id=>document.getElementById(id);
 const lang=()=>bundle?.plan.language||'en';
 const t=key=>translate(catalogs,lang(),key);
 function node(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
 function message(key,error=false){lastMessage={key,error};$('status').textContent=t(key);$('status').className=error?'error':'';}
 function error(error){const key='error_'+error.message;message(Object.hasOwn(catalogs[lang()],key)?key:'error_internal',true);}
-function changed(){revision++;result=null;$('export').disabled=true;$('timeline').replaceChildren();message('period_dirty');}
+function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('timeline').replaceChildren();message('period_dirty');}
 function button(key,fn){const n=node('button',t(key));n.type='button';n.addEventListener('click',fn);return n;}
 function field(key,value,fn,options){
   const label=node('label',undefined,'field');label.append(node('span',t(key)));
@@ -46,11 +46,103 @@ function addUse(segment,purpose){
   bundle.plan.room_uses.push({id:nextId('use',bundle.plan.room_uses),room,purpose,control:profile?'planner':'existing',profile,segment:segment.id,start:segment.start,end:segment.end});
   changed();render();
 }
+function applyChange(next){bundle=next;changed();render();}
+function safeTime(iso){try{return localTime(iso,lang(),bundle.plan.snapshot.timezone);}catch{return t('dates_needed');}}
+function dayLabel(segment,index){
+  try{return new Intl.DateTimeFormat(lang(),{timeZone:bundle.plan.snapshot.timezone,weekday:'short',month:'short',day:'numeric'}).format(new Date(segment.sunrise));}
+  catch{return `${t('period_day')} ${index+1}`;}
+}
+function openAdvanced(){const details=$('advanced-setup');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});details.querySelector('summary').focus();}
 function render(){
   document.documentElement.lang=lang();document.documentElement.dir=localeMetadata[lang()].direction;$('language').value=lang();
   document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));
   if(lastMessage)message(lastMessage.key,lastMessage.error);
   const root=$('period-form');root.replaceChildren();
+  const segments=bundle.plan.snapshot.segments;
+  if(!segments.some(v=>v.id===activeDay))activeDay=segments[0].id;
+  const segment=segments.find(v=>v.id===activeDay),index=segments.indexOf(segment);
+  const nav=node('nav',undefined,'day-tabs');nav.setAttribute('aria-label',t('choose_day'));
+  segments.forEach((day,i)=>{
+    const tab=node('button',dayLabel(day,i));tab.type='button';tab.setAttribute('aria-pressed',String(day.id===activeDay));
+    tab.addEventListener('click',()=>{activeDay=day.id;pendingCopy=null;render();});nav.append(tab);
+  });root.append(nav);
+  const main=section('family_plan');main.querySelector('h2').textContent=`${t(segment.kind)} · ${dayLabel(segment,index)}`;
+  main.append(node('p',`${t('candle_lighting')}: ${safeTime(segment.candle_lighting)}`,'hint'));
+  const state=dayHomeState(bundle.plan,segment),homeOptions=options(['home_state','away_state','unset']).map(([id,label])=>[id.replace('_state',''),label]);
+  if(state==='custom')homeOptions.push(['custom',t('custom_windows')]);
+  main.append(field('home_question',state,v=>{if(v!=='custom')applyChange(setDayHome(bundle,segment.id,v));},homeOptions));
+  const dayUses=bundle.plan.room_uses.filter(v=>v.segment===segment.id),meals=bundle.plan.meals.filter(v=>v.segment===segment.id);
+  if(state==='custom')main.append(button('review_custom',openAdvanced));
+  if(state==='away'&&(dayUses.length||meals.some(v=>['family','hosting'].includes(v.choice)))){
+    const notice=node('div',undefined,'inline-issue');notice.append(node('p',t('away_selection_conflict')),button('clear_away_choices',()=>{
+      const next=structuredClone(bundle);next.plan.room_uses=next.plan.room_uses.filter(v=>v.segment!==segment.id);
+      next.plan.meals.filter(v=>v.segment===segment.id&&v.choice!=='none').forEach(v=>v.choice='away');applyChange(next);
+    }));main.append(notice);
+  }
+  if(index>0)main.append(button('copy_previous',async()=>{
+    const token=revision;try{const candidate=copyPreviousDay(bundle,segment.id);const check=await validate(candidate);if(token!==revision||activeDay!==segment.id)return;pendingCopy={candidate,target:segment.id,check};render();}catch(e){if(token===revision)error(e);}
+  }));
+  if(pendingCopy?.target===segment.id){
+    const review=node('div',undefined,'copy-review');review.append(node('h3',t('review_copy')),node('p',t('copy_explanation')));
+    for(const use of pendingCopy.candidate.plan.room_uses.filter(v=>v.segment===segment.id))review.append(node('p',`${bundle.config.rooms[use.room][lang()]} · ${t(use.purpose)} · ${safeTime(use.start)} — ${safeTime(use.end)}`));
+    for(const meal of pendingCopy.candidate.plan.meals.filter(v=>v.segment===segment.id))review.append(node('p',`${catalogs[lang()]['meal_'+meal.kind]??meal.kind}: ${t(meal.choice)} · ${safeTime(meal.start)}`));
+    if(!pendingCopy.check.complete)review.append(node('p',t('period_incomplete'),'inline-issue'));
+    review.append(button('apply_copy',()=>{const candidate=pendingCopy.candidate;candidate.plan.language=lang();applyChange(candidate);}),button('cancel_copy',()=>{pendingCopy=null;render();}));main.append(review);
+  }
+  root.append(main);
+  for(const purpose of ['sleeping','recreation']){
+    const panel=section(purpose),tiles=node('div',undefined,'room-tiles');
+    for(const [room,label] of Object.entries(bundle.config.rooms)){
+      const matches=dayUses.filter(v=>v.room===room&&v.purpose===purpose),use=matches[0];
+      if(!matches.length&&!availableProfiles(bundle.config,room,purpose).length)continue;
+      const tile=node('div',undefined,'room-tile'+(use?' selected':''));tile.append(node('h3',label[lang()]));
+      const choices=[['off',t('not_used')],...availableProfiles(bundle.config,room,purpose).map(([id,p])=>[id,p.label[lang()]]),['existing',t('existing_control')]];
+      const select=field('profile_label',use?(use.profile??'existing'):'off',v=>{try{applyChange(setRoomChoice(bundle,segment.id,room,purpose,v));}catch(e){error(e);}},choices);
+      if(matches.length>1){select.querySelector('select').disabled=true;tile.append(node('p',t('custom_windows'),'hint'),button('review_custom',openAdvanced));}
+      tile.append(select);
+      if(use){
+        tile.append(node('p',`${safeTime(use.start)} — ${safeTime(use.end)}`,'hint'));
+        const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,use);tile.append(custom);
+        const overlap=bundle.plan.room_uses.some(v=>v.id!==use.id&&v.room===room&&new Date(v.start)<new Date(use.end)&&new Date(use.start)<new Date(v.end));
+        if(overlap){const notice=node('div',undefined,'inline-issue');notice.append(node('p',t('room_overlap_help')),button('adjust_window',()=>{custom.open=true;custom.querySelector('input').focus();}));tile.append(notice);}
+      }
+      tiles.append(tile);
+    }
+    panel.append(tiles);root.append(panel);
+  }
+  const mealPanel=section('meals_title'),mealTiles=node('div',undefined,'room-tiles');
+  for(const meal of meals){
+    const tile=node('div',undefined,'room-tile');tile.append(node('h3',catalogs[lang()]['meal_'+meal.kind]??meal.kind),
+      field('meal_choice',meal.choice,v=>{meal.choice=v;changed();render();},options(['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(meal.end)}`,'hint'));
+    const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);mealTiles.append(tile);
+  }
+  mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel);
+  const timing=node('details',undefined,'card');timing.append(node('summary',t('family_timing')),node('p',t('timing_scope'),'hint'));
+  const visited=new Set();
+  for(const use of dayUses.filter(v=>v.purpose==='sleeping'&&v.control==='planner')){
+    const profile=bundle.config.profiles[use.profile];
+    for(const groupId of profile.groups)for(const rule of bundle.config.groups[groupId].rules){
+      const kind=rule.action.type==='hvac'&&rule.action.mode!=='off'?'bedroom_hvac':rule.action.type==='state'&&rule.action.state==='off'&&rule.end===null?'bedroom_lights':null;
+      if(!kind||rule.start.anchor!=='candle_lighting'||visited.has(groupId+'/'+rule.id))continue;visited.add(groupId+'/'+rule.id);
+      const row=node('label',undefined,'field');row.append(node('span',`${bundle.config.rooms[use.room][lang()]} · ${t(kind)}`));
+      const input=node('input');input.type='range';input.min='0';input.max='720';input.step='15';input.value=rule.start.offset_minutes;
+      const output=node('output',safeTime(resolveWindowTime(rule.start,segment,bundle.plan.snapshot.timezone)));row.append(input,output);
+      input.addEventListener('input',()=>{rule.start.offset_minutes=Number(input.value);output.textContent=safeTime(resolveWindowTime(rule.start,segment,bundle.plan.snapshot.timezone));changed();});timing.append(row);
+    }
+  }
+  if(visited.size)root.append(timing);
+  const summary=section('family_summary');
+  const sleeping=dayUses.filter(v=>v.purpose==='sleeping'),recreation=dayUses.filter(v=>v.purpose==='recreation');
+  summary.append(node('p',`${t('sleeping')}: ${sleeping.length? [...new Set(sleeping.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`),node('p',`${t('recreation')}: ${recreation.length?[...new Set(recreation.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`));
+  for(const meal of meals)summary.append(node('p',`${catalogs[lang()]['meal_'+meal.kind]??meal.kind}: ${t(meal.choice)}`));
+  const extraUses=dayUses.some(v=>v.purpose==='other'),manual=bundle.plan.groups.some(v=>v.segment===segment.id);
+  if(extraUses||manual)summary.append(node('p',t('additional_custom'),'hint'),button('review_custom',openAdvanced));
+  summary.append(node('p',t('summary_hint'),'hint'));root.append(summary);
+  const advanced=node('details',undefined,'advanced-setup');advanced.id='advanced-setup';advanced.append(node('summary',t('advanced_setup')));
+  const contents=node('div',undefined,'advanced-content');advanced.append(contents);root.append(advanced);renderAdvanced(contents);renderTimeline();
+}
+
+function renderAdvanced(root){
   const calendar=section('period_calendar'),snapshot=bundle.plan.snapshot;
   calendar.append(node('p',t('calendar_supplied'),'hint'),field('timezone',snapshot.timezone,v=>snapshot.timezone=v),
     field('observance_region',snapshot.observance,v=>snapshot.observance=v,options(['israel','diaspora'])),
@@ -87,7 +179,7 @@ function render(){
   const editor=node('textarea');editor.dir='ltr';editor.rows=12;editor.maxLength=120000;editor.value=JSON.stringify(bundle.config,null,2);label.append(editor);advanced.append(label,button('apply_config',async()=>{
     const token=revision;
     try{const candidate={config:JSON.parse(editor.value),plan:structuredClone(bundle.plan)};await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('config_applied');}catch(e){if(token===revision)error(e);}
-  }));root.append(advanced);renderTimeline();
+  }));root.append(advanced);
 }
 function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
@@ -97,7 +189,7 @@ function renderTimeline(){
     const row=node('div',undefined,'event');const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.local;
     const load=Object.values(bundle.config.loads).find(v=>v.physical_id===event.physical_id);
     const description=node('div',load?.label[lang()]??event.physical_id);
-    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${reason.segment} / ${bundle.config.groups[reason.group].label[lang()]} / ${reason.rule} `));description.append(reasons);
+    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
     const action=event.action;let value=action.type==='state'?t(action.state):t('mode_'+action.mode);
     if(action.temperature!==undefined)value+=` · ${action.temperature}°${action.unit} · ${catalogs[lang()]['fan_'+action.fan_mode]??action.fan_mode}`;
     if(event.intent==='track_only')description.append(node('small',t('track_only')));

@@ -15,3 +15,90 @@ export function nextId(prefix,items){
   let i=1;const used=new Set(items.map(v=>v.id));while(used.has(`${prefix}_${i}`))i++;
   return `${prefix}_${i}`;
 }
+
+export function zonedParts(instant,zone){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));
+  return Object.fromEntries(parts.filter(v=>v.type!=='literal').map(v=>[v.type,v.value]));
+}
+export function zonedISO(instant,zone){
+  const p=zonedParts(instant,zone),ms=+new Date(instant);
+  const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
+  const offset=Math.round((local-ms)/60000),sign=offset<0?'-':'+';
+  const abs=Math.abs(offset);
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
+}
+export function resolveWindowTime(value,segment,zone){
+  if(value.at)return zonedISO(value.at,zone);
+  if(!['candle_lighting','sunrise'].includes(value.anchor))throw new Error('invalid_time');
+  return zonedISO(+new Date(segment[value.anchor])+value.offset_minutes*60000,zone);
+}
+export function dayBounds(plan,segment){
+  return {start:plan.snapshot.segments[0].id===segment.id?plan.snapshot.preparation_start:segment.start,end:segment.end};
+}
+export function dayHomeState(plan,segment){
+  const bounds=dayBounds(plan,segment),start=+new Date(bounds.start),end=+new Date(bounds.end);
+  let cursor=start;const states=new Set();
+  for(const item of plan.availability){
+    const a=Math.max(start,+new Date(item.start)),b=Math.min(end,+new Date(item.end));
+    if(a>=b)continue;if(a!==cursor)return 'custom';cursor=b;states.add(item.state);
+  }
+  return cursor===end&&states.size===1?[...states][0]:'custom';
+}
+export function setDayHome(bundle,segmentId,state){
+  const next=structuredClone(bundle),plan=next.plan,segment=plan.snapshot.segments.find(v=>v.id===segmentId);
+  const bounds=dayBounds(plan,segment),start=+new Date(bounds.start),end=+new Date(bounds.end),items=[];
+  for(const item of plan.availability){
+    const a=+new Date(item.start),b=+new Date(item.end);
+    if(b<=start||a>=end){items.push({...item});continue;}
+    if(a<start)items.push({...item,end:bounds.start});
+    if(b>end)items.push({...item,start:bounds.end});
+  }
+  items.push({id:'replacement',...bounds,state});items.sort((a,b)=>new Date(a.start)-new Date(b.start));
+  plan.availability=items.map((v,i)=>({...v,id:`availability_${i+1}`}));return next;
+}
+export function setRoomChoice(bundle,segmentId,room,purpose,profileId){
+  const next=structuredClone(bundle),plan=next.plan,segment=plan.snapshot.segments.find(v=>v.id===segmentId);
+  const matches=plan.room_uses.filter(v=>v.segment===segmentId&&v.room===room&&v.purpose===purpose);
+  if(matches.length>1)throw new Error('custom_room');
+  const existing=matches[0];plan.room_uses=plan.room_uses.filter(v=>!matches.includes(v));
+  if(profileId==='off')return next;
+  const profile=next.config.profiles[profileId];
+  if(profileId!=='existing'&&(!profile||profile.room!==room||profile.purpose!==purpose))throw new Error('invalid_mapping');
+  let window=existing?{start:existing.start,end:existing.end}:{start:segment.start,end:segment.end};
+  const oldProfile=existing&&next.config.profiles[existing.profile];
+  const oldDefault=oldProfile?.window&&Object.fromEntries(['start','end'].map(k=>[k,resolveWindowTime(oldProfile.window[k],segment,plan.snapshot.timezone)]));
+  if(profile?.window&&(!existing||(oldDefault&&existing.start===oldDefault.start&&existing.end===oldDefault.end))){
+    window=Object.fromEntries(['start','end'].map(k=>[k,resolveWindowTime(profile.window[k],segment,plan.snapshot.timezone)]));
+  }
+  plan.room_uses.push({id:existing?.id??nextId('use',plan.room_uses),room,purpose,segment:segmentId,
+    control:profileId==='existing'?'existing':'planner',profile:profileId==='existing'?null:profileId,...window});
+  return next;
+}
+function wallDate(iso,zone){const p=zonedParts(iso,zone);return Date.UTC(+p.year,+p.month-1,+p.day);}
+export function shiftWallDays(iso,days,zone){
+  const p=zonedParts(iso,zone),wall=Date.UTC(+p.year,+p.month-1,+p.day+days,+p.hour,+p.minute),desired=new Date(wall).toISOString().slice(0,16),matches=[];
+  // Modern IANA offsets at 15-minute increments; reject ambiguity, never guess a fold.
+  for(let offset=-14*60;offset<=14*60;offset+=15){
+    const candidate=wall-offset*60000,q=zonedParts(candidate,zone);
+    if(`${q.year}-${q.month}-${q.day}T${q.hour}:${q.minute}`===desired)matches.push(candidate);
+  }
+  if(matches.length!==1)throw new Error('copy_time');return zonedISO(matches[0],zone);
+}
+export function copyPreviousDay(bundle,targetId){
+  let next=structuredClone(bundle),plan=next.plan,index=plan.snapshot.segments.findIndex(v=>v.id===targetId);
+  if(index<=0)throw new Error('invalid_mapping');
+  const source=plan.snapshot.segments[index-1],target=plan.snapshot.segments[index],zone=plan.snapshot.timezone;
+  const state=dayHomeState(plan,source);if(state==='custom')throw new Error('copy_custom');
+  const days=(wallDate(target.start,zone)-wallDate(source.start,zone))/86400000;
+  for(const field of ['room_uses','meals']){
+    const sourceItems=plan[field].filter(v=>v.segment===source.id);
+    plan[field]=plan[field].filter(v=>v.segment!==targetId);
+    for(const item of sourceItems){
+      const copy={...item,id:nextId(field==='meals'?'meal':'use',plan[field]),segment:targetId,
+        start:shiftWallDays(item.start,days,zone),end:shiftWallDays(item.end,days,zone)};
+      if(new Date(copy.start)<new Date(plan.snapshot.preparation_start)||new Date(copy.end)>new Date(plan.snapshot.end))throw new Error('copy_bounds');
+      plan[field].push(copy);
+    }
+  }
+  next=setDayHome(next,targetId,state);return next;
+}
