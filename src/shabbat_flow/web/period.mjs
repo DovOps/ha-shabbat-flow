@@ -1,6 +1,7 @@
+import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
-import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime} from './period-model.mjs';
-let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null;
+import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
+let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
 const $=id=>document.getElementById(id);
 const lang=()=>bundle?.plan.language||'en';
 const t=key=>translate(catalogs,lang(),key);
@@ -9,13 +10,35 @@ function message(key,error=false){lastMessage={key,error};$('status').textConten
 function error(error){const key='error_'+error.message;message(Object.hasOwn(catalogs[lang()],key)?key:'error_internal',true);}
 function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('timeline').replaceChildren();message('period_dirty');}
 function button(key,fn){const n=node('button',t(key));n.type='button';n.addEventListener('click',fn);return n;}
-function field(key,value,fn,options){
+function field(key,value,fn,options,sourceRole){
   const label=node('label',undefined,'field');label.append(node('span',t(key)));
   const input=node(options?'select':'input');
+  const dateField=!options&&['window_start','window_end','preparation_start','candle_lighting','sunrise_anchor'].includes(key);
   if(options)for(const [val,text] of options){const option=node('option',text);option.value=val;input.append(option);}
-  else{input.type='text';input.maxLength=100;input.dir='ltr';}
-  input.value=value;input.addEventListener(options?'change':'input',()=>{fn(input.value);changed();});
-  label.append(input);return label;
+  else{input.type=dateField?'datetime-local':'text';input.maxLength=100;input.dir='ltr';if(dateField)input.step='1';}
+  if(dateField){
+    try{input.value=localDateTimeValue(value,bundle.plan.snapshot.timezone);}catch{input.value='';}
+    input.required=true;
+    const choices=node('select');choices.hidden=true;choices.setAttribute('aria-label',t('choose_clock_offset'));
+    input.addEventListener('input',()=>{
+      let matches=[];try{matches=localDateTimeCandidates(input.value,bundle.plan.snapshot.timezone);}catch{}
+      choices.replaceChildren();choices.hidden=matches.length<2;
+      if(matches.length===1){input.setCustomValidity('');fn(matches[0]);}
+      else{
+        fn('');input.setCustomValidity(t(matches.length?'choose_clock_offset':'invalid_local_clock'));
+        if(matches.length>1){const first=node('option',t('choose_clock_offset'));first.value='';choices.append(first);for(const iso of matches){const option=node('option',iso.slice(-6));option.value=iso;choices.append(option);}}
+      }
+      changed();
+    });
+    choices.addEventListener('change',()=>{if(choices.value){input.setCustomValidity('');fn(choices.value);changed();}});
+    label.append(input,node('small',bundle.plan.snapshot.timezone,'hint'),choices);
+    const role=sourceRole??({candle_lighting:'candle_lighting',sunrise_anchor:'sunrise'}[key]);
+    const source=calendarData?.values?.[role];
+    if(source?.status==='available')label.append(button('use_calendar_value',()=>{fn(source.value);changed();render();}),node('small',`${safeTime(source.value)} · ${source.entity_id}`,'hint'));
+  }else{
+    input.value=value;input.addEventListener(options?'change':'input',()=>{fn(input.value);changed();});label.append(input);
+  }
+  return label;
 }
 function options(keys){return keys.map(k=>[k,t(k)]);}
 function section(key){const n=node('section',undefined,'card');n.append(node('h2',t(key)));return n;}
@@ -147,8 +170,8 @@ function renderAdvanced(root){
   calendar.append(node('p',t('calendar_supplied'),'hint'),field('timezone',snapshot.timezone,v=>snapshot.timezone=v),
     field('observance_region',snapshot.observance,v=>snapshot.observance=v,options(['israel','diaspora'])),
     field('preparation_start',snapshot.preparation_start,v=>snapshot.preparation_start=v),
-    field('window_start',snapshot.start,v=>snapshot.start=v),field('window_end',snapshot.end,v=>snapshot.end=v));
-  const addDay=button('add_day',()=>{const id=nextId('day',snapshot.segments);snapshot.segments.push({id,kind:'yom_tov',start:snapshot.end,end:'',candle_lighting:'',sunrise:''});changed();render();});addDay.disabled=snapshot.segments.length>=3;calendar.append(node('p',t('day_edit_hint'),'hint'),addDay);root.append(calendar);
+    field('window_start',snapshot.start,v=>snapshot.start=v),field('window_end',snapshot.end,v=>snapshot.end=v,undefined,'end'));
+  const addDay=button('add_day',()=>{const id=nextId('day',snapshot.segments);snapshot.segments.push({id,kind:'yom_tov',start:snapshot.end,end:'',candle_lighting:'',sunrise:''});changed();render();});addDay.disabled=snapshot.segments.length>=3;calendar.append(node('p',t('day_edit_hint'),'hint'),addDay);if(calendarData?.source!=='standalone'){const source=node('div',undefined,'calendar-source');source.append(node('h3',t('calendar_source')),node('p',t('calendar_coverage'),'hint'));for(const [key,item] of Object.entries(calendarData?.values??{})){const labelKey=({candle_lighting:'candle_lighting',sunrise:'sunrise_anchor',end:'end',active:'observance_active'})[key];source.append(node('p',`${t(labelKey)}: ${item.value?safeTime(item.value):(catalogs[lang()]['source_'+item.status]??item.status)}`));}calendar.append(source);}root.append(calendar);
   const availability=section('availability_title');availability.append(node('p',t('availability_hint'),'hint'));
   for(const item of bundle.plan.availability){const row=node('div',undefined,'period-item');windowFields(row,item);row.append(field('home_status',item.state,v=>item.state=v,options(['home_state','away_state','unset']).map(([key,text])=>[key.replace('_state',''),text])),button('remove_item',()=>remove(bundle.plan.availability,item)));availability.append(row);}
   availability.append(button('add_window',()=>{bundle.plan.availability.push({id:nextId('window',bundle.plan.availability),start:snapshot.start,end:snapshot.end,state:'unset'});changed();render();}));root.append(availability);
@@ -203,9 +226,9 @@ async function validate(candidate){
 async function preview(){const token=revision;try{const next=await validate(structuredClone(bundle));if(token!==revision)return;result=next;$('export').disabled=!next.complete;renderTimeline();message(next.complete?'preview_ready':'period_incomplete',!next.complete);}catch(e){if(token===revision)error(e);}}
 async function boot(){
   try{
-    const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n')]);
+    const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
-    [bundle,catalogs]=await Promise.all(responses.map(r=>r.json()));initial=structuredClone(bundle);
+    [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));initial=structuredClone(bundle);
     $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();});
     $('preview').addEventListener('click',preview);
     $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(PERIOD_DRAFT_KEY,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});

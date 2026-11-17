@@ -24,3 +24,8 @@ Multi-day planning is specified in `specs/003-multiday-observance/spec.md`: obta
 
 ## Future optional MCP/chat adapter
 Feature 005 is an approved future requirement, not an approved package selection. Evaluate the installed HA version’s MCP/LLM API extension support, scoped permissions and network/authentication requirements before deciding between HA-native exposure and a separate thin adapter. The current loopback harness remains local and unauthenticated; it is not a remote MCP server.
+
+## Installable sample and default calendar direction
+Feature 006 uses HA built-ins `frontend`, `http` and `panel_custom` only; no third-party runtime package is added. The user-selected default is HA's built-in Jewish Calendar (`jewish_calendar`), with optional startup ordering and registry-based discovery verified against HA 2026.11.2 source. The household's installed version has not been verified. Manual mode remains available without the provider. Optional selected-entity reads are an initial bridge, not a claim of full provider compatibility or multi-day future coverage.
+
+Development compatibility tests install Home Assistant 2026.11.2, pytest 9.2.0 and pytest-asyncio 1.5.0 in an isolated Python 3.14 environment. These are test dependencies, not bundled packages. The installable sample runs within HA and uses its supplied libraries.

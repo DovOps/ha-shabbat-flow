@@ -12,6 +12,7 @@ WEB = Path(__file__).parent / 'web'
 MAX_BODY = 128 * 1024
 STATIC = {'/':('index.html','text/html'),'/app.mjs':('app.mjs','text/javascript'),'/model.mjs':('model.mjs','text/javascript'),'/style.css':('style.css','text/css')}
 
+STATIC['/transport.mjs']=('transport.mjs','text/javascript')
 STATIC.update({'/v2': ('period.html', 'text/html'), '/period.mjs': ('period.mjs', 'text/javascript'), '/period-model.mjs': ('period-model.mjs', 'text/javascript')})
 
 def reject_constant(_):
@@ -54,6 +55,8 @@ class Handler(BaseHTTPRequestHandler):
             base=json.loads((WEB/'i18n.json').read_text())
             extra=json.loads((WEB/'period-i18n.json').read_text())
             self.reply(200,{lang: {**base[lang], **extra[lang]} for lang in base})
+        elif self.path=='/api/v2/calendar':
+            self.reply(200,{'source':'standalone','values':{},'coverage':'manual_only'})
         elif self.path=='/api/v2/example':
             self.reply(200,json.loads((ROOT/'examples/period-preview.json').read_text()))
         elif self.path=='/api/example':

@@ -114,3 +114,14 @@ test('profile window defaults resolve supplied anchors independently',()=>{
   assert.equal(resolveWindowTime({anchor:'candle_lighting',offset_minutes:60},segment,'Asia/Jerusalem'),'2027-01-08T19:00:00+02:00');
   assert.equal(resolveWindowTime({anchor:'sunrise',offset_minutes:120},segment,'Asia/Jerusalem'),'2027-01-09T08:00:00+02:00');
 });
+
+const {localDateTimeCandidates,localDateTimeValue}=await import('../src/shabbat_flow/web/period-model.mjs');
+test('date controls preserve seconds, reject gaps and expose both fold offsets',()=>{
+  const zone='Asia/Jerusalem';
+  assert.equal(localDateTimeValue('2027-01-08T14:20:37Z',zone),'2027-01-08T16:20:37');
+  assert.deepEqual(localDateTimeCandidates('2027-01-08T16:20:37',zone),['2027-01-08T16:20:37+02:00']);
+  assert.deepEqual(localDateTimeCandidates('2027-03-26T02:30',zone),[]);
+  assert.deepEqual(localDateTimeCandidates('2027-10-31T01:30',zone),['2027-10-31T01:30:00+03:00','2027-10-31T01:30:00+02:00']);
+  assert.deepEqual(localDateTimeCandidates('2027-02-30T12:00',zone),[]);
+  assert.equal(shiftWallDays('2027-01-08T16:20:37+02:00',1,zone),'2027-01-09T16:20:37+02:00');
+});

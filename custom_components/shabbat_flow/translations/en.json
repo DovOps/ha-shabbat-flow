@@ -1,0 +1,38 @@
+{
+  "title": "ShabbatFlow Preview",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ShabbatFlow preview",
+        "description": "Add the sample planning panel. No devices are controlled and no automations are changed. Administrator-only for this sample."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one preview instance is supported."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Calendar sources (optional)",
+        "description": "Select existing entities to read. Timestamp states must include a UTC offset. Current values may not cover a multi-day holiday; missing dates are never calculated. Clear an optional selection to disable it.",
+        "data": {
+          "candle_lighting": "Candle lighting timestamp",
+          "sunrise": "Sunrise timestamp",
+          "end": "Final observance-end timestamp",
+          "active": "Issur melacha in effect",
+          "source_mode": "Calendar source"
+        }
+      }
+    }
+  },
+  "selector": {
+    "source_mode": {
+      "options": {
+        "jewish_calendar": "Jewish Calendar (default)",
+        "selected_entities": "Explicitly selected entities",
+        "manual": "Manual dates only"
+      }
+    }
+  }
+}

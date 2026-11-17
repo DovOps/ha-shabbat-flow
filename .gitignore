@@ -21,3 +21,6 @@ test-results/
 
 # Local Spec Kit session metadata (includes instance identifiers).
 .spec-context.json
+
+# Reproducible local release artifacts.
+dist/

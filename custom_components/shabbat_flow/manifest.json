@@ -1,0 +1,21 @@
+{
+  "domain": "shabbat_flow",
+  "name": "ShabbatFlow Preview",
+  "version": "0.1.0",
+  "config_flow": true,
+  "integration_type": "service",
+  "documentation": "https://github.com/DovOps/ha-shabbat-flow/blob/main/docs/installation.md",
+  "issue_tracker": "https://github.com/DovOps/ha-shabbat-flow/issues",
+  "codeowners": [
+    "@DovOps"
+  ],
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom"
+  ],
+  "requirements": [],
+  "after_dependencies": [
+    "jewish_calendar"
+  ]
+}

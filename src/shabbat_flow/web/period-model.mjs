@@ -17,15 +17,15 @@ export function nextId(prefix,items){
 }
 
 export function zonedParts(instant,zone){
-  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));
   return Object.fromEntries(parts.filter(v=>v.type!=='literal').map(v=>[v.type,v.value]));
 }
 export function zonedISO(instant,zone){
   const p=zonedParts(instant,zone),ms=+new Date(instant);
-  const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
+  const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
   const offset=Math.round((local-ms)/60000),sign=offset<0?'-':'+';
   const abs=Math.abs(offset);
-  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
 }
 export function resolveWindowTime(value,segment,zone){
   if(value.at)return zonedISO(value.at,zone);
@@ -75,14 +75,23 @@ export function setRoomChoice(bundle,segmentId,room,purpose,profileId){
   return next;
 }
 function wallDate(iso,zone){const p=zonedParts(iso,zone);return Date.UTC(+p.year,+p.month-1,+p.day);}
-export function shiftWallDays(iso,days,zone){
-  const p=zonedParts(iso,zone),wall=Date.UTC(+p.year,+p.month-1,+p.day+days,+p.hour,+p.minute),desired=new Date(wall).toISOString().slice(0,16),matches=[];
-  // Modern IANA offsets at 15-minute increments; reject ambiguity, never guess a fold.
+export function localDateTimeValue(iso,zone){
+  const p=zonedParts(iso,zone);return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`;
+}
+export function localDateTimeCandidates(value,zone){
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value))return [];
+  const desired=value.length===16?value+':00':value,wall=+new Date(desired+'Z'),matches=[];
+  if(!Number.isFinite(wall))return [];
   for(let offset=-14*60;offset<=14*60;offset+=15){
-    const candidate=wall-offset*60000,q=zonedParts(candidate,zone);
-    if(`${q.year}-${q.month}-${q.day}T${q.hour}:${q.minute}`===desired)matches.push(candidate);
+    const candidate=wall-offset*60000;
+    if(localDateTimeValue(candidate,zone)===desired)matches.push(zonedISO(candidate,zone));
   }
-  if(matches.length!==1)throw new Error('copy_time');return zonedISO(matches[0],zone);
+  return matches.sort((a,b)=>new Date(a)-new Date(b));
+}
+export function shiftWallDays(iso,days,zone){
+  const p=zonedParts(iso,zone),wall=Date.UTC(+p.year,+p.month-1,+p.day+days,+p.hour,+p.minute,+p.second);
+  const matches=localDateTimeCandidates(new Date(wall).toISOString().slice(0,19),zone);
+  if(matches.length!==1)throw new Error('copy_time');return matches[0];
 }
 export function copyPreviousDay(bundle,targetId){
   let next=structuredClone(bundle),plan=next.plan,index=plan.snapshot.segments.findIndex(v=>v.id===targetId);
