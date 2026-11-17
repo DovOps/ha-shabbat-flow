@@ -139,6 +139,10 @@ class CompilerTests(unittest.TestCase):
             with self.assertRaises(PlanError):
                 parse_instant(value,zone)
 
+    def test_calendar_second_precision(self):
+        value = parse_instant("2027-01-08T16:20:37+02:00", ZoneInfo("Asia/Jerusalem"))
+        self.assertEqual(value.second, 37)
+
     def test_dst_offset_and_elapsed_math(self):
         self.plan.update(candle_lighting='2027-03-26T18:20:00+03:00',sunrise='2027-03-27T06:30:00+03:00',end='2027-03-27T19:00:00+03:00')
         e=next(e for e in self.preview()['events'] if e['rule']=='bedroom_hvac_start')

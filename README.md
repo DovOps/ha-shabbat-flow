@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current checkpoint: local preview prototypes (v1 and v2).** No HA connection, device control, production integration installation or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current checkpoint: installable HA preview sample 0.1.0 plus local prototypes.** [Installation and limitations](docs/installation.md). The HA sample can read Jewish Calendar values; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
 
 ## Try the preview
 
@@ -21,7 +21,7 @@ Open **http://127.0.0.1:8765**. Select rooms and meals, adjust independent HVAC/
 
 The new **[multi-day preview](http://127.0.0.1:8765/v2)** adds separate sleeping/recreation windows, configurable sleep profiles, per-day meals, availability windows, explicit heating/cooling, shared-load conflict checks and a combined timeline. It uses separate v2 draft storage. Adding/removing days requires supplying the corresponding dated anchors and adjusting period coverage. The default view uses day tabs, room tiles and meal choices, with a reviewed copy-previous-day action. Optional bedroom timing sliders keep HVAC and lights independent. Calendar, interval/group editors and JSON are under Advanced setup. Browser visual/interaction verification of v2 is pending.
 
-Calendar inputs are deliberately illustrative. The original v1 preview covers a single ordinary Friday/Saturday and is not a full operational schedule. The v1 compiler is unchanged. V2 accepts supplied multi-day periods and explicit HVAC settings but still has no live HA calendar data, production execution, automatic v1 migration, feedback storage or boiler automation management. It cannot activate a plan.
+Calendar inputs are deliberately illustrative. The original v1 preview covers a single ordinary Friday/Saturday and is not a full operational schedule. The v1 compiler is unchanged. V2 accepts supplied multi-day periods and explicit HVAC settings but the standalone server has no live HA calendar data. Neither host provides production execution, automatic v1 migration, feedback storage or boiler automation management. It cannot activate a plan.
 
 ## Requirements and development
 
@@ -43,7 +43,7 @@ node --test tests/web.test.mjs
 python3 scripts/check_repository.py
 ```
 
-The preview uses Python standard libraries and browser-native modules. Node is a test tool only. No package install is needed. HA packaging and provider integration will be a separate reviewed feature.
+The preview uses Python standard libraries and browser-native modules. Node is a test tool only. No package install is needed. The optional HA package is built with `python3 scripts/build_ha.py --check --zip`; see [feature 006](specs/006-installable-preview/spec.md).
 
 ## Contributor configuration boundary
 

@@ -81,7 +81,7 @@ def parse_instant(value, zone):
     local=result.astimezone(zone)
     # Reject supplied offsets inconsistent with the zone, including imaginary wall times.
     require(result.utcoffset()==local.utcoffset() and result.replace(tzinfo=None)==local.replace(tzinfo=None),'invalid_time')
-    require(result.second==0 and result.microsecond==0,'invalid_time')
+    require(result.microsecond==0,'invalid_time')
     return result.astimezone(UTC)
 
 
