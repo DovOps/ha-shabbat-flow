@@ -190,3 +190,42 @@ class ScheduleTests(unittest.TestCase):
                                    start='2027-01-07T19:00:00+02:00',
                                    end='2027-01-07T22:00:00+02:00') for i in range(100)]
         self.fails('invalid_schema')
+
+    def power_only_fixture(self):
+        for load in self.config['loads'].values():
+            if load['kind'] == 'hvac':
+                load['kind'], load['capabilities'] = 'hvac_power', {}
+        for group in self.config['groups'].values():
+            for rule in group['rules']:
+                for key in ('action', 'release'):
+                    action = rule[key]
+                    if action and action['type'] == 'hvac':
+                        rule[key] = {'type': 'hvac_power', 'state': 'off' if action['mode'] == 'off' else 'on'}
+
+    def test_power_only_rejects_setting_overrides_and_wrong_action_types(self):
+        self.power_only_fixture()
+        rule = self.config['groups']['room_a_sleep_standard']['rules'][0]
+        original = copy.deepcopy(rule['action'])
+        for field, value in [('mode', 'heat'), ('temperature', 22), ('fan_mode', 'auto'), ('unit', 'C')]:
+            rule['action'] = {**original, field: value}
+            self.fails()
+        rule['action'] = {'type': 'state', 'state': 'on'}
+        self.fails()
+        rule['action'] = original
+        self.assertTrue(self.compile()['complete'])
+
+    def test_power_only_overlapping_demands_union_and_conflicts_are_explicit(self):
+        self.power_only_fixture()
+        group = copy.deepcopy(self.config['groups']['room_a_sleep_standard'])
+        self.config['groups']['extra_power'] = group
+        original = self.compile()
+        self.plan['groups'].append({'id': 'extra_power', 'segment': 'day_1', 'group': 'extra_power',
+                                   'start': '2027-01-07T22:00:00+02:00', 'end': '2027-01-08T08:00:00+02:00'})
+        result = self.compile()
+        self.assertTrue(result['complete'])
+        power = [e for e in result['events'] if e['physical_id'] == 'room_a_hvac']
+        self.assertTrue(all(set(e['action']) == {'type', 'state'} for e in power))
+        projection = lambda events: [(e['local'], e['action']) for e in events if e['physical_id'] == 'room_a_hvac']
+        self.assertEqual(projection(original['events']), projection(result['events']))
+        group['rules'][0]['action'] = {'type': 'hvac_power', 'state': 'off'}
+        self.fails('event_conflict')

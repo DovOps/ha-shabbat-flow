@@ -28,6 +28,9 @@ async function finishRoom(skip=false){
  const r=draft[activeRoom],s=setup(r);
  if(!skip){
   if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)return wizardError('needs_roles');
+  if(r.hvac.mode!=='none'&&!r.roles.hvac.length)return wizardError('needs_hvac_device');
+  if(r.hvac.mode!=='none'&&!r.purposes.length)return wizardError('needs_hvac_use');
+  if(r.hvac.mode==='profile')return wizardError('hvac_profile_required');
   if(!r.purposes.length&&!s.service)return wizardError('needs_purpose');
   if(s.service&&!r.roles.main_lights.length&&!r.roles.night_lights.length)return wizardError('needs_roles');
   if(r.shared_areas.some(a=>!draft[a]?.enabled||setup(draft[a]).status!=='ready'))return wizardError('missing_shared');
@@ -55,17 +58,24 @@ function drawHvac(card,aid){
  const room=draft[aid],h=room.hvac,entities=room.roles.hvac.map(id=>data.inventory.entities.find(e=>e.id===id)).filter(Boolean);
  const section=el('details');section.id='wizard-hvac';section.open=hvacOpen||h.mode!=='none';section.append(el('summary',t('hvac')),el('p',t('hvac_help'),'hint'));drawRole(section,aid,'hvac');
  const common=key=>entities.length?entities[0].capabilities[key].filter(v=>entities.every(e=>e.capabilities[key].includes(v))):[];
- section.append(select(t('mode'),h.mode,[['none',t('none')],...common('modes').filter(v=>v!=='off').map(v=>[v,t(v)])],v=>{mutate(aid,()=>h.mode=v);renderRooms();}));
+ const intent=['none','preserve'].includes(h.mode)?h.mode:'profile';
+ section.append(select(t('hvac_intent'),intent,['none','preserve','profile'].map(v=>[v,t(v)]),v=>{mutate(aid,()=>h.mode=v);renderRooms();}));
+ if(intent==='preserve'){
+  section.append(el('p',t('preserve_help'),'hint'));
+  for(const e of entities)section.append(el('small',`${e.name}: ${t(e.power_support?.turn_on&&e.power_support?.turn_off?'native_power_advertised':'native_power_unknown')}`,'hint'));
+ }
+ if(intent==='profile'){
+ section.append(select(t('mode'),h.mode,[['profile',t('choose')],...common('modes').filter(v=>v!=='off').map(v=>[v,t(v)])],v=>{mutate(aid,()=>h.mode=v);renderRooms();}));
  section.append(button('copy_current',()=>{
   const values=entities.map(e=>e.current),v=values[0];
   if(!entities.length||entities.some(e=>!e.available)||!v||!['heat','cool'].includes(v.mode)||!Number.isFinite(v.temperature)||!common('fan_modes').includes(v.fan_mode)||values.some(x=>!x||x.mode!==v.mode||x.temperature!==v.temperature||x.fan_mode!==v.fan_mode))return wizardError('current_unusable');
   mutate(aid,()=>Object.assign(h,{mode:v.mode,temperature:v.temperature,fan_mode:v.fan_mode}));renderRooms();
  }));
  for(const e of entities)if(e.current)section.append(el('small',`${e.name}: ${t(e.current.mode??'unknown')} · ${e.current.temperature??'—'}°${e.capabilities.unit??''} · ${e.current.fan_mode??'—'} · ${new Date(e.current.observed_at).toLocaleTimeString(language)}`,'hint'));
- if(h.mode!=='none'){
   const temp=input(t('temperature'),h.temperature,'number',v=>mutate(aid,()=>h.temperature=v===''?null:Number(v)));const control=temp.querySelector('input');control.step='any';if(entities.length){control.min=Math.max(...entities.map(e=>e.capabilities.min_temperature));control.max=Math.min(...entities.map(e=>e.capabilities.max_temperature));}
-  section.append(temp,select(t('fan_mode'),h.fan_mode??'',[['',t('choose')],...common('fan_modes').map(v=>[v,v])],v=>mutate(aid,()=>h.fan_mode=v||null)),input(t('lead_minutes'),h.lead_minutes,'number',v=>mutate(aid,()=>h.lead_minutes=Number(v))));
+  section.append(temp,select(t('fan_mode'),h.fan_mode??'',[['',t('choose')],...common('fan_modes').map(v=>[v,v])],v=>mutate(aid,()=>h.fan_mode=v||null)));
  }
+ if(intent!=='none')section.append(input(t('lead_minutes'),h.lead_minutes,'number',v=>mutate(aid,()=>h.lead_minutes=Number(v))));
  card.append(section);
 }
 function renderRooms(){
@@ -107,7 +117,8 @@ function renderRooms(){
   const ids=selectedRooms(),ready=ids.filter(id=>setup(draft[id]).status==='ready');root.append(el('p',`${ready.length} / ${ids.length} ${t('rooms_ready')}`),el('p',t('summary_help')));
   for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),el('strong',t(s.status==='ready'?'ready':'unfinished')),el('p',[...r.purposes.map(t),...(s.service?[t('service_area')]:[])].join(' · ')));
    for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length)card.append(el('p',`${t(role)}: ${r.roles[role].map(rid=>data.inventory.entities.find(e=>e.id===rid)?.name??rid).join(', ')}`));
-   card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
+   card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':r.hvac.mode==='preserve'?` · ${r.hvac.lead_minutes} ${t('minutes_early')}`:` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
+   if(r.hvac.mode==='preserve')card.append(el('p',t('preserve_help'),'hint'));
    for(const a of r.shared_areas)card.append(el('p',`${roomName(a)} · ${t(s.bathroom_timing[a]??'use_window')}`));if(s.home)card.append(el('p',t('when_home')));
    card.append(button('edit_room',()=>go('room',id)));root.append(card);
   }

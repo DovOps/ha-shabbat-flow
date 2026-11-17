@@ -111,3 +111,13 @@ export function copyPreviousDay(bundle,targetId){
   }
   next=setDayHome(next,targetId,state);return next;
 }
+
+
+// Presentation only: never modify the planned action or infer live device state.
+export function actionBadge(event){
+  const a=event.action,tracked=event.intent==='track_only';
+  let key='action_unknown',semantic='neutral';
+  if(['state','hvac_power'].includes(a.type)&&['on','off'].includes(a.state)){key=a.state;semantic=a.state;}
+  else if(a.type==='hvac'&&['heat','cool','off'].includes(a.mode)){key='mode_'+a.mode;semantic=a.mode;}
+  return {key,className:'state '+(tracked?'tracked':semantic),preserve:a.type==='hvac_power',tracked};
+}

@@ -220,3 +220,21 @@ test('wizard next waits for persistence and blocks unfinished bathroom dependenc
  bath.setup.status='ready';context.save=async()=>false;await context.finishRoom();assert.equal(navigation,undefined);assert.equal(room.setup.status,'draft');
  context.save=async()=>true;await context.finishRoom();assert.equal(room.setup.status,'ready');assert.deepEqual(navigation,['room','bath']);
 });
+
+test('planned action badges separate on/off, HVAC and informational intent without changing events',async()=>{
+ const {actionBadge}=await import('../src/shabbat_flow/web/period-model.mjs');
+ const cases=[['state','on','on'],['state','off','off'],['hvac_power','on','on'],['hvac_power','off','off'],['hvac','heat','heat'],['hvac','cool','cool'],['hvac','off','off']];
+ for(const [type,value,semantic] of cases){const event={action:{type,[type==='hvac'?'mode':'state']:value},intent:'set_state'};const before=structuredClone(event);const b=actionBadge(event);assert.equal(b.className,'state '+semantic);assert.equal(b.preserve,type==='hvac_power');assert.deepEqual(event,before);assert.equal(actionBadge({...event,intent:'track_only'}).className,'state tracked');}
+ assert.equal(actionBadge({action:{type:'unexpected'},intent:'set_state'}).className,'state neutral');
+ const base=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/i18n.json',import.meta.url)));
+ const extra=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
+ for(const lang of ['en','he'])for(const key of ['on','off','mode_heat','mode_cool','mode_off','power_only_preview','action_unknown'])assert.ok({...base[lang],...extra[lang]}[key]);
+});
+
+test('planned badge foreground/background colors meet 4.5 to 1 text contrast',()=>{
+ const css=fs.readFileSync(new URL('../src/shabbat_flow/web/style.css',import.meta.url),'utf8');
+ const lum=hex=>{const rgb=hex.match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
+ const colors=[];
+ for(const semantic of ['on','off','heat','cool','neutral']){const matches=[...css.matchAll(new RegExp('\\.state\\.'+semantic+'\\{background:#([0-9a-f]{6});color:#([0-9a-f]{6})','g'))];assert.ok(matches.length,semantic);const [,bg,fg]=matches.at(-1);const a=lum(bg),b=lum(fg);assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,semantic);colors.push(bg);}
+ assert.equal(new Set(colors).size,colors.length);
+});
