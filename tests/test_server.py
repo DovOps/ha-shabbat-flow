@@ -34,6 +34,27 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status,200)
         self.assertTrue(json.loads(data)['preview_only'])
 
+    def test_v2_preview_and_static_contract(self):
+        status, data = self.request('GET', '/api/v2/example')
+        self.assertEqual(status, 200)
+        status, result = self.request('POST', '/api/v2/preview', data, {'Content-Type': 'application/json'})
+        self.assertEqual(status, 200)
+        result = json.loads(result)
+        self.assertTrue(result['complete'] and result['preview_only'])
+        self.assertTrue(result['events'])
+        for path in ('/v2', '/period.mjs', '/period-model.mjs', '/api/v2/i18n', '/logo.png'):
+            self.assertEqual(self.request('GET', path)[0], 200)
+        self.assertEqual(self.request('POST', '/api/v2/activate', '{}', {'Content-Type': 'application/json'})[0], 404)
+
+    def test_v2_isolation_validation_and_origin(self):
+        data = self.request('GET', '/api/v2/example')[1]
+        headers = {'Content-Type': 'application/json'}
+        self.assertEqual(self.request('POST', '/api/preview', data, headers)[0], 400)
+        old = self.request('GET', '/api/example')[1]
+        self.assertEqual(self.request('POST', '/api/v2/preview', old, headers)[0], 400)
+        headers['Origin'] = 'https://evil.example'
+        self.assertEqual(self.request('POST', '/api/v2/preview', data, headers)[0], 403)
+
     def test_wrong_origin_and_host(self):
         for headers in ({'Host':'evil.example'},{'Origin':'https://evil.example'}):
             self.assertEqual(self.request('GET','/api/example',headers=headers)[0],403)

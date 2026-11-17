@@ -1,0 +1,766 @@
+{
+  "config": {
+    "schema_version": 2,
+    "rooms": {
+      "room_a": {
+        "en": "Room A",
+        "he": "חדר א׳"
+      },
+      "room_b": {
+        "en": "Room B",
+        "he": "חדר ב׳"
+      }
+    },
+    "loads": {
+      "room_a_spots": {
+        "label": {
+          "en": "Room A Spots",
+          "he": "תאורה room_a_spots"
+        },
+        "physical_id": "room_a_spots",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "room_b_spots": {
+        "label": {
+          "en": "Room B Spots",
+          "he": "תאורה room_b_spots"
+        },
+        "physical_id": "room_b_spots",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "bath": {
+        "label": {
+          "en": "Bath",
+          "he": "תאורה bath"
+        },
+        "physical_id": "bath",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "lounge": {
+        "label": {
+          "en": "Lounge",
+          "he": "תאורה lounge"
+        },
+        "physical_id": "lounge",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "dining": {
+        "label": {
+          "en": "Dining",
+          "he": "תאורה dining"
+        },
+        "physical_id": "dining",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "patio": {
+        "label": {
+          "en": "Patio",
+          "he": "תאורה patio"
+        },
+        "physical_id": "patio",
+        "owner": "planner",
+        "kind": "binary",
+        "capabilities": {}
+      },
+      "room_a_hvac": {
+        "label": {
+          "en": "Room A Hvac",
+          "he": "מיזוג room_a_hvac"
+        },
+        "physical_id": "room_a_hvac",
+        "owner": "planner",
+        "kind": "hvac",
+        "capabilities": {
+          "modes": [
+            "off",
+            "heat",
+            "cool"
+          ],
+          "unit": "C",
+          "min_temperature": 16,
+          "max_temperature": 30,
+          "fan_modes": [
+            "auto",
+            "low"
+          ]
+        }
+      },
+      "room_b_hvac": {
+        "label": {
+          "en": "Room B Hvac",
+          "he": "מיזוג room_b_hvac"
+        },
+        "physical_id": "room_b_hvac",
+        "owner": "planner",
+        "kind": "hvac",
+        "capabilities": {
+          "modes": [
+            "off",
+            "heat",
+            "cool"
+          ],
+          "unit": "C",
+          "min_temperature": 16,
+          "max_temperature": 30,
+          "fan_modes": [
+            "auto",
+            "low"
+          ]
+        }
+      }
+    },
+    "groups": {
+      "shared_bath": {
+        "label": {
+          "en": "Shared bathroom",
+          "he": "חדר רחצה משותף"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "coverage",
+            "targets": [
+              "bath"
+            ],
+            "start": {
+              "anchor": "use_start",
+              "offset_minutes": 0
+            },
+            "end": {
+              "anchor": "use_end",
+              "offset_minutes": 0
+            },
+            "action": {
+              "type": "state",
+              "state": "on"
+            },
+            "release": {
+              "type": "state",
+              "state": "off"
+            }
+          }
+        ]
+      },
+      "recreation": {
+        "label": {
+          "en": "Recreation lighting",
+          "he": "תאורת פנאי"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "activity",
+            "targets": [
+              "lounge"
+            ],
+            "start": {
+              "anchor": "use_start",
+              "offset_minutes": 0
+            },
+            "end": {
+              "anchor": "use_end",
+              "offset_minutes": 0
+            },
+            "action": {
+              "type": "state",
+              "state": "on"
+            },
+            "release": {
+              "type": "state",
+              "state": "off"
+            }
+          }
+        ]
+      },
+      "meal": {
+        "label": {
+          "en": "Meal lighting",
+          "he": "תאורת סעודה"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "meal",
+            "targets": [
+              "dining"
+            ],
+            "start": {
+              "anchor": "use_start",
+              "offset_minutes": 0
+            },
+            "end": {
+              "anchor": "use_end",
+              "offset_minutes": 0
+            },
+            "action": {
+              "type": "state",
+              "state": "on"
+            },
+            "release": {
+              "type": "state",
+              "state": "off"
+            }
+          }
+        ]
+      },
+      "room_a_sleep_early": {
+        "label": {
+          "en": "room_a early",
+          "he": "room_a מוקדם"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_a_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 180
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_a_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 240
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      },
+      "room_a_sleep_standard": {
+        "label": {
+          "en": "room_a standard",
+          "he": "room_a רגיל"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_a_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 240
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_a_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 300
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      },
+      "room_a_sleep_late": {
+        "label": {
+          "en": "room_a late",
+          "he": "room_a מאוחר"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_a_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 300
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_a_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 360
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      },
+      "room_b_sleep_early": {
+        "label": {
+          "en": "room_b early",
+          "he": "room_b מוקדם"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_b_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 180
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_b_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 240
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      },
+      "room_b_sleep_standard": {
+        "label": {
+          "en": "room_b standard",
+          "he": "room_b רגיל"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_b_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 240
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_b_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 300
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      },
+      "room_b_sleep_late": {
+        "label": {
+          "en": "room_b late",
+          "he": "room_b מאוחר"
+        },
+        "track_only": false,
+        "rules": [
+          {
+            "id": "hvac",
+            "targets": [
+              "room_b_hvac"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 300
+            },
+            "end": {
+              "anchor": "sunrise",
+              "offset_minutes": 90
+            },
+            "action": {
+              "type": "hvac",
+              "mode": "cool",
+              "temperature": 23,
+              "unit": "C",
+              "fan_mode": "auto"
+            },
+            "release": {
+              "type": "hvac",
+              "mode": "off"
+            }
+          },
+          {
+            "id": "sleep_lights",
+            "targets": [
+              "room_b_spots"
+            ],
+            "start": {
+              "anchor": "candle_lighting",
+              "offset_minutes": 360
+            },
+            "end": null,
+            "action": {
+              "type": "state",
+              "state": "off"
+            },
+            "release": null
+          }
+        ]
+      }
+    },
+    "profiles": {
+      "room_a_early": {
+        "label": {
+          "en": "Early",
+          "he": "מוקדם"
+        },
+        "room": "room_a",
+        "purpose": "sleeping",
+        "groups": [
+          "room_a_sleep_early",
+          "shared_bath"
+        ]
+      },
+      "room_a_standard": {
+        "label": {
+          "en": "Standard",
+          "he": "רגיל"
+        },
+        "room": "room_a",
+        "purpose": "sleeping",
+        "groups": [
+          "room_a_sleep_standard",
+          "shared_bath"
+        ]
+      },
+      "room_a_late": {
+        "label": {
+          "en": "Late",
+          "he": "מאוחר"
+        },
+        "room": "room_a",
+        "purpose": "sleeping",
+        "groups": [
+          "room_a_sleep_late",
+          "shared_bath"
+        ]
+      },
+      "room_a_recreation": {
+        "label": {
+          "en": "Recreation",
+          "he": "פנאי"
+        },
+        "room": "room_a",
+        "purpose": "recreation",
+        "groups": [
+          "recreation"
+        ]
+      },
+      "room_b_early": {
+        "label": {
+          "en": "Early",
+          "he": "מוקדם"
+        },
+        "room": "room_b",
+        "purpose": "sleeping",
+        "groups": [
+          "room_b_sleep_early",
+          "shared_bath"
+        ]
+      },
+      "room_b_standard": {
+        "label": {
+          "en": "Standard",
+          "he": "רגיל"
+        },
+        "room": "room_b",
+        "purpose": "sleeping",
+        "groups": [
+          "room_b_sleep_standard",
+          "shared_bath"
+        ]
+      },
+      "room_b_late": {
+        "label": {
+          "en": "Late",
+          "he": "מאוחר"
+        },
+        "room": "room_b",
+        "purpose": "sleeping",
+        "groups": [
+          "room_b_sleep_late",
+          "shared_bath"
+        ]
+      },
+      "room_b_recreation": {
+        "label": {
+          "en": "Recreation",
+          "he": "פנאי"
+        },
+        "room": "room_b",
+        "purpose": "recreation",
+        "groups": [
+          "recreation"
+        ]
+      }
+    }
+  },
+  "plan": {
+    "schema_version": 2,
+    "language": "en",
+    "snapshot": {
+      "schema_version": 2,
+      "period_id": "illustrative_period",
+      "timezone": "Asia/Jerusalem",
+      "observance": "diaspora",
+      "source": {
+        "id": "fictional_supplied_calendar",
+        "version": "1"
+      },
+      "preparation_start": "2027-01-07T16:00:00+02:00",
+      "start": "2027-01-07T17:00:00+02:00",
+      "end": "2027-01-10T17:00:00+02:00",
+      "segments": [
+        {
+          "id": "day_1",
+          "kind": "yom_tov",
+          "start": "2027-01-07T17:00:00+02:00",
+          "end": "2027-01-08T17:00:00+02:00",
+          "candle_lighting": "2027-01-07T16:40:00+02:00",
+          "sunrise": "2027-01-08T06:00:00+02:00"
+        },
+        {
+          "id": "day_2",
+          "kind": "yom_tov",
+          "start": "2027-01-08T17:00:00+02:00",
+          "end": "2027-01-09T17:00:00+02:00",
+          "candle_lighting": "2027-01-08T18:00:00+02:00",
+          "sunrise": "2027-01-09T06:00:00+02:00"
+        },
+        {
+          "id": "day_3",
+          "kind": "shabbat",
+          "start": "2027-01-09T17:00:00+02:00",
+          "end": "2027-01-10T17:00:00+02:00",
+          "candle_lighting": "2027-01-09T16:40:00+02:00",
+          "sunrise": "2027-01-10T06:00:00+02:00"
+        }
+      ]
+    },
+    "availability": [
+      {
+        "id": "whole_period",
+        "start": "2027-01-07T16:00:00+02:00",
+        "end": "2027-01-10T17:00:00+02:00",
+        "state": "home"
+      }
+    ],
+    "room_uses": [
+      {
+        "id": "sleep_1",
+        "room": "room_a",
+        "purpose": "sleeping",
+        "control": "planner",
+        "profile": "room_a_standard",
+        "segment": "day_1",
+        "start": "2027-01-07T17:00:00+02:00",
+        "end": "2027-01-08T08:00:00+02:00"
+      },
+      {
+        "id": "sleep_2",
+        "room": "room_a",
+        "purpose": "sleeping",
+        "control": "planner",
+        "profile": "room_a_standard",
+        "segment": "day_2",
+        "start": "2027-01-08T17:00:00+02:00",
+        "end": "2027-01-09T08:00:00+02:00"
+      },
+      {
+        "id": "sleep_3",
+        "room": "room_a",
+        "purpose": "sleeping",
+        "control": "planner",
+        "profile": "room_a_standard",
+        "segment": "day_3",
+        "start": "2027-01-09T17:00:00+02:00",
+        "end": "2027-01-10T08:00:00+02:00"
+      }
+    ],
+    "meals": [
+      {
+        "id": "evening_1",
+        "segment": "day_1",
+        "kind": "evening",
+        "choice": "family",
+        "start": "2027-01-07T19:00:00+02:00",
+        "end": "2027-01-07T22:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      },
+      {
+        "id": "daytime_1",
+        "segment": "day_1",
+        "kind": "daytime",
+        "choice": "family",
+        "start": "2027-01-08T12:00:00+02:00",
+        "end": "2027-01-08T14:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      },
+      {
+        "id": "evening_2",
+        "segment": "day_2",
+        "kind": "evening",
+        "choice": "family",
+        "start": "2027-01-08T19:00:00+02:00",
+        "end": "2027-01-08T22:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      },
+      {
+        "id": "daytime_2",
+        "segment": "day_2",
+        "kind": "daytime",
+        "choice": "family",
+        "start": "2027-01-09T12:00:00+02:00",
+        "end": "2027-01-09T14:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      },
+      {
+        "id": "evening_3",
+        "segment": "day_3",
+        "kind": "evening",
+        "choice": "family",
+        "start": "2027-01-09T19:00:00+02:00",
+        "end": "2027-01-09T22:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      },
+      {
+        "id": "daytime_3",
+        "segment": "day_3",
+        "kind": "daytime",
+        "choice": "family",
+        "start": "2027-01-10T12:00:00+02:00",
+        "end": "2027-01-10T14:00:00+02:00",
+        "groups": [
+          "meal"
+        ]
+      }
+    ],
+    "groups": []
+  }
+}

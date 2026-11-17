@@ -5,12 +5,14 @@ from pathlib import Path
 import sys
 
 from .compiler import compile_plan, PlanError
+from .schedule import compile_schedule
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = Path(__file__).parent / 'web'
 MAX_BODY = 128 * 1024
 STATIC = {'/':('index.html','text/html'),'/app.mjs':('app.mjs','text/javascript'),'/model.mjs':('model.mjs','text/javascript'),'/style.css':('style.css','text/css')}
 
+STATIC.update({'/v2': ('period.html', 'text/html'), '/period.mjs': ('period.mjs', 'text/javascript'), '/period-model.mjs': ('period-model.mjs', 'text/javascript')})
 
 def reject_constant(_):
     raise ValueError('invalid_json')
@@ -48,6 +50,12 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200,(ROOT/'assets/logo.png').read_bytes(),'image/png')
         elif self.path=='/api/i18n':
             self.reply(200,json.loads((WEB/'i18n.json').read_text()))
+        elif self.path=='/api/v2/i18n':
+            base=json.loads((WEB/'i18n.json').read_text())
+            extra=json.loads((WEB/'period-i18n.json').read_text())
+            self.reply(200,{lang: {**base[lang], **extra[lang]} for lang in base})
+        elif self.path=='/api/v2/example':
+            self.reply(200,json.loads((ROOT/'examples/period-preview.json').read_text()))
         elif self.path=='/api/example':
             self.reply(200,{'config':json.loads((ROOT/'examples/household.json').read_text()),'plan':json.loads((ROOT/'examples/plan.json').read_text())})
         else:
@@ -56,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.permitted():
             return
-        if self.path!='/api/preview':
+        if self.path not in ('/api/preview','/api/v2/preview'):
             self.reply(404,{'error':'not_found'})
             return
         try:
@@ -69,7 +77,8 @@ class Handler(BaseHTTPRequestHandler):
             payload=json.loads(self.rfile.read(length),parse_constant=reject_constant)
             if type(payload) is not dict or set(payload)!={'config','plan'}:
                 raise ValueError('invalid_request')
-            result=compile_plan(payload['config'],payload['plan'])
+            compiler=compile_schedule if self.path=='/api/v2/preview' else compile_plan
+            result=compiler(payload['config'],payload['plan'])
         except PlanError as exc:
             self.reply(400,{'error':exc.code})
         except (ValueError,TypeError,UnicodeDecodeError,RecursionError):
