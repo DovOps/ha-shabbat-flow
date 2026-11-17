@@ -1,6 +1,6 @@
 import {request} from './transport.mjs';
-import {localDateTimeCandidates,localDateTimeValue} from './period-model.mjs';
-let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false;
+import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
+let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
 const defaults=()=>({enabled:false,purposes:[],roles:{main_lights:[],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -84,23 +84,44 @@ async function refresh(manual=false,discard=false){
  }catch{offline=true;syncLabel();}
 }
 async function save(){if(needsReview)return status('changed');if(saving)return;saving=true;$('save').disabled=true;try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:draft});draft=structuredClone(data.settings.rooms);dirty=false;needsReview=false;render();status('saved');}catch(e){fail(e);}finally{saving=false;$('save').disabled=false;}}
-async function openPlan(){
- if(dirty)return status('needs_save');
- try{
-  if(!observance||Object.values(dateValues).some(v=>!v))return status('invalid_time');
+function planProblems(){
+ const problems=[];
+ if(dirty)problems.push('needs_save');
+ if(!observance)problems.push('choose_observance');
+ for(const key of ['candles','sunrise','end'])if(!dateValues[key])problems.push('missing_'+key);
+ if(Object.values(dateValues).every(Boolean)){
   const {candles,sunrise,end}=dateValues;
-  if(new Date(end)-new Date(candles)>36*3600000)return status('multi_day');
+  if(![candles,sunrise,end].every(v=>Number.isFinite(+new Date(v)))||!(new Date(candles)<new Date(sunrise)&&new Date(sunrise)<new Date(end)))problems.push('date_order');
+  else if(new Date(end)-new Date(candles)>36*3600000)problems.push('multi_day');
+ }
+ const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&r.purposes.length);
+ if(!dirty&&!rooms.some(r=>r.roles.main_lights.length||r.roles.night_lights.length||(r.roles.hvac.length&&r.hvac.mode!=='none')||r.shared_areas.some(a=>{const shared=data.settings.rooms[a];return shared?.enabled&&(shared.roles.main_lights.length||shared.roles.night_lights.length);})))problems.push('needs_roles');
+ if(data.issues.length)problems.push('invalid_mapping');
+ return problems;
+}
+function planFeedback(keys){
+ const box=$('plan-status');box.replaceChildren();
+ for(const key of keys)box.append(el('p',t(key)));
+ box.focus({preventScroll:true});box.scrollIntoView({block:'nearest'});
+}
+async function openPlan(){
+ if(opening)return;
+ const problems=planProblems();if(problems.length)return planFeedback(problems);
+ opening=true;$('plan').disabled=true;$('plan').textContent=t('opening_plan');planFeedback(['opening_plan']);
+ try{
+  const {candles,sunrise,end}=dateValues;
   const start=candles,preparation=new Date(+new Date(candles)-30*60000);
   // Retain correct offset in the supplied HA timezone.
-  const {zonedISO}=await import('./period-model.mjs');
   const snapshot={schema_version:2,period_id:'household_period',timezone:data.inventory.timezone,observance,source:{id:'reviewed_ha_calendar',version:'1'},preparation_start:zonedISO(preparation,data.inventory.timezone),start,end,
    segments:[{id:'day_1',kind,start,end,candle_lighting:candles,sunrise}]};
   const bundle=await api('household_plan',{revision:data.settings.revision,inventory_revision:data.inventory.revision,snapshot});bundle.plan.language=language;
-  sessionStorage.setItem('shabbat-flow-household-workspace',JSON.stringify(bundle));location.href='./period.html?household=1';
- }catch(e){fail(e);}
+  try{sessionStorage.setItem('shabbat-flow-household-workspace',JSON.stringify(bundle));}catch{throw new Error('workspace_storage_failed');}
+  location.href='./period.html?household=1';
+ }catch(e){planFeedback([catalogs[language][e.message]?e.message:'error']);}
+ finally{opening=false;$('plan').disabled=false;$('plan').textContent=t('open_plan');}
 }
 async function boot(){try{
- catalogs=await (await fetch('./household-i18n.json')).json();language=navigator.language.startsWith('he')?'he':'en';
+ catalogs=await (await fetch('./household-i18n.json?v=button-feedback-1')).json();language=navigator.language.startsWith('he')?'he':'en';
  data=await api('household');draft=structuredClone(data.settings.rooms);calendar=await api('calendar');
  dateValues.candles=calendar.values?.candle_lighting?.value??'';dateValues.end=calendar.values?.end?.value??'';
  const rise=calendar.values?.sunrise?.value;if(rise&&new Date(rise)>new Date(dateValues.candles)&&new Date(rise)<new Date(dateValues.end))dateValues.sunrise=rise;

@@ -66,7 +66,16 @@
     "demo": "Open fictional demo instead",
     "needs_save": "Save your reviewed setup first.",
     "limits": "Up to 20 included areas and 100 mapped loads. Assign each entity once; share it through area dependencies.",
-    "multi_day": "For a continuous holiday, start with the first day’s supplied end and add remaining dated segments in Advanced setup. Do not use a final multi-day Havdalah as a one-day boundary."
+    "multi_day": "For a continuous holiday, start with the first day’s supplied end and add remaining dated segments in Advanced setup. Do not use a final multi-day Havdalah as a one-day boundary.",
+    "choose_observance": "Choose Israel or Diaspora under Calendar observance.",
+    "missing_candles": "Enter a valid candle-lighting date and time.",
+    "missing_sunrise": "Enter the next morning’s sunrise date and time. Today’s sunrise cannot be substituted for it.",
+    "missing_end": "Enter a valid observance-end date and time.",
+    "date_order": "Check the dates: candle lighting must come before sunrise, and sunrise before observance end.",
+    "needs_roles": "Include at least one room, choose Sleeping or Recreation, assign its lights or a supported HVAC profile, then save the house setup above.",
+    "invalid_mapping": "Review the room mappings and device warnings above, then save corrections before opening the planner.",
+    "opening_plan": "Preparing your room planner…",
+    "workspace_storage_failed": "The browser could not store this workspace. Allow site storage and try again; your saved house setup is unchanged."
   },
   "he": {
     "language": "שפה",
@@ -135,6 +144,15 @@
     "demo": "פתיחת דוגמה בדיונית",
     "needs_save": "שמרו תחילה את ההגדרות שנבדקו.",
     "limits": "עד 20 אזורים ו־100 ישויות ממופות. שייכו כל ישות פעם אחת ושתפו באמצעות תלות בין אזורים.",
-    "multi_day": "לחג רצוף, התחילו בסיום היום הראשון שסופק והוסיפו את שאר המקטעים בהגדרות המתקדמות. אין להשתמש בהבדלה הסופית של חג רב־יומי כגבול יום יחיד."
+    "multi_day": "לחג רצוף, התחילו בסיום היום הראשון שסופק והוסיפו את שאר המקטעים בהגדרות המתקדמות. אין להשתמש בהבדלה הסופית של חג רב־יומי כגבול יום יחיד.",
+    "choose_observance": "בחרו ישראל או חו״ל בשדה מנהג לוח השנה.",
+    "missing_candles": "הזינו תאריך ושעה תקינים להדלקת נרות.",
+    "missing_sunrise": "הזינו את התאריך והשעה של זריחת הבוקר הבא. אין להחליף אותם בזריחה של היום.",
+    "missing_end": "הזינו תאריך ושעה תקינים לסיום שבת או חג.",
+    "date_order": "בדקו את התאריכים: הדלקת נרות לפני הזריחה, והזריחה לפני סיום שבת או חג.",
+    "needs_roles": "כללו לפחות חדר אחד, בחרו שינה או פנאי, שייכו תאורה או פרופיל מיזוג נתמך ושמרו את הגדרות הבית למעלה.",
+    "invalid_mapping": "בדקו את שיוכי החדרים ואת אזהרות המכשירים למעלה ושמרו תיקונים לפני פתיחת המתכנן.",
+    "opening_plan": "מכינים את מתכנן החדרים…",
+    "workspace_storage_failed": "הדפדפן לא הצליח לשמור את סביבת התכנון. אפשרו אחסון לאתר ונסו שוב. הגדרות הבית השמורות לא השתנו."
   }
 }
