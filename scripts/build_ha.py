@@ -26,7 +26,7 @@ def generated():
     files['www/transport.mjs'] = (ROOT/'src/shabbat_flow/ha_transport.mjs').read_bytes()
     files['www/panel.js'] = (ROOT/'src/shabbat_flow/ha_panel.js').read_bytes()
     files['www/logo.png'] = (ROOT/'assets/logo.png').read_bytes()
-    files['data/period-preview.json'] = (ROOT/'examples/period-preview.json').read_bytes()
+    files['fixtures/period-preview.json'] = (ROOT/'examples/period-preview.json').read_bytes()
     return files
 
 
@@ -40,7 +40,7 @@ def build(check=False):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-    actual = {str(p.relative_to(TARGET)) for directory in ('engine','www','data')
+    actual = {str(p.relative_to(TARGET)) for directory in ('engine','www','fixtures')
               for p in (TARGET/directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts}
     if actual != set(expected):
         raise SystemExit('Unexpected generated HA assets: '+str(sorted(actual-set(expected))))

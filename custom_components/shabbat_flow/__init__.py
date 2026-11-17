@@ -10,7 +10,7 @@ ROOT = Path(__file__).parent
 
 
 def load_assets():
-    sample = json.loads((ROOT / "data/period-preview.json").read_text())
+    sample = json.loads((ROOT / "fixtures/period-preview.json").read_text())
     base = json.loads((ROOT / "www/i18n.json").read_text())
     extra = json.loads((ROOT / "www/period-i18n.json").read_text())
     return sample, {lang: {**base[lang], **extra[lang]} for lang in base}
