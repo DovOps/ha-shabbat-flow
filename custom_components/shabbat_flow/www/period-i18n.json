@@ -108,7 +108,10 @@
     "source_on": "In effect",
     "source_off": "Not in effect",
     "house_setup": "House setup",
-    "household_notice": "Your HA household snapshot · Supplied dates · Preview only; no devices controlled. Changes in HA do not rewrite this workspace."
+    "household_notice": "Your HA household snapshot · Supplied dates · Preview only; no devices controlled. Changes in HA do not rewrite this workspace.",
+    "power_only_preview": "Preserve existing settings",
+    "action_unknown": "Unrecognized action",
+    "power_support_notice": "Power-only HVAC events are intentions. Device-specific restoration of previous settings must be verified before future execution."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -219,6 +222,9 @@
     "source_on": "בתוקף",
     "source_off": "לא בתוקף",
     "house_setup": "הגדרות הבית",
-    "household_notice": "תמונת מצב של הבית מ־HA · תאריכים שסופקו · תצוגה בלבד ללא הפעלת מכשירים. שינויים ב־HA אינם משנים תוכנית זו."
+    "household_notice": "תמונת מצב של הבית מ־HA · תאריכים שסופקו · תצוגה בלבד ללא הפעלת מכשירים. שינויים ב־HA אינם משנים תוכנית זו.",
+    "power_only_preview": "שמירת ההגדרות הקיימות",
+    "action_unknown": "פעולה לא מזוהה",
+    "power_support_notice": "אירועי הפעלה וכיבוי למיזוג הם כוונות בלבד. לפני ביצוע עתידי יש לאמת שהמכשיר משחזר את הגדרותיו הקודמות."
   }
 }

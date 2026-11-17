@@ -1,6 +1,6 @@
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
-import {PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
+import {actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
 const householdMode=new URLSearchParams(location.search).get('household')==='1';
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
 const draftKey=householdMode?'shabbat-flow-household-draft-v2':PERIOD_DRAFT_KEY;
@@ -148,7 +148,7 @@ function render(){
   for(const use of dayUses.filter(v=>v.purpose==='sleeping'&&v.control==='planner')){
     const profile=bundle.config.profiles[use.profile];
     for(const groupId of profile.groups)for(const rule of bundle.config.groups[groupId].rules){
-      const kind=rule.action.type==='hvac'&&rule.action.mode!=='off'?'bedroom_hvac':rule.action.type==='state'&&rule.action.state==='off'&&rule.end===null?'bedroom_lights':null;
+      const kind=((rule.action.type==='hvac'&&rule.action.mode!=='off')||(rule.action.type==='hvac_power'&&rule.action.state==='on'))?'bedroom_hvac':rule.action.type==='state'&&rule.action.state==='off'&&rule.end===null?'bedroom_lights':null;
       if(!kind||rule.start.anchor!=='candle_lighting'||visited.has(groupId+'/'+rule.id))continue;visited.add(groupId+'/'+rule.id);
       const row=node('label',undefined,'field');row.append(node('span',`${bundle.config.rooms[use.room][lang()]} · ${t(kind)}`));
       const input=node('input');input.type='range';input.min='0';input.max='720';input.step='15';input.value=rule.start.offset_minutes;
@@ -211,15 +211,17 @@ function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
   root.append(node('p',`${t('event_count')}: ${result.events.length}`));
+  if(result.events.some(e=>e.action.type==='hvac_power'))root.append(node('p',t('power_support_notice'),'hint'));
   for(const event of result.events){
     const row=node('div',undefined,'event');const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.local;
     const load=Object.values(bundle.config.loads).find(v=>v.physical_id===event.physical_id);
     const description=node('div',load?.label[lang()]??event.physical_id);
     const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
-    const action=event.action;let value=action.type==='state'?t(action.state):t('mode_'+action.mode);
+    const action=event.action,badge=actionBadge(event);let value=t(badge.key);
+    if(badge.preserve)description.append(node('small',t('power_only_preview')));
     if(action.temperature!==undefined)value+=` · ${action.temperature}°${action.unit} · ${catalogs[lang()]['fan_'+action.fan_mode]??action.fan_mode}`;
     if(event.intent==='track_only')description.append(node('small',t('track_only')));
-    row.append(time,description,node('bdi',value,'state'));root.append(row);
+    row.append(time,description,node('bdi',value,badge.className));root.append(row);
   }
 }
 async function validate(candidate){

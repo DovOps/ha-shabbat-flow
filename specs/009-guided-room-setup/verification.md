@@ -43,5 +43,15 @@ Required commands: Python unit suite, Node web suite, repository hygiene, genera
 - GitHub CI passed for implementation commit `f1bfc18` (run `44165028408`); implementation merged to main as `bc297ae`. Final verification recorded in this documentation checkpoint.
 - Final archive SHA-256: `c940b3a3eafa6d606d5890aff15570063dcc841ba688bd13ff5e91055efba422`.
 
-## Pending schedule badge follow-up
-WIZ-FR-014 / US5 is newly specified and not covered by the 0.4.0 completion evidence above. Add regression coverage for mixed planned On/Off/HVAC badges, semantic classes, localized text, contrast and mobile/RTL appearance. Confirm presentation changes leave schedule events and digest unchanged.
+## Schedule badge follow-up (previously pending)
+WIZ-FR-014 / US5 was not part of the 0.4.0 completion evidence above. Its implementation and verification are recorded below.
+
+
+## Version 0.5.0 — badge and power-only follow-ups
+- WIZ-FR-014: preview events use pure semantic badge mapping. On is green, Off is dark slate, heating/cooling have explicit mode colors, and tracked/unknown actions remain informational. Every badge keeps localized text. Automated contrast tests cover all foreground/background pairs at 4.5:1 or better; presentation mapping does not mutate events.
+- WIZ-FR-015–016 / WIZ-NFR-011: dedicated `hvac_power` load/action types permit only `type` and on/off `state`, rejecting temperature, mode, unit and fan overrides. Independent lead time is clamped to the supplied preparation start. UI distinguishes power-only, explicit profile and unscheduled intent. Existing `none` settings are not reinterpreted.
+- Native TURN_ON/TURN_OFF flags, including IntFlag values from HA states, are read as diagnostics. Resume semantics remain unverified. No runtime adapter or service/device control calls are added.
+- Python suite: 64 passed; Node suite: 25 passed; HA integration suites: 45 passed on each of 2026.8.2 and 2026.11.2. New coverage includes currently-off/heat/cool states with no fan/target metadata, HVAC-only rooms, missing selection, missing explicit profile, unchanged legacy intent, preparation-bound clipping, strict action schema, overlap union and conflicting demands.
+- Local browser with fictional fixtures: selected and saved power-only for an off unit with missing fan/target metadata, reloaded to verify persistence, and rendered mixed power-only/profile/lighting events. Hebrew mobile preview at 360px had no page-level horizontal overflow; On/Off badges are visually distinct. Power-only notes are concise per event with a single preview-level verification notice.
+- Package and repository hygiene checks passed. Full static tree versioned as 0.5.0. Archive SHA-256: `ca663d70f815ea28e7d4d494c6d0b8e84be81864ff505fc1abc8ce678b7a923a`.
+- Bathroom-label candidate filtering remains a separate optional design proposal; it was not promoted to an approved functional requirement in this increment.

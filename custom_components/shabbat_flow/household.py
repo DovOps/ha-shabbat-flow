@@ -4,6 +4,7 @@ from datetime import timedelta, datetime, timezone
 from hashlib import sha256
 import json
 import math
+from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.helpers import area_registry as ar, floor_registry as fr
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from .engine.compiler import PlanError, require
@@ -58,6 +59,8 @@ def inventory(hass):
                          'disabled': e.disabled_by is not None,
                          'available': bool(state and state.state not in ('unknown', 'unavailable') and e.disabled_by is None),
                          'capabilities': caps,
+                         'power_support': {'turn_on': bool((attrs.get('supported_features', 0) if isinstance(attrs.get('supported_features', 0), int) and not isinstance(attrs.get('supported_features', 0), bool) else 0) & ClimateEntityFeature.TURN_ON),
+                                           'turn_off': bool((attrs.get('supported_features', 0) if isinstance(attrs.get('supported_features', 0), int) and not isinstance(attrs.get('supported_features', 0), bool) else 0) & ClimateEntityFeature.TURN_OFF)} if domain == 'climate' else None,
                          'current': {'mode': state.state if state else None,
                                      'temperature': attrs.get('temperature') if finite(attrs.get('temperature')) else None,
                                      'fan_mode': attrs.get('fan_mode') if attrs.get('fan_mode') in caps.get('fan_modes', []) else None,
@@ -150,7 +153,7 @@ def validate_settings(rooms, inv):
         require(type(room['roles']) is dict and set(room['roles']) == set(ROLES))
         hvac = room['hvac']
         require(type(hvac) is dict and set(hvac) == {'mode', 'temperature', 'fan_mode', 'lead_minutes'})
-        require(hvac['mode'] in ('none', 'heat', 'cool'))
+        require(hvac['mode'] in ('none', 'preserve', 'profile', 'heat', 'cool'))
         require(hvac['temperature'] is None or finite(hvac['temperature']))
         require(hvac['fan_mode'] is None or isinstance(hvac['fan_mode'], str) and len(hvac['fan_mode']) <= 100)
         require(type(hvac['lead_minutes']) is int and 0 <= hvac['lead_minutes'] <= 180)
@@ -158,6 +161,8 @@ def validate_settings(rooms, inv):
             enabled += 1
             require(aid in areas, 'invalid_mapping')
             if ready(room):
+                require(hvac['mode'] != 'profile', 'hvac_profile_required')
+                require(hvac['mode'] == 'none' or bool(room['roles']['hvac']), 'needs_hvac_device')
                 require(all(a != aid and a in areas and ready(rooms.get(a, {})) for a in room['shared_areas']), 'missing_shared')
                 if setup:
                     require(bool(room['purposes']) or setup['service'], 'needs_purpose')
@@ -179,7 +184,7 @@ def validate_settings(rooms, inv):
                 # A load has one assigned room/role; shared dependencies reuse that assignment.
                 require(rid not in mapped, 'invalid_mapping'); mapped.add(rid)
                 bindings[rid] = binding(e)
-                if role == 'hvac' and hvac['mode'] != 'none':
+                if role == 'hvac' and hvac['mode'] not in ('none', 'preserve'):
                     c = e['capabilities']
                     require(hvac['mode'] in c['modes'] and 'off' in c['modes'] and hvac['fan_mode'] in c['fan_modes'], 'invalid_mapping')
                     require(finite(hvac['temperature']) and finite(c['min_temperature']) and finite(c['max_temperature'])
@@ -209,8 +214,9 @@ def workspace(settings, inv, snapshot):
             lid = internal_id('load_', rid)
             if role == 'hvac' and rooms[aid]['hvac']['mode'] == 'none':
                 continue
+            power_only = role == 'hvac' and rooms[aid]['hvac']['mode'] == 'preserve'
             config['loads'][lid] = {'label': label(e['name']), 'physical_id': lid, 'owner': 'planner',
-                                    'kind': 'hvac' if role == 'hvac' else 'binary', 'capabilities': e['capabilities'] if role == 'hvac' else {}}
+                                    'kind': 'hvac_power' if power_only else 'hvac' if role == 'hvac' else 'binary', 'capabilities': e['capabilities'] if role == 'hvac' and not power_only else {}}
             result.append(lid)
         return result
 
@@ -239,9 +245,11 @@ def workspace(settings, inv, snapshot):
             rule(night, start, end, on, off)
             for lid in targets(aid, 'hvac'):
                 h = room['hvac']; c = config['loads'][lid]['capabilities']
-                rule([lid], {'anchor': 'use_start', 'offset_minutes': -h['lead_minutes']}, end,
+                power_only = h['mode'] == 'preserve'
+                rule([lid], {'anchor': 'use_start', 'offset_minutes': -h['lead_minutes'], 'not_before': 'preparation_start'}, end,
+                     {'type': 'hvac_power', 'state': 'on'} if power_only else
                      {'type': 'hvac', 'mode': h['mode'], 'temperature': h['temperature'], 'unit': c['unit'], 'fan_mode': h['fan_mode']},
-                     {'type': 'hvac', 'mode': 'off'})
+                     {'type': 'hvac_power', 'state': 'off'} if power_only else {'type': 'hvac', 'mode': 'off'})
             config['groups'][gid] = {'label': label(areas[aid]['name']), 'track_only': False, 'rules': rules}
             variants = [('early', 240, 60, 'Early', 'מוקדם'), ('standard', 360, 120, 'Standard', 'רגיל'), ('late', 480, 180, 'Late', 'מאוחר')] if purpose == 'sleeping' else [('evening', 0, 360, 'Evening', 'ערב')]
             for name, delay, duration, en, he in variants:

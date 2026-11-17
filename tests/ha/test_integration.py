@@ -56,7 +56,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.4.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.5.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -394,3 +394,54 @@ async def test_legacy_selection_without_devices_resumes_unfinished(host):
     old['rooms'][bed.id]['shared_areas']=[bath.id]
     migrated=migrate_settings(old)
     assert migrated['rooms'][bed.id]['setup']['status']=='draft'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('live_mode',['off','heat','cool'])
+async def test_power_only_hvac_without_target_or_fan_metadata(host,live_mode):
+    from homeassistant.components.climate import ClimateEntityFeature
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    climate=er.async_get(hass).async_get_or_create('climate','test','example-power-only')
+    climate=er.async_get(hass).async_update_entity(climate.entity_id,area_id=bed.id)
+    hass.states.async_set(climate.entity_id,live_mode,{'supported_features':ClimateEntityFeature.TURN_ON|ClimateEntityFeature.TURN_OFF})
+    inv=inventory(hass);entity=next(e for e in inv['entities'] if e['id']==climate.id)
+    assert entity['power_support']=={'turn_on':True,'turn_off':True}
+    r=wizard_room(room(['sleeping']));r['roles']['hvac']=[climate.id];r['hvac']['mode']='preserve'
+    saved={**empty_settings(),'rooms':{bed.id:r},'bindings':validate_settings({bed.id:r},inv)}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];b=workspace(saved,inv,snap);p=b['plan']
+    p['availability'][0]['state']='home'
+    for m in p['meals']:m['choice']='none'
+    p['room_uses']=[{'id':'sleep','room':internal_id('room_',bed.id),'purpose':'sleeping','control':'planner','profile':next(iter(b['config']['profiles'])),'segment':'day_1','start':'2027-01-07T22:00:00+02:00','end':'2027-01-08T08:00:00+02:00'}]
+    result=compile_schedule(b['config'],p)
+    assert result['complete'] and [e['action'] for e in result['events']]==[{'type':'hvac_power','state':'on'},{'type':'hvac_power','state':'off'}]
+    assert result['events'][0]['local']=='2027-01-07T21:00:00+02:00'
+    assert result['events'][1]['local']=='2027-01-08T08:00:00+02:00'
+    assert all(load['kind']=='hvac_power' and load['capabilities']=={} for load in b['config']['loads'].values())
+    # Missing advertised power support remains visibly unknown, not a guessed mode.
+    hass.states.async_set(climate.entity_id,'off',{})
+    assert next(e for e in inventory(hass)['entities'] if e['id']==climate.id)['power_support']=={'turn_on':False,'turn_off':False}
+
+
+@pytest.mark.asyncio
+async def test_power_only_does_not_reinterpret_unscheduled_and_clamps_preparation(host):
+    from custom_components.shabbat_flow.household import migrate_settings
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    climate=er.async_get(hass).async_get_or_create('climate','test','example-power-clamp')
+    hass.states.async_set(climate.entity_id,'off',{})
+    inv=inventory(hass);r=wizard_room(room(['recreation'],[light.id]));r['roles']['hvac']=[climate.id]
+    saved={**empty_settings(),'rooms':{bed.id:r},'bindings':validate_settings({bed.id:r},inv)}
+    assert migrate_settings(saved)['rooms'][bed.id]['hvac']['mode']=='none'
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    b=workspace(saved,inv,snap);assert all(load['kind']=='binary' for load in b['config']['loads'].values())
+    r['hvac']['mode']='preserve';r['hvac']['lead_minutes']=180
+    b=workspace(saved,inv,snap);p=b['plan'];p['availability'][0]['state']='home'
+    for m in p['meals']:m['choice']='none'
+    p['room_uses']=[{'id':'evening','room':internal_id('room_',bed.id),'purpose':'recreation','control':'planner','profile':next(iter(b['config']['profiles'])),'segment':'day_1','start':snap['start'],'end':'2027-01-07T23:00:00+02:00'}]
+    events=compile_schedule(b['config'],p)['events'];power=[e for e in events if e['action']['type']=='hvac_power']
+    assert power[0]['local']==snap['preparation_start'] and power[1]['action']['state']=='off'
+    r['roles']['hvac']=[]
+    with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
+    r['roles']['hvac']=[climate.id];r['hvac']['mode']='profile'
+    with pytest.raises(ValueError):validate_settings({bed.id:r},inv)

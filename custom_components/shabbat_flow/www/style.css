@@ -15,3 +15,14 @@ input[type=datetime-local]{font:inherit;width:100%;min-width:0;max-width:100%;pa
 .bathroom-link {border-inline-start:3px solid #00a4cf;padding-inline-start:1rem;margin-block:1rem}
 #rooms small {display:block} #wizard-heading:focus {outline:2px solid #00a4cf;outline-offset:4px}
 @media(max-width:480px){.intro{display:block} #rooms .toolbar{display:flex;flex-wrap:wrap} #rooms .toolbar button{flex:1 1 130px}}
+
+/* Planned action badges: text remains meaningful without color. */
+.state.on{background:#e7f5f1;color:#145c43;border:1px solid #90bdac}
+.state.off{background:#475569;color:#ffffff;border:1px solid #475569}
+.state.heat{background:#fff0df;color:#863900;border:1px solid #d9a06b}
+.state.cool{background:#e5f2ff;color:#174b7e;border:1px solid #85afd5}
+.state.tracked,.state.neutral{background:#f2ebfa;color:#594275;border:1px solid #b7a1cc}
+.event{grid-template-columns:145px minmax(0,1fr) minmax(70px,auto)}
+.event .state{max-width:170px;overflow-wrap:anywhere}.event>div{overflow-wrap:anywhere}
+.intro{gap:24px}.intro h1{flex:1}.intro>p{flex:1}
+@media(max-width:650px){.event{grid-template-columns:95px minmax(0,1fr) minmax(50px,auto)}.event .state{max-width:100px}}

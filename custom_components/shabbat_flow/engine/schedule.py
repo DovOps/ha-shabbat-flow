@@ -31,9 +31,9 @@ def catalog(value):
 
 def validate_action(action, load):
     require(type(action) is dict)
-    if load['kind'] == 'binary':
+    if load['kind'] in ('binary', 'hvac_power'):
         keys(action, {'type', 'state'})
-        require(action['type'] == 'state')
+        require(action['type'] == ('hvac_power' if load['kind'] == 'hvac_power' else 'state'))
         choice(action['state'], ('on', 'off'))
     else:
         caps = load['capabilities']
@@ -55,7 +55,9 @@ def validate_time(value):
         keys(value, {'at'})
         require(type(value['at']) is str and len(value['at']) <= 40, 'invalid_time')
     else:
-        keys(value, {'anchor', 'offset_minutes'})
+        keys(value, {'anchor', 'offset_minutes'} | ({'not_before'} if 'not_before' in value else set()))
+        if 'not_before' in value:
+            require(value['not_before'] == 'preparation_start' and value['anchor'] == 'use_start')
         choice(value['anchor'], ('candle_lighting', 'sunrise', 'use_start', 'use_end'))
         require(type(value['offset_minutes']) is int and abs(value['offset_minutes']) <= 1440)
 
@@ -74,9 +76,9 @@ def validate_configuration(config):
         labels(load['label'])
         identifier(load['physical_id'])
         identifier(load['owner'])
-        choice(load['kind'], ('binary', 'hvac'))
+        choice(load['kind'], ('binary', 'hvac', 'hvac_power'))
         caps = load['capabilities']
-        if load['kind'] == 'binary':
+        if load['kind'] in ('binary', 'hvac_power'):
             keys(caps, set())
         else:
             keys(caps, {'modes', 'unit', 'min_temperature', 'max_temperature', 'fan_modes'})
@@ -259,7 +261,7 @@ def compile_schedule(config, plan):
     for meal in clean_plan['meals']:
         meal['groups'].sort()
     result = {'preview_only': True, 'complete': not issues, 'issues': issues,
-              'digest': digest({'compiler': 'generic-v2.2', 'config': clean_config, 'plan': clean_plan}),
+              'digest': digest({'compiler': 'generic-v2.3', 'config': clean_config, 'plan': clean_plan}),
               'events': []}
     if issues:
         result['issues'] = sorted(issues, key=canonical)
@@ -276,6 +278,8 @@ def compile_schedule(config, plan):
                 instant = anchors[time['anchor']] + timedelta(minutes=time['offset_minutes'])
             except OverflowError:
                 raise PlanError('invalid_time') from None
+        if time.get('not_before') == 'preparation_start':
+            instant = max(instant, calendar['preparation_start'])
         require(calendar['preparation_start'] <= instant <= calendar['end'], 'invalid_sequence')
         return instant
 

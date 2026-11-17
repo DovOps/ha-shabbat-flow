@@ -12,3 +12,6 @@ No runtime dependency change is proposed. Feature 007's HA registries/Store and 
 
 ## Schedule badge follow-up
 Map each preview action to a semantic badge type, apply distinct On/Off treatments and localized labels, then test mixed binary/HVAC events and desktop/mobile EN/HE rendering against US5. This follow-up is specified but not yet implemented or installed. Bathroom-label filtering remains a separate design candidate.
+
+## Power-only HVAC follow-up
+Add a dedicated `hvac_power` load/action contract with exact on/off-only keys, separate from setting-bearing HVAC profiles. Reuse independent lead/end windows and shared-demand conflict handling. Keep existing `none` settings unscheduled. Expose native power feature flags as diagnostics, not restoration guarantees; HA's base climate turn-on fallback can choose a mode. No execution adapter is part of this change. Implement semantic preview badges without modifying events or schedule digest. Bathroom-label filtering remains a separate optional design candidate, not an outstanding approved FR.

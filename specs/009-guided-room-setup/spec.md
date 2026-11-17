@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Core wizard implemented in preview 0.4.0. Schedule badge follow-up (WIZ-FR-014) specified; implementation pending.
+**Status:** Wizard plus badge and power-only HVAC follow-ups implemented in preview 0.5.0; verification recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -33,7 +33,7 @@ As a homeowner, I select the bathroom used by a room and review the relevant swi
 As a homeowner, I see the devices relevant to the current room and can copy a supported current HVAC setting without typing a raw profile.
 
 1. Lighting choices distinguish main lights from night/background lights. The setup explains that sleeping main lights turn off at the chosen bedtime and recreation lighting follows room use.
-2. HVAC offers leave existing control, use current settings, and adjust settings. Copying current settings is a reviewed snapshot, never a live binding or a device command.
+2. HVAC offers three distinct scheduling choices: On/Off only preserving settings, a specified heating/cooling profile (including copy-current as a shortcut), and Do not schedule this HVAC. Copying current settings is a reviewed snapshot, never a live binding or a device command.
 3. HVAC controls use supported modes, temperature units/ranges and available fan options. Off, unavailable, missing, unsupported or conflicting settings require explicit adjustment or leaving HVAC unscheduled; the application never guesses a mode.
 4. Multiple HVAC devices with incompatible settings are not silently given one shared profile. The UI explains the conflict and allows choosing a compatible subset or leaving them unscheduled.
 5. HVAC lead time remains independent of lighting changeover, anchored to the room-use schedule. Labels cover both heating and cooling.
@@ -91,7 +91,7 @@ The final schedule preview must make On and Off actions immediately distinguisha
 
 - Choose rooms → configure each room → review summary → plan dates/usage. Retain advanced controls behind clearly labelled disclosure, not as the first screen.
 - Linking an unconfigured bathroom adds a visibly pending shared-area setup step; it does not implicitly approve its devices. Multiple links reuse that step.
-- “Leave existing control” generates no HVAC actions and does not suspend existing automations.
+- The legacy `none` choice is labelled “Do not schedule this HVAC.” It remains unscheduled on upgrade; it is never silently reinterpreted as power-only scheduling.
 - The home-wide bathroom option requires compiler support for explicit home intervals; storing a flag without integrating it into preview is insufficient.
 - Recent-use ranking is a subsequent enhancement, not a prerequisite for this wizard. It requires a bounded history contract, coverage/confidence labels and an unknown-history fallback. Area-scoped candidates and current HVAC snapshots are the initial simplifications.
 - Recorder pattern analysis, automatic inferred mappings, automatic activation, family non-admin access and chat/MCP remain separate roadmap items. No new external dependency or third-party design is adopted.
@@ -99,3 +99,15 @@ The final schedule preview must make On and Off actions immediately distinguisha
 
 ## Setup feedback to consider separately
 The homeowner may need to correct HA area associations for HVAC devices. An optional homeowner-selected HA label for bathroom-light candidates could make bathroom selection easier. This is a follow-up design candidate, not a mandatory label dependency or an implemented label filter: preserve explicit area/device selection as a fallback and never infer room-to-bathroom relationships merely from a light's label. No household registry or label changes are authorized by this specification update.
+
+
+## US6 — Schedule HVAC power without overriding settings (P1)
+The homeowner selects an HVAC device and schedules On/Off while leaving its heating/cooling mode, target temperature and fan setting to the device/integration.
+
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-015 | Offer “Schedule On/Off only — preserve settings,” “Use a specific profile,” and “Do not schedule this HVAC” as distinct intents in setup and summary. Power-only uses the independent HVAC lead time and room-use end to generate typed HVAC On/Off events, without mode, temperature, unit or fan overrides. It works with a currently-off device and does not require target/fan metadata. |
+| WIZ-FR-016 | Show power-only HVAC events in the final preview, with distinct On/Off badges and a “preserve settings” explanation. Read HA's advertised turn-on/off support as diagnostic information only. Unsupported/unknown support and unverified resume semantics are visible. Never fall back to a guessed mode or treat advertised TURN_ON as proof of restoration. Future execution must verify a device-specific power/resume adapter before activation; this release emits intentions only. |
+| WIZ-NFR-011 | Test power-only versus specific-profile versus unscheduled behavior, HVAC-only rooms, currently-off devices, absent temperature/fan metadata, overlapping demands, incompatible intents, strict rejection of setting overrides in power actions, unchanged legacy settings, and multilingual summaries. No actuator or HA control service calls are introduced. |
+
+Acceptance: a used room with power-only HVAC produces an On event at use start minus its lead time (clamped to the supplied preparation start) and an Off at use end, regardless of its current heat/cool/off state; the actions contain no explicit settings. Unscheduled HVAC produces neither event. Explicit profiles retain their existing target/mode behavior. Old saved `none` choices and existing workspace snapshots remain unchanged; a user explicitly selects power-only, saves, and opens a new workspace to use it. Devices reporting no native power support still allow an explicitly labelled intention preview, never a claim of executable compatibility.

@@ -1,10 +1,10 @@
-# Installable preview 0.4.0
+# Installable preview 0.5.0
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.4.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.5.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
 4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
@@ -62,3 +62,16 @@ HVAC supports copying an available device's current heat/cool target and fan set
 Existing schema-1 room mappings are migrated in memory with their original use-window semantics and persisted as schema 2 on the next successful settings save. The HA Store envelope stays version 1; the payload owns the household schema version. Back up both the integration and its own Store before upgrade. To roll back after saving new-format settings, restore both copies while HA is stopped.
 
 בחרו חדרים, הגדירו כל חדר בנפרד ושמרו להמשך. ניתן לקשר חדר רחצה משותף ולהגדיר את התאורה פעם אחת. חדרים שטרם הושלמו אינם יוצרים פעולות בתכנון. הגדרות מיזוג נוכחיות מועתקות לבדיקה בלבד; אין הפעלת מכשירים.
+
+
+## Power-only HVAC and action badges (0.5.0)
+In a room's HVAC section, choose one of three scheduling intents:
+- **Schedule On/Off only — preserve settings** creates typed HVAC power intentions, with no heating/cooling mode, temperature or fan commands. It accepts currently-off units and does not require target/fan metadata. The independent lead time is bounded by the supplied preparation start.
+- **Use a specific heating/cooling profile** retains explicit validated settings and the copy-current shortcut.
+- **Do not schedule this HVAC** emits no HVAC events. This is the clarified label for the previous “Leave existing HVAC control” choice; upgrades do not silently change existing choices.
+
+Save the room and open a new dated planner, then select its use/profile. Existing workspace snapshots retain their earlier settings. Power-only preview events say “Preserve existing settings.” On badges are green; Off badges are dark slate with white text; active heating/cooling have separate mode colors. Tracked actions remain informational.
+
+HA's advertised TURN_ON/TURN_OFF flags are shown as diagnostics only. The base climate turn-on fallback can select a mode, so these flags do not prove that an integration restores previous settings. This preview does not execute anything. A future executor must verify a device-specific resume adapter and refuse unsupported or unverified restoration; it must not substitute a guessed mode or setting-bearing command.
+
+בתפריט המיזוג בחדר ניתן לבחור הפעלה וכיבוי בלבד תוך שמירת ההגדרות, פרופיל חימום/קירור מוגדר, או ללא תזמון. לאחר שמירה יש לפתוח מתכנן מתוארך חדש ולבחור שימוש בחדר. תגי הפעלה ירוקים ותגי כיבוי כהים, עם טקסט ברור. התאימות לשחזור ההגדרות במכשיר דורשת אימות לפני ביצוע עתידי.

@@ -11,4 +11,6 @@
 - [x] W009 Commit/push/merge the implementation checkpoint and record evidence.
 
 ## Follow-up from preview feedback
-- [ ] W010 Implement WIZ-FR-014: distinct planned On/Off badges, explicit HVAC mode labels, EN/HE and contrast checks; verify mixed events without changing compilation output.
+- [x] W010 Implement WIZ-FR-014: distinct planned On/Off badges, explicit HVAC mode labels, EN/HE and contrast checks; verify mixed events without changing compilation output.
+- [x] W011 Implement WIZ-FR-015–016 and WIZ-NFR-011: typed power-only HVAC, distinct setup intent, diagnostics and tests.
+- [ ] W012 Package, verify installed badge/power controls, record evidence and merge checkpoint.
