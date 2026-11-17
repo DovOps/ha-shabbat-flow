@@ -56,14 +56,14 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.2.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.3.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
-    assert hass.http.register_view.call_count == 6
+    assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
     assert 'shabbat-flow' not in hass.data[frontend.DATA_PANELS]
     with pytest.raises(web.HTTPServiceUnavailable): await SampleView(hass).get(Request())
     await async_setup_entry(hass, entry)
-    assert hass.http.register_view.call_count == 6  # Routes are not registered twice on reload.
+    assert hass.http.register_view.call_count == 7  # Routes are not registered twice on reload.
     assert hass.http.async_register_static_paths.await_count == 1
 
 

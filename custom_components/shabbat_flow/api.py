@@ -204,3 +204,19 @@ class HouseholdPlanView(BaseView):
         except (ValueError, TypeError, KeyError, UnicodeDecodeError, RecursionError):
             return self.response({"error": "invalid_request"}, 400)
         return self.response(result)
+
+
+class UpcomingView(BaseView):
+    url = "/api/shabbat_flow/upcoming"
+    name = "api:shabbat_flow:upcoming"
+
+    async def get(self, request):
+        from .upcoming import upcoming
+        self.check(request)
+        if self.hass.data[DOMAIN]["entry"].options.get("source_mode") == "manual":
+            return self.response({"status": "unavailable", "error": "calendar_manual"})
+        try:
+            return self.response(await upcoming(self.hass))
+        except PlanError as exc:
+            code = exc.code if exc.code.startswith("calendar_") else "calendar_incomplete"
+            return self.response({"status": "unavailable", "error": code})

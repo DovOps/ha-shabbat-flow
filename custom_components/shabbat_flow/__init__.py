@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView
 
 ROOT = Path(__file__).parent
 
@@ -28,7 +28,7 @@ async def async_setup_entry(hass, entry):
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry

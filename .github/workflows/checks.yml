@@ -25,11 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ha: ['2026.8.2', '2026.11.2']
+        include:
+          - ha: '2026.8.2'
+            hdate: '1.2.1'
+          - ha: '2026.11.2'
+            hdate: '1.2.2'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-      - run: python -m pip install homeassistant==${{ matrix.ha }} pytest==9.2.0 pytest-asyncio==1.5.0
+      - run: python -m pip install homeassistant==${{ matrix.ha }} pytest==9.2.0 pytest-asyncio==1.5.0 "hdate[astral]==${{ matrix.hdate }}"
       - run: python -m pytest tests/ha -q -o asyncio_default_fixture_loop_scope=function

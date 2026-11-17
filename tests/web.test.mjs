@@ -164,7 +164,7 @@ test('open household planner shows local actionable errors and handles request l
   const code=source.slice(source.indexOf('function planProblems('),source.indexOf('async function boot('));
   const box={messages:[],replaceChildren(){this.messages=[];},append(p){this.messages.push(p);},focus(){this.focused=true;},scrollIntoView(){this.visible=true;}};
   const button={},room={enabled:true,purposes:['sleeping'],roles:{main_lights:['fictional_light'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}};
-  const context={dirty:false,opening:false,observance:'',dateValues:{candles:'2027-01-08T16:00:00+02:00',sunrise:'',end:'2027-01-09T18:00:00+02:00'},kind:'shabbat',language:'en',catalogs:{en:{invalid_mapping:'Mapping issue',workspace_storage_failed:'Storage issue'}},data:{settings:{rooms:{},revision:1},inventory:{timezone:'Asia/Jerusalem',revision:'a'},issues:[]},
+  const context={manualZone:null,manualCalendar:true,automatic:null,structuredClone,dirty:false,opening:false,observance:'',dateValues:{candles:'2027-01-08T16:00:00+02:00',sunrise:'',end:'2027-01-09T18:00:00+02:00'},kind:'shabbat',language:'en',catalogs:{en:{invalid_mapping:'Mapping issue',workspace_storage_failed:'Storage issue'}},data:{settings:{rooms:{},revision:1},inventory:{timezone:'Asia/Jerusalem',revision:'a'},issues:[]},
     $:id=>id==='plan'?button:box,t:key=>key,el:(_,text)=>text,zonedISO:d=>d.toISOString(),api:async()=>{throw new Error('unexpected request');},sessionStorage:{setItem(){}},location:{href:''}};
   runInNewContext(code,context);
   await context.openPlan();assert.deepEqual(box.messages,['choose_observance','missing_sunrise','needs_roles']);assert.ok(box.focused&&box.visible);assert.equal(context.location.href,'');
@@ -176,4 +176,22 @@ test('open household planner shows local actionable errors and handles request l
   resolve({plan:{}});await pending;assert.equal(context.location.href,'./period.html?household=1');assert.equal(button.disabled,false);
   context.location.href='';context.api=async()=>({plan:{}});context.sessionStorage.setItem=()=>{throw new Error('blocked');};await context.openPlan();assert.deepEqual(box.messages,['workspace_storage_failed']);assert.equal(context.location.href,'');
   context.dateValues.sunrise='2027-01-08T06:00:00+02:00';await context.openPlan();assert.deepEqual(box.messages,['date_order']);
+});
+
+test('automatic calendar passes the whole snapshot and refresh preserves manual dates',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
+ const code=source.slice(source.indexOf('function planProblems('),source.indexOf('async function boot('));
+ const snapshot=structuredClone(period.plan.snapshot);snapshot.start='2099-01-01T16:00:00+02:00';
+ const box={replaceChildren(){},append(){},focus(){},scrollIntoView(){}},button={};let received;
+ const context={manualZone:null,manualCalendar:false,automatic:{status:'ready',snapshot},structuredClone,dirty:false,opening:false,language:'en',catalogs:{en:{}},
+ data:{settings:{revision:1,rooms:{a:{enabled:true,purposes:['sleeping'],roles:{main_lights:['load'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}}}},inventory:{revision:'a'},issues:[]},
+ $:id=>id==='plan'?button:box,t:v=>v,el:(_,v)=>v,api:async(_,body)=>{received=body;return {plan:{}};},sessionStorage:{setItem(){}},location:{href:''}};
+ runInNewContext(code,context);await context.openPlan();assert.deepEqual(received.snapshot,snapshot);assert.notEqual(received.snapshot,snapshot);assert.equal(received.snapshot.segments.length,3);
+ context.automatic={status:'unavailable',error:'calendar_missing'};assert.ok(context.planProblems().includes('calendar_missing'));
+ context.calendarLoading=false;context.dateValues={candles:'manual',sunrise:'manual',end:'manual'};context.manualCalendar=true;context.renderCalendar=()=>{};context.renderDates=()=>{};context.manualZone='Europe/London';
+ runInNewContext(source.slice(source.indexOf('async function refreshCalendar('),source.indexOf('function renderDates(')),context);
+ context.api=async()=>({status:'ready',snapshot});await context.refreshCalendar();assert.deepEqual(context.dateValues,{candles:'manual',sunrise:'manual',end:'manual'});assert.equal(context.manualZone,'Europe/London');
+ context.manualCalendar=false;context.setManualCalendar(true);assert.equal(context.dateValues.end,snapshot.segments[0].end);assert.equal(context.observance,snapshot.observance);
+ const html=fs.readFileSync(new URL('../src/shabbat_flow/web/household.html',import.meta.url),'utf8');assert.ok(html.includes('<div id="dates" hidden>'));assert.ok(html.includes('<details id="calendar-advanced">'));
 });

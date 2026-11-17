@@ -17,7 +17,7 @@ Use the installed HA registries as the live inventory, without a manual import. 
 
 ## Nonfunctional requirements
 - SYNC-NFR-001: Admin/auth guards on read/write APIs; bounded JSON inputs; no tokens, unique hardware identifiers, arbitrary entity attributes or histories in inventory responses. No household data, screenshots or exports in repository examples/tests.
-- SYNC-NFR-002: Writes confined to ShabbatFlow storage. No device/service calls, registry mutations, recorder changes or existing-automation changes. Poll only while setup is visible; no server polling scheduler. Limit configuration to 20 enabled planning areas and 100 mapped loads to stay within compiler bounds, with explicit errors rather than truncation.
+- SYNC-NFR-002: Writes confined to ShabbatFlow storage. No device-control calls, registry mutations, recorder changes or existing-automation changes. Poll only while setup is visible; no server polling scheduler. Limit configuration to 20 enabled planning areas and 100 mapped loads to stay within compiler bounds, with explicit errors rather than truncation.
 - SYNC-NFR-003: Deterministic configuration and workspace generation from inventory/settings/calendar snapshots; stable load identity and fail-closed validation for unsafe or unsupported HVAC capabilities. Unknown capability values are not guessed.
 - SYNC-NFR-004: Test registry rename/move/delete/add, inherited area, unavailable state, persistence/reload, stale writes, admin/body bounds, shared-load deduplication, locale parity and personalized compilation with synthetic fixtures. Verify against HA 2026.8.2 and 2026.11.2.
 - SYNC-NFR-005: Version static asset URLs as a complete asset tree so HA/browser caching cannot mix releases. Upgrade with recoverable copy of the prior integration, restart and normal config-entry reload; verify installed UI, calendar and sample preview without controlling devices.
@@ -25,4 +25,4 @@ Use the installed HA registries as the live inventory, without a manual import. 
 - SYNC-NFR-006: Planner feedback is localized, keyboard-focusable and announced through a live region. Test invalid inputs, server failure, storage failure and successful navigation without device calls.
 
 ## Deferred
-Invented planning areas independent of HA areas, automatic future multi-day calendar acquisition, automation import/replacement, shared weekly-plan storage, family non-admin access, activation/execution, feedback storage and MCP remain separate features. Inventory sync is bounded polling while the page is open, not a claim of push-based instantaneous updates.
+Invented planning areas independent of HA areas, automatic future multi-day calendar acquisition (now implemented by feature 008), automation import/replacement, shared weekly-plan storage, family non-admin access, activation/execution, feedback storage and MCP remain separate features. Inventory sync is bounded polling while the page is open, not a claim of push-based instantaneous updates.
