@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "loads": {
+    "room_a_wall": {
+      "en": "Room A wall light",
+      "he": "תאורת קיר בחדר א׳"
+    },
+    "room_b_wall": {
+      "en": "Room B wall light",
+      "he": "תאורת קיר בחדר ב׳"
+    },
+    "room_a_hvac": {
+      "en": "Room A HVAC",
+      "he": "מיזוג בחדר א׳"
+    },
+    "room_b_hvac": {
+      "en": "Room B HVAC",
+      "he": "מיזוג בחדר ב׳"
+    },
+    "shared_bath": {
+      "en": "Shared bathroom",
+      "he": "חדר רחצה משותף"
+    },
+    "entry": {
+      "en": "Entry light",
+      "he": "תאורת כניסה"
+    },
+    "nightlights": {
+      "en": "Hall nightlights",
+      "he": "תאורת לילה במסדרון"
+    },
+    "hall": {
+      "en": "Bedroom hallway",
+      "he": "מסדרון חדרי שינה"
+    },
+    "living_spots": {
+      "en": "Living room spots",
+      "he": "ספוטים בסלון"
+    },
+    "dining": {
+      "en": "Dining lights",
+      "he": "תאורת פינת אוכל"
+    },
+    "background": {
+      "en": "Living background lights",
+      "he": "תאורת רקע בסלון"
+    },
+    "kitchen_spots": {
+      "en": "Kitchen spots",
+      "he": "ספוטים במטבח"
+    },
+    "island": {
+      "en": "Kitchen island",
+      "he": "תאורת אי במטבח"
+    },
+    "shared_hvac": {
+      "en": "Shared-space HVAC",
+      "he": "מיזוג בחלל המשותף"
+    },
+    "room_a_spots": {
+      "en": "Room A spots",
+      "he": "ספוטים בחדר א׳"
+    },
+    "room_b_spots": {
+      "en": "Room B spots",
+      "he": "ספוטים בחדר ב׳"
+    }
+  },
+  "rooms": {
+    "room_a": {
+      "label": {
+        "en": "Room A",
+        "he": "חדר א׳"
+      },
+      "wall": "room_a_wall",
+      "climate": "room_a_hvac",
+      "sleep_lights": [
+        "room_a_spots"
+      ]
+    },
+    "room_b": {
+      "label": {
+        "en": "Room B",
+        "he": "חדר ב׳"
+      },
+      "wall": "room_b_wall",
+      "climate": "room_b_hvac",
+      "sleep_lights": [
+        "room_b_spots"
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "rooms": [
+        "room_a",
+        "room_b"
+      ],
+      "loads": [
+        "room_a_wall",
+        "room_b_wall",
+        "shared_bath"
+      ]
+    }
+  ],
+  "roles": {
+    "entry": [
+      "entry"
+    ],
+    "nightlights": [
+      "nightlights"
+    ],
+    "bedroom_hall": [
+      "hall"
+    ],
+    "living_spots": [
+      "living_spots"
+    ],
+    "dining": [
+      "dining"
+    ],
+    "background": [
+      "background"
+    ],
+    "kitchen_spots": [
+      "kitchen_spots"
+    ],
+    "island": [
+      "island"
+    ],
+    "shared_hvac": [
+      "shared_hvac"
+    ]
+  }
+}

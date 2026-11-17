@@ -1,0 +1,30 @@
+# Product requirements and roadmap
+
+All stages inherit English/Hebrew and RTL parity, offline planning, privacy and explicit activation requirements. This is a general product, not a copy of one household's records.
+
+## R1: local preview (current feature 001)
+Fictional configurable rooms/resources, meal choices, independent climate/lighting offsets and homeowner-selected bedroom sleep-light cutoff, shared dependencies, explicit dated candle-lighting/sunrise/end inputs, multilingual timeline, validation, browser-local drafts and JSON export. No HA access or execution.
+
+## R2: Home Assistant discovery and preview integration
+Before hardening the integration, implement continuous multi-day planning from `specs/003-multiday-observance/spec.md`, alongside homeowner-defined schedule groups as specified in `specs/002-extensible-schedule-groups/spec.md`. Lighting and HVAC become presets over a generic schedule model. Include track-only groups and references to existing scenes/scripts; specialized appliance/cycle/elevator capabilities must be explicitly supported and approved, never inferred from on/off availability.
+Read areas/entities and automation definitions using supported APIs; owner-confirm physical load/alias mappings. Guided setup in both languages; reference existing scenes/scripts and flag conflicting ownership. Build a native dashboard card and authenticated backend, with revision-aware household plans and administrator activation permissions. Calendar adapter snapshots verified local zmanim. HA and Good Days compatibility/version matrices are required.
+
+## R3: controlled execution
+Approve/freeze before earliest preparation event; policies for late edits and missing plans. Persist event outcomes, deduplicate actions, use absolute instants, bound retries, reconcile permitted current states after restart without replaying stale events. Separate per-bedroom temperatures, fan modes, pre-conditioning and wake/off rules from shared-space HVAC and lighting. Test recovery, rollback and offline operation before a weekday pilot and shadow Shabbat.
+
+Existing boiler automations stay available. Owner-approved keep/suspend/activate windows snapshot prior enabled states and restore only what the planner changed, with intervening owner changes respected. Suspension is not a boiler-off command and may not stop an already running automation. Existing outdoor nightly 23:00 catch-all has one owner; one-night extension delays off, expires after the night and must not race the original rule.
+
+## R4: profiles and observance expansion
+Model sleeping and recreation as separate time-bounded room uses; allow both for the same room. Early/Standard/Late sleeping profiles adjust HVAC preparation, sleep lighting and wake/off independently without storing age or identity. HVAC includes heating and cooling with explicit supported mode/temperature selections. See feature 002 for the model; feature 001's room selector means sleeping only.
+Morning/lunch/nap profiles; seasonal and late-friends fixed-time overrides; entry night scene; selective night-scene suppression; per-room sleep/wake controls. Handle consecutive Shabbat/Yom Tov days without intermediate false shutdowns. Local observance settings and end-boundary conventions are explicit. Special high-attendance prayer-service profiles are separate from residential defaults. No religious-policy inference.
+
+## R5: feedback and historical analysis (phase-two capability)
+Post-observance multilingual feedback: actual rooms/meals, comfort by room/time, pre-conditioning, HVAC-off/wake, lighting changes, bathrooms/access, mornings, outdoor extension, interventions, what worked and one-time versus recurring requests. Compare versioned planned actions, actual observations and feedback. Codex proposes evidence-backed changes; owners approve new versions.
+
+Read-only history import reports retention and coverage first. Deterministic snapshot-based metrics: transitions, duration, first/last use, censored intervals, sustained versus brief task lighting, co-activation, overlap and lead/lag. Deduplicate synchronized entities before correlation. Preserve missing/unavailable periods and context-attribution uncertainty; missing user ID never proves physical switching. Assisted-operation context is optional and not a religious-identity field. Correlation proposes groups/windows, never infers household identity or occupancy. Show sample size, evidence and uncertainty; identical inputs/settings produce identical results. Annual events are not ordinary-weekend training data.
+
+## R6: reusable onboarding
+Validated configuration import/export, synthetic example homes, optional sanitized inventory export and AI configuration-assistance prompt. Generated proposals use the same schema/compiler and remain drafts. Automatic conversion of arbitrary existing automations and optional messaging channels are deferred.
+
+## Decisions still open
+Production executor reuse; license choice before public release; supported HA versions; precise default freeze policy; temperature limits; all household defaults; late-time versus relative-time precedence; lifecycle for manual overrides; role permissions; retention policy. No unknown value is silently promoted to an approved default.

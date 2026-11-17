@@ -1,0 +1,23 @@
+# Private household inputs must live outside this repository.
+.env
+.env.*
+!.env.example
+private/
+local/
+data/
+*.db
+*.sqlite*
+*.log
+*.pem
+*.key
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+node_modules/
+test-results/
+.DS_Store
+.codex/
+
+# Local Spec Kit session metadata (includes instance identifiers).
+.spec-context.json
