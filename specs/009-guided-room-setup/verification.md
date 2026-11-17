@@ -42,3 +42,6 @@ Required commands: Python unit suite, Node web suite, repository hygiene, genera
 - An initial deferred restart was declined because another core job was running. A normal restart after startup completed succeeded; the corrected migration was then visibly verified.
 - GitHub CI passed for implementation commit `f1bfc18` (run `44165028408`); implementation merged to main as `bc297ae`. Final verification recorded in this documentation checkpoint.
 - Final archive SHA-256: `c940b3a3eafa6d606d5890aff15570063dcc841ba688bd13ff5e91055efba422`.
+
+## Pending schedule badge follow-up
+WIZ-FR-014 / US5 is newly specified and not covered by the 0.4.0 completion evidence above. Add regression coverage for mixed planned On/Off/HVAC badges, semantic classes, localized text, contrast and mobile/RTL appearance. Confirm presentation changes leave schedule events and digest unchanged.

@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Implemented in preview 0.4.0; verification recorded separately.
+**Status:** Core wizard implemented in preview 0.4.0. Schedule badge follow-up (WIZ-FR-014) specified; implementation pending.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -59,6 +59,19 @@ The final summary lists ready rooms, their purposes, lights, HVAC intent, bathro
 | WIZ-FR-012 | Preserve existing saved household mappings through a versioned, tested migration. Existing valid configurations retain their semantics; do not reinterpret legacy shared-area use windows as whole-observance demand. Invalid references remain visible for review. |
 | WIZ-FR-013 | Preserve the settings-revision and structural-inventory checks from 007. Inventory updates cannot erase unsaved wizard edits; another browser's save produces a recoverable conflict rather than lost updates. |
 
+### US5 — Scan planned On and Off actions (P1, follow-up)
+The final schedule preview must make On and Off actions immediately distinguishable rather than render all actions as green badges.
+
+1. Given a preview containing both binary On and Off events, each event has its own action badge. On and Off use distinct semantic color treatments consistently across devices and days; they never share the same green treatment.
+2. Every badge also has explicit localized action text (English/Hebrew). The action remains understandable without color, in RTL, and at mobile size. Badge text must have at least 4.5:1 contrast against its background.
+3. HVAC Off uses the Off treatment. Heating and cooling retain explicit mode labels and cannot be mistaken for Off. An informational/tracked action or warning must not acquire an On badge merely because the row renders successfully.
+4. Styling follows the planned action, not the device's current HA state or the validity of the plan. Badges do not imply that an action has executed.
+5. Verification uses mixed On/Off and HVAC events in the same preview, checks distinct semantic classes and readable labels, and visually checks both languages at desktop and mobile widths. Schedule events, timings and digest remain unchanged by styling.
+
+| Follow-up ID | Functional requirement |
+| --- | --- |
+| WIZ-FR-014 | The final schedule preview shall render separate, visibly distinct color-coded badges for planned On and Off actions on each event, with consistent semantic colors and explicit localized text. Cover binary switches/lights and HVAC Off versus active heating/cooling, preserve non-color readability and contrast, and do not conflate action state with validation or execution status. Acceptance: US5. |
+
 ## Nonfunctional requirements
 
 | ID | Requirement and verification target |
@@ -82,3 +95,7 @@ The final summary lists ready rooms, their purposes, lights, HVAC intent, bathro
 - The home-wide bathroom option requires compiler support for explicit home intervals; storing a flag without integrating it into preview is insufficient.
 - Recent-use ranking is a subsequent enhancement, not a prerequisite for this wizard. It requires a bounded history contract, coverage/confidence labels and an unknown-history fallback. Area-scoped candidates and current HVAC snapshots are the initial simplifications.
 - Recorder pattern analysis, automatic inferred mappings, automatic activation, family non-admin access and chat/MCP remain separate roadmap items. No new external dependency or third-party design is adopted.
+
+
+## Setup feedback to consider separately
+The homeowner may need to correct HA area associations for HVAC devices. An optional homeowner-selected HA label for bathroom-light candidates could make bathroom selection easier. This is a follow-up design candidate, not a mandatory label dependency or an implemented label filter: preserve explicit area/device selection as a fallback and never infer room-to-bathroom relationships merely from a light's label. No household registry or label changes are authorized by this specification update.
