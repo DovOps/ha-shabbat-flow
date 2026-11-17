@@ -1,6 +1,6 @@
 # Verification plan and traceability
 
-Status: implementation and automated/local browser verification completed for preview 0.4.0. Deployment verification is recorded below.
+Status: implementation, automated/local browser checks and installed verification completed through preview 0.5.1. Version-specific evidence is recorded below.
 
 | Scenario / evidence to add | Requirements |
 | --- | --- |
@@ -55,3 +55,10 @@ WIZ-FR-014 / US5 was not part of the 0.4.0 completion evidence above. Its implem
 - Local browser with fictional fixtures: selected and saved power-only for an off unit with missing fan/target metadata, reloaded to verify persistence, and rendered mixed power-only/profile/lighting events. Hebrew mobile preview at 360px had no page-level horizontal overflow; On/Off badges are visually distinct. Power-only notes are concise per event with a single preview-level verification notice.
 - Package and repository hygiene checks passed. Full static tree versioned as 0.5.1. Archive SHA-256: `7a9b4983603a3c4105d05d507dbb8eed193ab2a77c48170d8594e583ed1d0314`.
 - Bathroom-label candidate filtering remains a separate optional design proposal; it was not promoted to an approved functional requirement in this increment.
+
+### Installed 0.5.1 checkpoint
+- Uploaded the archive, verified its SHA-256 and extracted bytes, and retained recoverable copies of the previous integration and its settings inside HA. A normal restart completed after waiting for the preceding startup; the live app served the versioned 0.5.1 static tree.
+- Verified the three HVAC intents in the installed editor and power-only summaries with independent lead time. Existing unscheduled selections retained that intent. No household mappings were changed for verification.
+- Compiled the installed fictional demo and visually verified green On, dark slate Off and blue explicit cooling badges across lighting and HVAC events. Returned the open app to house setup. Screenshots remain outside the repository.
+- GitHub CI passed for implementation commit `cdedc18` (run `44173629881`). Implementation merged to main as `98f691b`.
+- Device restoration remains unverified: this release compiles preview intentions only and makes no device-control calls. Existing dated workspaces remain snapshots; changed room setup requires a new workspace.
