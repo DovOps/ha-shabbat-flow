@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current checkpoint: local preview prototype.** No HA connection, device control, production integration installation or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current checkpoint: local preview prototypes (v1 and v2).** No HA connection, device control, production integration installation or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
 
 ## Try the preview
 
@@ -19,7 +19,9 @@ PYTHONPATH=src python3 -m shabbat_flow.server
 
 Open **http://127.0.0.1:8765**. Select rooms and meals, adjust independent HVAC/lighting timings, switch English/עברית, and preview the schedule. Save/load/delete a draft explicitly in your browser. Exporting downloads your inputs and computed preview; keep any real configuration private. The server does not store submissions. Stop with Ctrl+C.
 
-Calendar inputs are deliberately illustrative. This preview covers a single ordinary Friday/Saturday and is not a full operational schedule. Temperature settings, per-room HVAC-off, naps, live HA calendar data, multi-day holidays, outdoor extensions and boiler automation management remain future work. It cannot activate a plan.
+The new **[multi-day preview](http://127.0.0.1:8765/v2)** adds separate sleeping/recreation windows, configurable sleep profiles, per-day meals, availability windows, explicit heating/cooling, shared-load conflict checks and a combined timeline. It uses separate v2 draft storage. Adding/removing days requires supplying the corresponding dated anchors and adjusting period coverage. The default view uses day tabs, room tiles and meal choices, with a reviewed copy-previous-day action. Optional bedroom timing sliders keep HVAC and lights independent. Calendar, interval/group editors and JSON are under Advanced setup. Browser visual/interaction verification of v2 is pending.
+
+Calendar inputs are deliberately illustrative. The original v1 preview covers a single ordinary Friday/Saturday and is not a full operational schedule. The v1 compiler is unchanged. V2 accepts supplied multi-day periods and explicit HVAC settings but still has no live HA calendar data, production execution, automatic v1 migration, feedback storage or boiler automation management. It cannot activate a plan.
 
 ## Requirements and development
 
@@ -30,6 +32,9 @@ Calendar inputs are deliberately illustrative. This preview covers a single ordi
 - [Spec Kit workflow and provenance](docs/spec-kit.md)
 - [Extensible groups and room uses](specs/002-extensible-schedule-groups/spec.md) (planned)
 - [Multi-day observance planning](specs/003-multiday-observance/spec.md) (planned)
+- [Feedback and improvement loop](specs/004-feedback-loop/spec.md) (planned)
+- [Optional MCP/chat interface](specs/005-chat-interface/spec.md) (planned)
+- [Next implementation plan](specs/002-extensible-schedule-groups/plan.md)
 - [Product roadmap](docs/roadmap.md)
 
 ```sh

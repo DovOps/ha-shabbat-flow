@@ -7,6 +7,6 @@
 - No Home Assistant device calls, production installation or automation modifications without a separately reviewed authorization. Preview code has no execution adapter.
 - English and Hebrew are first-class. Translate every user-facing string and validate RTL and keyboard behavior. Stable machine codes remain language-independent.
 - Do not infer occupancy, identity or religious affiliation from device use.
-- Do not commit or push until the user reviews the checkpoint and requests it. When later committing, use the configured GitHub alias/noreply identity; never substitute a personal email.
+- Commit or push only within the user’s authorization. When the user authorizes ongoing checkpoint commits, do not request confirmation for each routine commit. A commit authorization alone does not authorize a push. When later committing, use the configured GitHub alias/noreply identity; never substitute a personal email.
 - Run `PYTHONPATH=src python3 -m unittest discover -s tests -v`, `node --test tests/web.test.mjs`, and `python3 scripts/check_repository.py` before proposing a checkpoint.
 - Document actual verification and remaining limitations; do not mark HA deployment or future roadmap features complete.

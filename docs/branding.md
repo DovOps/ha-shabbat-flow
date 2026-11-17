@@ -8,4 +8,4 @@ Generated with the built-in image-generation tool. The image-edit prompt and ori
 
 The local preview header serves this exact approved asset at `/logo.png`, with responsive sizing and a ShabbatFlow accessible name. No third-party logo or remote image fetch is used.
 
-Approved dashboard tagline: “A peaceful Shabbat starts with a plan.” Hebrew: “שבת שלווה מתחילה בתכנון.” The existing logo image remains unchanged; its embedded earlier tagline has not been regenerated.
+Approved dashboard tagline: “A peaceful Shabbat starts with a plan.” Hebrew: “שבת שלווה מתחילה בתכנון.” The current logo now uses the approved tagline. Its wordmark reads SHAbbatFlow, with HA emphasized in turquoise; the original candle/ribbon composition is retained.

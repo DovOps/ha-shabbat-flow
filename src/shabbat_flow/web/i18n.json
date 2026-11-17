@@ -88,7 +88,8 @@
     "rule_living_morning": "Morning shared-space lighting",
     "rule_lunch_lights": "Lunch at home",
     "bedroom_lights": "Bedroom sleep lights off",
-    "rule_bedroom_lights_off": "Sleep cutoff for homeowner-selected room lights"
+    "rule_bedroom_lights_off": "Sleep cutoff for homeowner-selected room lights",
+    "v2_preview_link": "Try the multi-day and room-use preview"
   },
   "he": {
     "title": "ShabbatFlow",
@@ -179,6 +180,7 @@
     "rule_living_morning": "תאורת בוקר בחלל המשותף",
     "rule_lunch_lights": "סעודת צהריים בבית",
     "bedroom_lights": "כיבוי תאורה בחדרים לשינה",
-    "rule_bedroom_lights_off": "כיבוי לקראת שינה של התאורה שנבחרה לחדר"
+    "rule_bedroom_lights_off": "כיבוי לקראת שינה של התאורה שנבחרה לחדר",
+    "v2_preview_link": "ניסיון בתצוגה הרב־יומית ובשימושי חדרים"
   }
 }

@@ -1,6 +1,6 @@
 # Feature specification: continuous Shabbat and Yom Tov planning
 
-Status: requirements draft; not implemented in the single-Shabbat preview.
+Status: supplied multi-day calendar/selection compilation is implemented in the opt-in v2 local preview. Live providers, freeze/execution policy, copy-day and migration remain planned; the original v1 preview remains single-Shabbat.
 
 ## User scenarios
 A household plans the whole upcoming observance before it starts, whether one day, two days, or three consecutive days. Each evening/day has its own meals, sleeping/recreation uses, lighting and HVAC profiles. Copying a day is an explicit convenience; it does not silently assume identical plans.
@@ -41,4 +41,4 @@ A versioned period contains `period_id`, timezone, observance settings, start/en
 ## Implementation sequence and review points
 First settle the provider contract and inspect available future coverage read-only. Then implement a versioned period schema and compiler fixtures, followed by the dated multi-day dashboard, migration and full-period validation. Add execution/status reconciliation only in the separately reviewed executor phase. Confirm provider(s), subsequent-evening conventions, freeze timing and mismatch/outage behavior before production activation.
 
-The current compiler deliberately still rejects multi-day input. This specification promotes multi-day planning to the integration foundation rather than promising it in today’s preview.
+The v1 compiler deliberately still rejects multi-day input; the new v2 compiler accepts supplied multi-day snapshots. This specification promotes multi-day planning to the integration foundation rather than promising it in today’s preview.

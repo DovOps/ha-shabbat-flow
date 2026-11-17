@@ -19,12 +19,17 @@ Model sleeping and recreation as separate time-bounded room uses; allow both for
 Morning/lunch/nap profiles; seasonal and late-friends fixed-time overrides; entry night scene; selective night-scene suppression; per-room sleep/wake controls. Handle consecutive Shabbat/Yom Tov days without intermediate false shutdowns. Local observance settings and end-boundary conventions are explicit. Special high-attendance prayer-service profiles are separate from residential defaults. No religious-policy inference.
 
 ## R5: feedback and historical analysis (phase-two capability)
+
+Detailed requirements: `specs/004-feedback-loop/spec.md`. Start with optional 1–5 ratings and manual planned-versus-reported review tied to immutable plan revisions; add observed-history comparisons and trends when coverage is available. Proposals modify future drafts only after owner acceptance.
 Post-observance multilingual feedback: actual rooms/meals, comfort by room/time, pre-conditioning, HVAC-off/wake, lighting changes, bathrooms/access, mornings, outdoor extension, interventions, what worked and one-time versus recurring requests. Compare versioned planned actions, actual observations and feedback. Codex proposes evidence-backed changes; owners approve new versions.
 
 Read-only history import reports retention and coverage first. Deterministic snapshot-based metrics: transitions, duration, first/last use, censored intervals, sustained versus brief task lighting, co-activation, overlap and lead/lag. Deduplicate synchronized entities before correlation. Preserve missing/unavailable periods and context-attribution uncertainty; missing user ID never proves physical switching. Assisted-operation context is optional and not a religious-identity field. Correlation proposes groups/windows, never infers household identity or occupancy. Show sample size, evidence and uncertainty; identical inputs/settings produce identical results. Annual events are not ordinary-weekend training data.
 
 ## R6: reusable onboarding
 Validated configuration import/export, synthetic example homes, optional sanitized inventory export and AI configuration-assistance prompt. Generated proposals use the same schema/compiler and remain drafts. Automatic conversion of arbitrary existing automations and optional messaging channels are deferred.
+
+## R7: optional MCP/chat interface
+See `specs/005-chat-interface/spec.md`. Offer plan inspection, future-draft editing, feedback and proposal review through the same application services as the dashboard. Evaluate HA-native MCP exposure first; no dependency is selected. Initial scope excludes activation and direct device control.
 
 ## Decisions still open
 Production executor reuse; license choice before public release; supported HA versions; precise default freeze policy; temperature limits; all household defaults; late-time versus relative-time precedence; lifecycle for manual overrides; role permissions; retention policy. No unknown value is silently promoted to an approved default.
