@@ -33,3 +33,12 @@ Required commands: Python unit suite, Node web suite, repository hygiene, genera
 - Legacy selected rooms with no mapped devices migrate to unfinished. Existing configured rooms retain their original shared use-window policy. Migration is persisted only on an explicit settings save.
 - No real mappings were written for browser verification. Browser persistence flows used fictional local fixtures; HA persistence was verified in isolated integration tests.
 - The UI renders only the active room's detailed controls; a dedicated performance benchmark at the maximum supported inventory size is not yet recorded.
+
+
+## Installed verification and checkpoint
+- Uploaded the built 0.4.0 archive, verified its SHA-256 and every extracted file, and kept recoverable copies of the previous integration and this integration's settings inside HA. No home data was exported into the repository.
+- Verified the versioned installed wizard after restart: existing selections are retained, unmapped legacy selections resume as unfinished, one room is displayed at a time, and English/Hebrew navigation renders correctly.
+- Verified the summary still loads the upcoming period and its dated candle-lighting, sunrise and end from the installed Jewish Calendar.
+- An initial deferred restart was declined because another core job was running. A normal restart after startup completed succeeded; the corrected migration was then visibly verified.
+- GitHub CI passed for implementation commit `f1bfc18` (run `44165028408`); implementation merged to main as `bc297ae`. Final verification recorded in this documentation checkpoint.
+- Final archive SHA-256: `c940b3a3eafa6d606d5890aff15570063dcc841ba688bd13ff5e91055efba422`.
