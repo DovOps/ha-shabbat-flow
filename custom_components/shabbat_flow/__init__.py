@@ -1,10 +1,13 @@
 """Home Assistant host for a non-executing ShabbatFlow sample."""
 import json
+from asyncio import Lock
+from homeassistant.helpers.storage import Store
+from .household import empty_settings
 from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView
 
 ROOT = Path(__file__).parent
 
@@ -18,10 +21,14 @@ def load_assets():
 
 async def async_setup_entry(hass, entry):
     data = hass.data.setdefault(DOMAIN, {})
+    if "household" not in data:
+        data["household_store"] = Store(hass, 1, DOMAIN + ".household")
+        data["household"] = await data["household_store"].async_load() or empty_settings()
+        data["household_lock"] = Lock()
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry

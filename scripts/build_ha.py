@@ -15,14 +15,16 @@ def generated():
         files['engine/'+name] = (ROOT/'src/shabbat_flow'/name).read_bytes()
     files['engine/__init__.py'] = b'"""Generated pure planner engine; edit src/shabbat_flow instead."""\n'
     web = ROOT/'src/shabbat_flow/web'
-    for name in ('period.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json'):
+    for name in ('period.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json','household.mjs','household-i18n.json'):
         files['www/'+name] = (web/name).read_bytes()
     html = (web/'period.html').read_text()
     for name in ('style.css','period.mjs','logo.png'):
         html = html.replace('"/'+name+'"', '"./'+name+'"')
     html = html.replace('href="/"', 'href="./period.html"')
     html = html.replace('<p><a href="./period.html" data-i18n="original_preview"></a></p>', '')
+    html = html.replace('<p id="status"', '<p><a href="./household.html" data-i18n="house_setup"></a></p><p id="status"')
     files['www/period.html'] = html.encode()
+    files['www/household.html'] = (web/'household.html').read_bytes()
     files['www/transport.mjs'] = (ROOT/'src/shabbat_flow/ha_transport.mjs').read_bytes()
     files['www/panel.js'] = (ROOT/'src/shabbat_flow/ha_panel.js').read_bytes()
     files['www/logo.png'] = (ROOT/'assets/logo.png').read_bytes()
@@ -51,7 +53,7 @@ def archive():
     output = ROOT/'dist'/f'shabbat-flow-{version}.zip'
     output.parent.mkdir(exist_ok=True)
     # Exact source allowlist plus generated assets: no logs/private/temp files.
-    names = set(generated()) | {'__init__.py','api.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
+    names = set(generated()) | {'__init__.py','api.py','household.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
     with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(names):
             info = zipfile.ZipInfo('custom_components/shabbat_flow/'+name, date_time=(2026,1,1,0,0,0))

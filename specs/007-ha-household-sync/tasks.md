@@ -1,0 +1,6 @@
+- [x] S001 Live registry inventory and mapping drift.
+- [x] S002 Stored settings and stale-write protection.
+- [x] S003 Multilingual household setup and live refresh.
+- [x] S004 Personalized dated planner workspace.
+- [x] S005 Compatibility and regression tests.
+- [x] S006 Versioned package, live upgrade and verification.
