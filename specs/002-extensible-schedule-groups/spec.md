@@ -1,6 +1,6 @@
 # Feature Specification: homeowner-defined schedule groups
 
-Status: Draft / next increment. Not implemented by preview feature 001.
+Status: Internal calendar/room-use validation foundation implemented; generic compiler and dashboard remain planned. Not implemented by preview feature 001. See plan.md, tasks.md and analysis.md for scope and verification.
 
 ## User scenarios
 US1: An installer adds a named group such as outdoor access or an additional appliance, selects available targets and previews its dated actions without changing the core engine.

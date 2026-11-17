@@ -30,6 +30,9 @@ Calendar inputs are deliberately illustrative. This preview covers a single ordi
 - [Spec Kit workflow and provenance](docs/spec-kit.md)
 - [Extensible groups and room uses](specs/002-extensible-schedule-groups/spec.md) (planned)
 - [Multi-day observance planning](specs/003-multiday-observance/spec.md) (planned)
+- [Feedback and improvement loop](specs/004-feedback-loop/spec.md) (planned)
+- [Optional MCP/chat interface](specs/005-chat-interface/spec.md) (planned)
+- [Next implementation plan](specs/002-extensible-schedule-groups/plan.md)
 - [Product roadmap](docs/roadmap.md)
 
 ```sh

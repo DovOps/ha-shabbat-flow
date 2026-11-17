@@ -21,3 +21,6 @@ Reference: https://contributors.home-assistant.io/core/integrations/manifest/
 Before R2, present actual providers, required fields, supported versions, install/configuration steps, missing-data behavior and alternatives. Obtain the owner's decision before incorporating provider-specific APIs, third-party UI designs, libraries or an executor. Read-only inspection does not change the production installation.
 
 Multi-day planning is specified in `specs/003-multiday-observance/spec.md`: obtain the entire continuous period and its per-day anchors before approval. A status sensor remaining on across a day boundary must not prevent the next day’s preplanned meal/profile events. No provider package is selected by this requirement.
+
+## Future optional MCP/chat adapter
+Feature 005 is an approved future requirement, not an approved package selection. Evaluate the installed HA version’s MCP/LLM API extension support, scoped permissions and network/authentication requirements before deciding between HA-native exposure and a separate thin adapter. The current loopback harness remains local and unauthenticated; it is not a remote MCP server.
