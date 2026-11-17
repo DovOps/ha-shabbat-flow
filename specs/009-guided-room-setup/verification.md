@@ -1,6 +1,6 @@
 # Verification plan and traceability
 
-Status: specification reviewed against the existing household, API, frontend and compiler code. Implementation and deployment checks below are pending; no wizard behavior is claimed as delivered.
+Status: implementation and automated/local browser verification completed for preview 0.4.0. Deployment verification is recorded below.
 
 | Scenario / evidence to add | Requirements |
 | --- | --- |
@@ -17,3 +17,19 @@ Status: specification reviewed against the existing household, API, frontend and
 | Automatic upcoming dates/manual override regression; HA version matrix; versioned package | WIZ-FR-011; WIZ-NFR-009, 010 |
 
 Required commands: Python unit suite, Node web suite, repository hygiene, generated-package check and both supported HA integration suites. Record counts and live verification only after executing them.
+
+
+## Executed checks
+- Python unit suite: 62 passed.
+- Node web suite: 23 passed, including wizard write freezing, double-submit guard, failed-save preservation and unresolved-bathroom gating.
+- HA 2026.8.2 and 2026.11.2: 41 integration tests passed on each version. Added tests cover schema migration, legacy selections without mappings, draft persistence through integration reload, unfinished-room exclusion, sanitized nonstructural HVAC telemetry, explicit home/away/unset policies, overlapping/touching/disjoint bathroom demand and whole-observance behavior for 1/2/3 days.
+- Generated package, repository hygiene and whitespace checks passed. No new external dependencies.
+- Local browser with fictional fixtures: selected a room, linked/configured a bathroom, saved the bathroom, resumed the unfinished room after reload, copied current heating/target/fan settings and reviewed the summary. English and Hebrew journeys rendered correctly. At a 360px viewport, the Hebrew summary and room editor had no page-level horizontal overflow; focus moved to the step heading after navigation.
+
+## Scope and limits
+- The installed integration remains preview-only. No device execution, automation activation or household inference.
+- Current HVAC copying requires supported compatible heat/cool, target and fan values. Unsupported metadata needs explicit adjustment or opting out. Recent-use ranking remains deferred.
+- Saved settings resume at the first unfinished selected room rather than persisting an exact viewport or cursor position. Back navigation retains in-memory edits; Save & next, Save progress and Skip persist them.
+- Legacy selected rooms with no mapped devices migrate to unfinished. Existing configured rooms retain their original shared use-window policy. Migration is persisted only on an explicit settings save.
+- No real mappings were written for browser verification. Browser persistence flows used fictional local fixtures; HA persistence was verified in isolated integration tests.
+- The UI renders only the active room's detailed controls; a dedicated performance benchmark at the maximum supported inventory size is not yet recorded.

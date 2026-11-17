@@ -49,6 +49,7 @@ function windowFields(parent,item){parent.append(field('window_start',item.start
 function groupPicker(parent,item){
   const details=node('details');details.append(node('summary',t('selected_groups')));
   for(const [id,group] of Object.entries(bundle.config.groups)){
+    if(group.activation==='home')continue;
     const label=node('label',undefined,'toggle');label.append(node('span',group.label[lang()]));
     const input=node('input');input.type='checkbox';input.checked=item.groups.includes(id);
     input.addEventListener('change',()=>{item.groups=input.checked?[...item.groups,id]:item.groups.filter(v=>v!==id);changed();});
@@ -197,8 +198,8 @@ function renderAdvanced(root){
     day.append(button('add_meal',()=>{bundle.plan.meals.push({id:nextId('meal',bundle.plan.meals),segment:segment.id,kind:'additional',choice:'unset',start:segment.start,end:segment.end,groups:[]});changed();render();}));root.append(day);
   }
   const manual=section('manual_groups');manual.append(node('p',t('manual_hint'),'hint'));
-  for(const item of bundle.plan.groups){const row=node('div',undefined,'period-item');row.append(field('period_day',item.segment,v=>item.segment=v,snapshot.segments.map(s=>[s.id,s.id])),field('group_label',item.group,v=>item.group=v,Object.entries(bundle.config.groups).map(([id,g])=>[id,g.label[lang()]])));windowFields(row,item);row.append(button('remove_item',()=>remove(bundle.plan.groups,item)));manual.append(row);}
-  manual.append(button('add_group',()=>{const group=Object.keys(bundle.config.groups)[0],segment=snapshot.segments[0];if(!group)return;bundle.plan.groups.push({id:nextId('selection',bundle.plan.groups),segment:segment.id,group,start:segment.start,end:segment.end});changed();render();}));root.append(manual);
+  for(const item of bundle.plan.groups){const row=node('div',undefined,'period-item');row.append(field('period_day',item.segment,v=>item.segment=v,snapshot.segments.map(s=>[s.id,s.id])),field('group_label',item.group,v=>item.group=v,Object.entries(bundle.config.groups).filter(([,g])=>g.activation!=='home').map(([id,g])=>[id,g.label[lang()]])));windowFields(row,item);row.append(button('remove_item',()=>remove(bundle.plan.groups,item)));manual.append(row);}
+  manual.append(button('add_group',()=>{const group=Object.keys(bundle.config.groups).find(id=>bundle.config.groups[id].activation!=='home'),segment=snapshot.segments[0];if(!group)return;bundle.plan.groups.push({id:nextId('selection',bundle.plan.groups),segment:segment.id,group,start:segment.start,end:segment.end});changed();render();}));root.append(manual);
   const advanced=node('details',undefined,'card');advanced.append(node('summary',t('advanced_config')),node('p',t('advanced_hint'),'hint'));
   const label=node('label',undefined,'field');label.append(node('span',t('advanced_config')));
   const editor=node('textarea');editor.dir='ltr';editor.rows=12;editor.maxLength=120000;editor.value=JSON.stringify(bundle.config,null,2);label.append(editor);advanced.append(label,button('apply_config',async()=>{

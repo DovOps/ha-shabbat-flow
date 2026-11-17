@@ -2,7 +2,7 @@ import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
 let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
-const defaults=()=>({enabled:false,purposes:[],roles:{main_lights:[],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
+const defaults=()=>({enabled:false,setup:{status:'draft',service:false,home:false,bathroom_timing:{}},purposes:[],roles:{main_lights:[],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 function status(key){$('status').textContent=t(key);}
 function changed(){dirty=true;status('dirty');}
@@ -15,46 +15,107 @@ function updateAvailability(){
  for(const box of document.querySelectorAll('[data-entity-id]')){const e=data.inventory.entities.find(v=>v.id===box.dataset.entityId);if(e)box.querySelector('span').textContent=`${e.name} · ${e.entity_id} · ${t(e.disabled?'disabled':e.available?'available':'unavailable')}`;}
 }
 function syncLabel(){ $('sync').textContent=offline?t('offline'):`${t('synced')}: ${new Date(data.observed_at).toLocaleTimeString(language)} · ${data.inventory.areas.length} / ${data.inventory.entities.length}`; }
+let stage='select',activeRoom=null,showAll=false,hvacOpen=false,returnToRoom=null;
+const setup=r=>r.setup??={status:r.enabled?'ready':'draft',service:!r.purposes.length,home:false,bathroom_timing:Object.fromEntries(r.shared_areas.map(a=>[a,'use_window']))};
+const selectedRooms=()=>Object.keys(draft).filter(a=>draft[a].enabled);
+function button(key,action,primary=false){const b=el('button',t(key),primary?'primary':'');b.type='button';b.disabled=saving;b.onclick=action;return b;}
+function go(next,id=null){stage=next;activeRoom=id;showAll=false;hvacOpen=false;renderRooms();const heading=$('wizard-heading');heading?.focus();heading?.scrollIntoView({block:'start'});}
+function roomName(id){return data.inventory.areas.find(a=>a.id===id)?.name??id;}
+function markDraft(id){setup(draft[id]).status='draft';for(const [other,r] of Object.entries(draft))if(r.shared_areas.includes(id)&&r.enabled)setup(r).status='draft';}
+function mutate(id,fn){fn();markDraft(id);changed();}
+async function finishRoom(skip=false){
+ if(saving)return;
+ const r=draft[activeRoom],s=setup(r);
+ if(!skip){
+  if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)return wizardError('needs_roles');
+  if(!r.purposes.length&&!s.service)return wizardError('needs_purpose');
+  if(s.service&&!r.roles.main_lights.length&&!r.roles.night_lights.length)return wizardError('needs_roles');
+  if(r.shared_areas.some(a=>!draft[a]?.enabled||setup(draft[a]).status!=='ready'))return wizardError('missing_shared');
+ }
+ if(skip)markDraft(activeRoom);else s.status='ready';changed();
+ if(!await save()){s.status='draft';renderRooms();return;}
+ if(returnToRoom){const previous=returnToRoom;returnToRoom=null;go('room',previous);return;}
+ const ids=selectedRooms(),index=ids.indexOf(activeRoom);go(index+1<ids.length?'room':'summary',ids[index+1]);
+}
+function wizardError(key){const box=$('wizard-error');box.textContent=t(key);box.focus();box.scrollIntoView({block:'nearest'});}
+function drawRole(host,aid,role){
+ const room=draft[aid],selected=room.roles[role],field=el('fieldset');field.append(el('legend',t(role)));
+ const candidates=data.inventory.entities.filter(e=>(role==='hvac'?e.domain==='climate':['light','switch'].includes(e.domain))&&(showAll||e.area_id===aid||selected.includes(e.id)));
+ if(!candidates.length)field.append(el('p',t('none_found'),'hint'));
+ for(const e of candidates){
+  const owner=Object.entries(draft).find(([a,r])=>r.enabled&&Object.entries(r.roles).some(([key,ids])=>ids.includes(e.id)&&(a!==aid||key!==role)));
+  const box=checkbox(`${e.name} · ${e.entity_id} · ${t(e.disabled?'disabled':e.available?'available':'unavailable')}`,selected.includes(e.id),v=>{mutate(aid,()=>room.roles[role]=v?[...room.roles[role],e.id]:room.roles[role].filter(x=>x!==e.id));renderRooms();});
+  box.dataset.entityId=e.id;box.querySelector('input').id='role-'+role+'-'+e.id;box.querySelector('input').disabled=!selected.includes(e.id)&&(e.disabled||!!owner);
+  field.append(box);if(owner)field.append(el('small',`${t('assigned_to')}: ${roomName(owner[0])}`,'hint'));
+ }
+ for(const id of selected.filter(id=>!data.inventory.entities.some(e=>e.id===id)))field.append(checkbox(`${t('missing_choice')} · ${id}`,true,()=>{mutate(aid,()=>room.roles[role]=room.roles[role].filter(x=>x!==id));renderRooms();}));
+ host.append(field);
+}
+function drawHvac(card,aid){
+ const room=draft[aid],h=room.hvac,entities=room.roles.hvac.map(id=>data.inventory.entities.find(e=>e.id===id)).filter(Boolean);
+ const section=el('details');section.id='wizard-hvac';section.open=hvacOpen||h.mode!=='none';section.append(el('summary',t('hvac')),el('p',t('hvac_help'),'hint'));drawRole(section,aid,'hvac');
+ const common=key=>entities.length?entities[0].capabilities[key].filter(v=>entities.every(e=>e.capabilities[key].includes(v))):[];
+ section.append(select(t('mode'),h.mode,[['none',t('none')],...common('modes').filter(v=>v!=='off').map(v=>[v,t(v)])],v=>{mutate(aid,()=>h.mode=v);renderRooms();}));
+ section.append(button('copy_current',()=>{
+  const values=entities.map(e=>e.current),v=values[0];
+  if(!entities.length||entities.some(e=>!e.available)||!v||!['heat','cool'].includes(v.mode)||!Number.isFinite(v.temperature)||!common('fan_modes').includes(v.fan_mode)||values.some(x=>!x||x.mode!==v.mode||x.temperature!==v.temperature||x.fan_mode!==v.fan_mode))return wizardError('current_unusable');
+  mutate(aid,()=>Object.assign(h,{mode:v.mode,temperature:v.temperature,fan_mode:v.fan_mode}));renderRooms();
+ }));
+ for(const e of entities)if(e.current)section.append(el('small',`${e.name}: ${t(e.current.mode??'unknown')} · ${e.current.temperature??'—'}°${e.capabilities.unit??''} · ${e.current.fan_mode??'—'} · ${new Date(e.current.observed_at).toLocaleTimeString(language)}`,'hint'));
+ if(h.mode!=='none'){
+  const temp=input(t('temperature'),h.temperature,'number',v=>mutate(aid,()=>h.temperature=v===''?null:Number(v)));const control=temp.querySelector('input');control.step='any';if(entities.length){control.min=Math.max(...entities.map(e=>e.capabilities.min_temperature));control.max=Math.min(...entities.map(e=>e.capabilities.max_temperature));}
+  section.append(temp,select(t('fan_mode'),h.fan_mode??'',[['',t('choose')],...common('fan_modes').map(v=>[v,v])],v=>mutate(aid,()=>h.fan_mode=v||null)),input(t('lead_minutes'),h.lead_minutes,'number',v=>mutate(aid,()=>h.lead_minutes=Number(v))));
+ }
+ card.append(section);
+}
 function renderRooms(){
- const root=$('rooms');root.replaceChildren();root.append(el('p',t('profile_help')),el('p',t('limits'),'hint'));
- const inv=data.inventory,known=new Set(inv.areas.map(a=>a.id));
- const areas=[...inv.areas,...Object.keys(draft).filter(id=>!known.has(id)).map(id=>({id,name:id,floor_id:null}))];
- for(const area of areas){
-  const room=draft[area.id]??=defaults();const card=el('section',undefined,'card');
-  card.append(el('h2',area.name),el('small',inv.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor'),'hint'));
-  if(!known.has(area.id))card.append(el('p',t('missing_area'),'error'));
-  card.append(checkbox(t('enabled'),room.enabled,value=>{room.enabled=value;renderRooms();}));
-  if(room.enabled){
-   for(const p of ['sleeping','recreation'])card.append(checkbox(t(p),room.purposes.includes(p),v=>{room.purposes=v?[...room.purposes,p]:room.purposes.filter(x=>x!==p);}));
-   const mappings=el('details');mappings.append(el('summary',t('assign')));
-   let showAll=false;const roleHost=el('div');
-   const drawRoles=()=>{roleHost.replaceChildren();for(const role of ['main_lights','night_lights','hvac']){
-    const fieldset=el('fieldset');fieldset.append(el('legend',t(role)));const selected=room.roles[role];
-    const candidates=inv.entities.filter(e=>(role==='hvac'?e.domain==='climate':['light','switch'].includes(e.domain))&&(showAll||e.area_id===area.id||selected.includes(e.id)));
-    if(!candidates.length&&!selected.length)fieldset.append(el('p',t('none_found'),'hint'));
-    for(const e of candidates){
-     const state=e.disabled?'disabled':e.available?'available':'unavailable';
-     const box=checkbox(`${e.name} · ${e.entity_id} · ${t(state)}`,selected.includes(e.id),v=>{room.roles[role]=v?[...room.roles[role],e.id]:room.roles[role].filter(x=>x!==e.id);drawRoles();});
-     box.dataset.entityId=e.id;box.querySelector('input').disabled=e.disabled&&!selected.includes(e.id);fieldset.append(box);
-     if(role==='hvac'&&selected.includes(e.id))fieldset.append(el('small',`${t('capabilities')}: ${JSON.stringify(e.capabilities)}`,'hint'));
-    }
-    for(const id of selected.filter(id=>!inv.entities.some(e=>e.id===id)))fieldset.append(checkbox(`${t('missing_choice')} · ${id}`,true,()=>{room.roles[role]=room.roles[role].filter(x=>x!==id);drawRoles();}));
-    roleHost.append(fieldset);
-   }};
-   const all=checkbox(t('all_entities'),false,v=>{showAll=v;drawRoles();});all.querySelector('input').onchange=event=>{showAll=event.target.checked;drawRoles();};mappings.append(all,roleHost);drawRoles();card.append(mappings);
-   const shared=el('details');shared.append(el('summary',t('shared')),el('p',t('shared_help'),'hint'));
-   for(const other of areas.filter(a=>a.id!==area.id))shared.append(checkbox(other.name,room.shared_areas.includes(other.id),v=>{room.shared_areas=v?[...room.shared_areas,other.id]:room.shared_areas.filter(x=>x!==other.id);}));card.append(shared);
-   const h=room.hvac;const climate=el('details');climate.append(el('summary',t('mode')),
-    select(t('mode'),h.mode,['none','heat','cool'].map(v=>[v,t(v)]),v=>h.mode=v),
-    input(t('temperature'),h.temperature,'number',v=>h.temperature=v===''?null:Number(v)),
-    input(t('fan_mode'),h.fan_mode,'text',v=>h.fan_mode=v||null),
-    input(t('lead_minutes'),h.lead_minutes,'number',v=>h.lead_minutes=Number(v)));card.append(climate);
+ const focused=document.activeElement?.id;hvacOpen=$('wizard-hvac')?.open??hvacOpen;
+ const root=$('rooms');root.replaceChildren();$('weekly-planning').hidden=stage!=='summary';
+ const known=new Set(data.inventory.areas.map(a=>a.id));
+ const areas=[...data.inventory.areas,...Object.keys(draft).filter(id=>!known.has(id)).map(id=>({id,name:id}))];
+ for(const [id,r] of Object.entries(draft))setup(r);
+ if(stage==='room'&&!draft[activeRoom]?.enabled){stage='select';activeRoom=null;}
+ const title=el('h2',t(stage==='select'?'select_rooms':stage==='summary'?'review_setup':'configure_room'));title.id='wizard-heading';title.tabIndex=-1;root.append(title);
+ const error=el('p',undefined,'error');error.id='wizard-error';error.tabIndex=-1;error.setAttribute('role','alert');root.append(error);
+ if(stage==='select'){
+  root.append(el('p',t('selection_help')));const grid=el('div',undefined,'room-selection');
+  for(const area of areas){const r=draft[area.id]??=defaults();const label=`${area.name} · ${data.inventory.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor')}`;grid.append(checkbox(label,r.enabled,v=>{mutate(area.id,()=>r.enabled=v);renderRooms();},'area-'+area.id));}
+  root.append(grid,button('start_setup',async()=>{if(!selectedRooms().length)return wizardError('select_one');if(await save()){const ids=selectedRooms();go('room',ids.find(id=>setup(draft[id]).status!=='ready')??ids[0]);}},true),button('review_setup',()=>go('summary')));
+ }else if(stage==='room'){
+  const aid=activeRoom,r=draft[aid],s=setup(r),ids=selectedRooms(),card=el('section',undefined,'card');
+  card.append(el('p',`${t('room_progress')} ${ids.indexOf(aid)+1} / ${ids.length}`,'hint'),el('h3',roomName(aid)),el('p',t(s.status==='ready'?'ready':'unfinished')));
+  if(!known.has(aid))card.append(el('p',t('missing_area'),'error'));
+  card.append(el('p',t('purpose_help')));
+  for(const purpose of ['sleeping','recreation'])card.append(checkbox(t(purpose),r.purposes.includes(purpose),v=>mutate(aid,()=>r.purposes=v?[...r.purposes,purpose]:r.purposes.filter(p=>p!==purpose))));
+  card.append(checkbox(t('service_area'),s.service,v=>{mutate(aid,()=>{s.service=v;if(!v)s.home=false;});renderRooms();}));
+  const advanced=el('details');advanced.append(el('summary',t('profile_details')),el('p',t('profile_help')));card.append(advanced);
+  const all=checkbox(t('all_entities'),showAll,v=>{showAll=v;renderRooms();});all.querySelector('input').onchange=e=>{showAll=e.target.checked;renderRooms();};card.append(all);
+  drawRole(card,aid,'main_lights');drawRole(card,aid,'night_lights');drawHvac(card,aid);
+  if(s.service){
+   card.append(checkbox(t('when_home'),s.home,v=>mutate(aid,()=>s.home=v)),el('p',t('home_help'),'hint'));
+   const links=Object.entries(draft).filter(([id,room])=>room.enabled&&room.shared_areas.includes(aid));card.append(el('p',`${t('linked_rooms')}: ${links.map(([id])=>roomName(id)).join(', ')||t('none_linked')}`));
+   if(r.shared_areas.length)card.append(button('remove_links',()=>{mutate(aid,()=>{r.shared_areas=[];s.bathroom_timing={};});renderRooms();}));
+  }else{
+   card.append(el('h3',t('bathroom_question')),el('p',t('bathroom_help'),'hint'));
+   const add=select(t('add_bathroom'),'', [['',t('none_later')],...areas.filter(a=>a.id!==aid&&!r.shared_areas.includes(a.id)).map(a=>[a.id,a.name])],id=>{if(!id)return;mutate(aid,()=>{r.shared_areas.push(id);s.bathroom_timing[id]='use_window';const bath=draft[id]??=defaults();bath.enabled=true;setup(bath).service=true;});renderRooms();});card.append(add);
+   for(const id of r.shared_areas){const bath=draft[id],link=el('section',undefined,'bathroom-link');link.append(el('strong',roomName(id)),el('p',t(bath?.enabled&&setup(bath).status==='ready'?'ready':'unfinished')),
+    select(t('bathroom_timing'),s.bathroom_timing[id]??'use_window',['use_window','whole_observance'].map(v=>[v,t(v)]),v=>mutate(aid,()=>s.bathroom_timing[id]=v)),
+    button('configure_bathroom',async()=>{if(await save()){returnToRoom=aid;go('room',id);}}),button('remove_link',()=>{mutate(aid,()=>{r.shared_areas=r.shared_areas.filter(a=>a!==id);delete s.bathroom_timing[id];});renderRooms();}));card.append(link);}
   }
-  root.append(card);
+  const nav=el('div',undefined,'toolbar');nav.append(button('back',()=>{const i=ids.indexOf(aid);go(i>0?'room':'select',ids[i-1]);}),button('save_next',()=>finishRoom(),true),button('skip_room',()=>finishRoom(true)),button('review_setup',()=>go('summary')));card.append(nav);root.append(card);
+ }else{
+  const ids=selectedRooms(),ready=ids.filter(id=>setup(draft[id]).status==='ready');root.append(el('p',`${ready.length} / ${ids.length} ${t('rooms_ready')}`),el('p',t('summary_help')));
+  for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),el('strong',t(s.status==='ready'?'ready':'unfinished')),el('p',[...r.purposes.map(t),...(s.service?[t('service_area')]:[])].join(' · ')));
+   for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length)card.append(el('p',`${t(role)}: ${r.roles[role].map(rid=>data.inventory.entities.find(e=>e.id===rid)?.name??rid).join(', ')}`));
+   card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
+   for(const a of r.shared_areas)card.append(el('p',`${roomName(a)} · ${t(s.bathroom_timing[a]??'use_window')}`));if(s.home)card.append(el('p',t('when_home')));
+   card.append(button('edit_room',()=>go('room',id)));root.append(card);
+  }
+  root.append(button('select_rooms',()=>go('select')));
  }
  $('issues').replaceChildren();for(const item of data.issues)$('issues').append(el('p',`${t(item.code)} · ${item.id}`,'error'));
  $('unassigned').replaceChildren();const details=el('details');details.append(el('summary',`${data.inventory.entities.filter(e=>!e.area_id).length}`));
- for(const e of inv.entities.filter(e=>!e.area_id))details.append(el('p',`${e.name} · ${e.entity_id}`));$('unassigned').append(details);
+ for(const e of data.inventory.entities.filter(e=>!e.area_id))details.append(el('p',`${e.name} · ${e.entity_id}`));$('unassigned').append(details);if(focused)$(focused)?.focus({preventScroll:true});
 }
 let automatic=null,manualCalendar=false,calendarLoading=false,manualZone=null;
 let dateValues={candles:'',sunrise:'',end:''},kind='shabbat',observance='';
@@ -109,7 +170,16 @@ async function refresh(manual=false,discard=false){
   offline=false;updateAvailability();syncLabel();
  }catch{offline=true;syncLabel();}
 }
-async function save(){if(needsReview)return status('changed');if(saving)return;saving=true;$('save').disabled=true;try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:draft});draft=structuredClone(data.settings.rooms);dirty=false;needsReview=false;render();status('saved');}catch(e){fail(e);}finally{saving=false;$('save').disabled=false;}}
+async function save(){
+ if(needsReview){status('changed');return false;}if(saving)return false;
+ saving=true;$('save').disabled=true;const payload=structuredClone(draft);
+ // Freeze controls while a write is pending so late edits cannot be lost.
+ const controls=[...document.querySelectorAll('#rooms input,#rooms select,#rooms button,#language,#refresh,#discard')];
+ const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
+ try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload});draft=structuredClone(data.settings.rooms);dirty=false;needsReview=false;status('saved');return true;}
+ catch(e){fail(e);wizardError(catalogs[language][e.message]?e.message:'error');return false;}
+ finally{saving=false;$('save').disabled=false;controls.forEach((c,i)=>c.disabled=disabled[i]);}
+}
 function planProblems(){
  const problems=[];
  if(dirty)problems.push('needs_save');
@@ -125,7 +195,7 @@ function planProblems(){
   else if(new Date(end)-new Date(candles)>36*3600000)problems.push('multi_day');
  }
  }
- const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&r.purposes.length);
+ const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&(r.setup?.status??'ready')==='ready'&&(r.purposes.length||r.setup?.home));
  if(!dirty&&!rooms.some(r=>r.roles.main_lights.length||r.roles.night_lights.length||(r.roles.hvac.length&&r.hvac.mode!=='none')||r.shared_areas.some(a=>{const shared=data.settings.rooms[a];return shared?.enabled&&(shared.roles.main_lights.length||shared.roles.night_lights.length);})))problems.push('needs_roles');
  if(data.issues.length)problems.push('invalid_mapping');
  return problems;
@@ -158,7 +228,7 @@ async function openPlan(){
 }
 async function boot(){try{
  catalogs=await (await fetch('./household-i18n.json')).json();language=navigator.language.startsWith('he')?'he':'en';
- data=await api('household');draft=structuredClone(data.settings.rooms);calendar=await api('calendar');
+ data=await api('household');draft=structuredClone(data.settings.rooms);const ids=selectedRooms();if(ids.length){activeRoom=ids.find(id=>setup(draft[id]).status!=='ready');stage=activeRoom?'room':'summary';}calendar=await api('calendar');
  try{automatic=await api('upcoming');}catch{automatic={status:'unavailable',error:'calendar_unavailable'};}
  dateValues.candles=calendar.values?.candle_lighting?.value??'';dateValues.end=calendar.values?.end?.value??'';
  const rise=calendar.values?.sunrise?.value;if(rise&&new Date(rise)>new Date(dateValues.candles)&&new Date(rise)<new Date(dateValues.end))dateValues.sunrise=rise;
