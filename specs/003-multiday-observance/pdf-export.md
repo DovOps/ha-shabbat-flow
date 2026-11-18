@@ -41,8 +41,12 @@ The user confirmed the previous PDF export worked in the local browser. Actual n
 - [x] Add a pure interval/cell model and shared preview/PDF renderer, using existing assets and no dependencies.
 - [x] Gate on a complete current preview; preserve the event list and lighting map.
 - [x] Test heating/cooling and power-only intentions, unknown initial state, pre-candle state, short mixed episodes, final partial cells, track-only exclusion, physical aliases, multi-day and DST bounds, and unchanged inputs.
-- [ ] Deploy after a noninteractive route is available or the owner confirms a screen-use window.
+- [x] Deploy during the owner-confirmed screen-use window.
+- [ ] Confirm the live chart after HA restart.
 
 Implementation uses 30-minute elapsed cells across the supplied first candle and final end, with exact within-cell splits. Eight-unit print chunks repeat the complete axis; mobile charts scroll horizontally. The shared report renderer copies the HVAC chart alongside the lighting chart. No state is inferred from real device readings or settings.
 
 Local checks: 66 Python tests and 35 web tests passed; package consistency, hygiene and whitespace checks passed. Browser/screenshot verification was intentionally not attempted because the owner requested no interruption of their desktop session. SSH configuration has no HA alias and the saved local-network host was unreachable; deployment is pending an owner-confirmed window, with 0.9.0 still installed.
+
+### 0.9.1 deployment — 2026-11-18
+The owner authorized browser deployment. Uploaded the archive and verified SHA-256 `1da4d0afbc6c28f5c6d09f09fe0681088e17d64365ef6c95dd43469dd4c14b8e`, package scope, manifest, Python syntax and all 33 extracted file contents. Backed up the previous integration and household Store inside HA; stored settings remained byte-for-byte unchanged. Requested one HA restart. The owner then asked to stop screen sharing, so browser interaction ended before startup/live chart verification. No device commands, household-setting changes or automation edits were performed. Main CI run `44291377107` passed.
