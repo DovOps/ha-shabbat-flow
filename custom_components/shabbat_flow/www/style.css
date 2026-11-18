@@ -75,3 +75,9 @@ input[type=datetime-local]{font:inherit;width:100%;min-width:0;max-width:100%;pa
  #print-report .map-label{font-size:8pt}
  #print-report .map-ticks{font-size:6pt}
 }
+
+.hvac-cells{display:flex;gap:2px;direction:ltr;height:16px;min-width:0}
+.hvac-cell{display:block;flex-basis:0;min-width:0;border:1px solid #91a4ad}
+.hvac-cell.hvac-unknown{background:repeating-linear-gradient(135deg,#fff,#fff 2px,#9aabb3 2px,#9aabb3 3px)!important}
+.hvac-cells:focus-visible{outline:3px solid #008fbf;outline-offset:2px}
+@media print{#print-report .hvac-cells{gap:.4mm;height:3mm}#print-report .hvac-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}}

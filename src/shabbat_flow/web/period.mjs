@@ -1,3 +1,4 @@
+import {renderHvacMap} from './hvac-map.mjs';
 import {renderLightingMap} from './lighting-map.mjs';
 import {renderPrintReport} from './period-report.mjs';
 import {request as fetch} from './transport.mjs';
@@ -215,6 +216,7 @@ function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
   for(const warning of result.warnings??[]){const text=node('p',t(warning.code),'hint');text.append(node('bdi',' · '+(bundle.config.groups[warning.group]?.label[lang()]??warning.group)));root.append(text);}
+  root.append(renderHvacMap({bundle,result,node,t,lang}));
   root.append(renderLightingMap({bundle,result,node,t,lang}));
   root.append(node('p',`${t('event_count')}: ${result.events.length}`));
   if(result.events.some(e=>e.action.type==='hvac_power'))root.append(node('p',t('power_support_notice'),'hint'));

@@ -142,7 +142,11 @@
     "map_role_hvac": "HVAC",
     "map_on": "On",
     "map_off": "Off",
-    "map_unknown": "Unknown"
+    "map_unknown": "Unknown",
+    "hvac_map_title": "HVAC — the whole observance",
+    "hvac_map_help": "One row per scheduled unit, from first candle lighting to the final observance end. Each cell is 30 minutes: teal = planned On, pale = Off, gray/hatched = Unknown. Split cells preserve exact changeovers. Initial state is unknown unless a prior planned command establishes it. This chart shows intentions, not live operation.",
+    "hvac_map_empty": "No HVAC control events in this preview.",
+    "hvac_map_unit": "HVAC unit"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -287,6 +291,10 @@
     "map_role_hvac": "מיזוג וחימום",
     "map_on": "פועל",
     "map_off": "כבוי",
-    "map_unknown": "לא ידוע"
+    "map_unknown": "לא ידוע",
+    "hvac_map_title": "מיזוג וחימום — כל תקופת השבת והחג",
+    "hvac_map_help": "שורה לכל יחידה מתוזמנת, מהדלקת הנרות הראשונה ועד סיום השבת או החג. כל משבצת היא 30 דקות: טורקיז = הפעלה מתוכננת, בהיר = כיבוי, אפור/מפוספס = לא ידוע. משבצות מפוצלות שומרות על זמני המעבר המדויקים. המצב ההתחלתי אינו ידוע אלא אם פקודה מתוכננת קודמת קובעת אותו. התרשים מציג כוונות ולא פעולה בפועל.",
+    "hvac_map_empty": "אין אירועי מיזוג וחימום מתוזמנים בתצוגה זו.",
+    "hvac_map_unit": "יחידת מיזוג וחימום"
   }
 }

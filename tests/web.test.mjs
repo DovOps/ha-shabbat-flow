@@ -357,3 +357,22 @@ test('lighting map carries planned state, preserves unknown and plots DST days',
  const fall=lightingMap(make('2027-11-07T00:00:00-04:00','2027-11-08T00:00:00-05:00'),{complete:true,events:[]});assert.equal((fall[0].end-fall[0].start)/3600000,25);
  assert.deepEqual(lightingMap(bundle,{complete:false}),[]);
 });
+
+test('HVAC whole-period cells preserve partial episodes, state carryover and physical identity',async()=>{
+ const {hvacMap}=await import('../src/shabbat_flow/web/hvac-map.mjs');
+ const bundle={config:{loads:{a:{physical_id:'unit',kind:'hvac'},alias:{physical_id:'unit',kind:'hvac'},power:{physical_id:'power',kind:'hvac_power'},light:{physical_id:'light',kind:'binary'}}},plan:{snapshot:{segments:[{candle_lighting:'2027-01-08T16:00:00+02:00'}],end:'2027-01-09T17:10:00+02:00'}}};
+ const events=[{physical_id:'unit',local:'2027-01-08T15:50:00+02:00',action:{type:'hvac',mode:'heat'}},{physical_id:'unit',local:'2027-01-08T16:07:00+02:00',action:{type:'hvac',mode:'off'}},{physical_id:'unit',local:'2027-01-08T16:11:00+02:00',action:{type:'hvac',mode:'cool'}},{physical_id:'unit',local:'2027-01-08T17:00:00+02:00',intent:'track_only',action:{type:'hvac',mode:'off'}},{physical_id:'power',local:'2027-01-08T17:05:00+02:00',action:{type:'hvac_power',state:'on'}},{physical_id:'power',local:'2027-01-09T17:10:00+02:00',action:{type:'hvac_power',state:'off'}}];
+ const input=JSON.stringify({bundle,events}),map=hvacMap(bundle,{complete:true,events});
+ assert.equal(map.lanes.length,2);assert.equal(map.lanes[0].cells.length,51);assert.equal(map.lanes[0].cells.at(-1).end-map.lanes[0].cells.at(-1).start,600000);
+ assert.deepEqual(map.lanes[0].cells[0].parts.map(v=>v.state),['on','off','on']);assert.equal(map.lanes[0].cells[0].parts[1].end-map.lanes[0].cells[0].parts[1].start,240000);
+ assert.equal(map.lanes[0].intervals.at(-1).state,'on');assert.equal(map.lanes[1].intervals[0].state,'unknown');assert.equal(map.lanes[1].intervals.at(-1).end,map.end);
+ assert.equal(JSON.stringify({bundle,events}),input);assert.equal(hvacMap(bundle,{complete:false}),null);
+});
+
+test('HVAC chart uses actual multi-day and DST elapsed bounds, not fixed 25 hours',async()=>{
+ const {hvacMap}=await import('../src/shabbat_flow/web/hvac-map.mjs');
+ for(const [start,end,hours] of [['2027-03-13T18:00:00-05:00','2027-03-14T19:00:00-04:00',24],['2027-11-06T18:00:00-04:00','2027-11-07T19:00:00-05:00',26],['2027-01-07T16:00:00+02:00','2027-01-10T17:00:00+02:00',73]]){
+  const bundle={config:{loads:{unit:{kind:'hvac_power',physical_id:'unit'}}},plan:{snapshot:{segments:[{candle_lighting:start}],end}}};
+  const map=hvacMap(bundle,{complete:true,events:[{physical_id:'unit',local:start,action:{type:'hvac_power',state:'on'}}]});assert.equal((map.end-map.start)/3600000,hours);assert.equal(map.lanes[0].cells.length,hours*2);
+ }
+});
