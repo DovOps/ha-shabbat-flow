@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Preview 0.7.1 installed and verified, including explicit room/save feedback.
+**Status:** Preview 0.8.0 implementation and verification in progress.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -154,3 +154,17 @@ Defaults are suggestions requiring explicit configuration, not religious guidanc
 | WIZ-FR-030 | Replace ambiguous unfinished status with distinct Ready, Draft awaiting completion, and Needs attention states. Show actionable validation reasons beside the room heading, in review cards and near Save & next. A valid draft explains that Save & next completes it; Save progress retains its draft status. |
 | WIZ-FR-031 | Inventory changes, conflicting saved revisions, connectivity failures and server save errors must remain visible near save controls. Offer a Refresh inventory action for inventory review, preserving draft selections. Failed saves must not erase the explanation when the form redraws. Never silently discard edits or automatically acknowledge a conflicting saved revision. |
 | WIZ-NFR-016 | Problems use a red, high-contrast treatment plus warning icon and text, never color alone. Announce changes accessibly and focus the explanation after blocked completion. Support English/Hebrew and RTL; test draft preservation, stale inventory recovery, validation and failed-save messaging. |
+
+## US11 — Common areas distinct from bathrooms
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-032 | Explicitly distinguish Bedroom, Bathroom, Common Area and Hallway, independently from Sleeping/Recreation purposes. Common areas can use meal lighting/HVAC, home-driven night/morning lighting and optional daylight breaks without a sleeping/recreation purpose or bathroom link. Bathroom links remain optional for non-bathroom rooms; explicit bathrooms cannot link recursively. |
+| WIZ-FR-033 | Compose daylight breaks with night/morning and meal profiles. During the configured sunrise/sunset break, suppress all selected main/night lighting demand, including meal lights, while preserving HVAC demand and sleeping shutoff commands. Outside the break restore only lighting still required. Missing/invalid sunset retains lighting with a visible warning. Apply per day, preserving union, DST and final-shutoff behavior. |
+| WIZ-FR-034 | Preserve legacy service-area semantics until explicit classification. Do not infer bathroom type from names or HA labels. On explicit Common area conversion, keep devices/meals/daylight settings; convert an existing bathroom night policy into home-driven phases only if no general phases exist, otherwise retain the configured general phases, and disable the competing legacy night policy. Explain this conversion. Common-area main lights use the main-light label, not the bathroom label. |
+| WIZ-NFR-017 | Test common-only meal/HVAC saves, classification persistence and legacy preservation, conversion without device loss, combined daylight/night/meal timelines across 1–3 days, missing sunset, HVAC independence, and English/Hebrew UI. Upgrade preserves production settings and never commands devices. |
+
+Hallway classification exposes the explicit hallway night preset (candles to sunrise −60 minutes, adjustable); no devices, meals or HVAC are selected automatically. Room type follows homeowner use, not the HA display name. Sleeping and recreation remain independent purposes.
+
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-035 | Bind Bedroom/Common Area/Bathroom area/Hallway area labels separately from entity light-role labels. Suggest types using direct HA area labels only; unique matches default newly selected empty areas. Existing configured areas require Apply suggested area type; explicit types remain fixed across refreshes. Conflicting matches require explicit choice. Common Area labels do not imply recreation or sleeping. Preserve the original five-label request format and saved mappings when adding the two new area bindings. |

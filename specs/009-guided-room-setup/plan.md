@@ -27,3 +27,6 @@ Use optional validated room phase settings and generated home-driven windows for
 
 ## Explicit completion feedback
 Share pure room validation between proactive status rendering and completion. Render persistent feedback at the room heading and save controls without replacing focused form fields during polling. Keep remote save errors separate from local draft validation. No new dependencies or changes to scheduling semantics.
+
+## Common areas and composable daylight policy
+Add optional explicit area_type to schema-2 setup; absent values retain legacy behavior. Separate area classification from purposes and reusable lighting policy. General phases own night transitions when enabled; daylight masks clip lighting rules across home/meal/recreation demands, never HVAC or one-shot sleeping Off rules. Keep backend compatibility and require explicit user conversion of legacy common/service areas. No new dependencies.

@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.7.1/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.8.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -634,3 +634,62 @@ async def test_evening_meal_starts_background_without_recreation_selection(host)
     result=compile_schedule(b['config'],p);assert result['complete'] and not result['warnings']
     night=[(e['local'],e['action']['state']) for e in result['events'] if e['physical_id']==internal_id('load_',shared.id)]
     assert night==[(dinner['end'],'on'),('2027-01-08T05:00:00+02:00','off')]
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('days',[1,2,3])
+@pytest.mark.parametrize('sunset_present',[True,False])
+async def test_common_meals_night_and_daylight_compose_without_bathroom(host,days,sunset_present):
+    from custom_components.shabbat_flow.household import room_phases, bathroom_policy
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;area,unused,light,night=fixtures(hass)
+    climate=er.async_get(hass).async_get_or_create('climate','test','common-unit');hass.states.async_set(climate.entity_id,'off')
+    inv=inventory(hass);r=wizard_room(room(lights=[light.id]),service=True)
+    r['roles'].update(night_lights=[night.id],hvac=[climate.id]);r['hvac'].update(mode='preserve',lead_minutes=30)
+    r['setup'].update(area_type='common',phases={**room_phases(r),'night':'home','evening_main':True,'morning':True,'night_end':120,'evening_meal':True,'daytime_meal':True},lighting={**bathroom_policy(r),'mode':'daylight'})
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['segments']=snap['segments'][:days];snap['end']=snap['segments'][-1]['end']
+    if sunset_present:
+        for seg in snap['segments']:seg['sunset']=seg['sunrise'][:10]+'T16:30:00+02:00'
+    before=deepcopy(r)
+    saved={**empty_settings(),'rooms':{area.id:r},'bindings':validate_settings({area.id:r},inv)}
+    b=workspace(saved,inv,snap);assert r==before and not r['purposes'] and not r['shared_areas']
+    b['plan']['availability'][0]['state']='home'
+    for m in b['plan']['meals']:m['choice']='family'
+    result=compile_schedule(b['config'],b['plan']);assert result['complete']
+    events=lambda rid:[e for e in result['events'] if e['physical_id']==internal_id('load_',rid)]
+    assert len(events(climate.id))==days*4
+    assert any(e['action']['state']=='on' for e in events(night.id))
+    for seg in snap['segments']:
+        day=seg['sunrise'][:10]
+        main=[(e['local'],e['action']['state']) for e in events(light.id)]
+        if sunset_present:
+            assert (day+'T09:00:00+02:00','off') in main
+            assert (day+'T14:30:00+02:00','on') in main
+            assert not any(day+'T09:00:00+02:00'<e['local']<day+'T14:30:00+02:00' and e['action']['state']=='on' for e in events(light.id))
+        else:assert not (day+'T09:00:00+02:00','off') in main
+    assert bool(result['warnings']) != sunset_present
+    assert not any(e['local']==snap['end'] and e['action'].get('state')=='off' for e in result['events'])
+
+@pytest.mark.asyncio
+async def test_area_types_persist_and_legacy_not_inferred(host):
+    from custom_components.shabbat_flow.household import migrate_settings, room_phases
+    hass,_=host;area,bath,light,shared=fixtures(hass);view=HouseholdView(hass)
+    r=wizard_room(room(lights=[light.id]),service=True);r['setup']['phases']={**room_phases(r),'daytime_meal':True}
+    legacy={**empty_settings(),'schema_version':2,'rooms':{area.id:r}}
+    assert 'area_type' not in migrate_settings(legacy)['rooms'][area.id]['setup']
+    r['setup']['area_type']='common'
+    payload={'revision':0,'inventory_revision':inventory(hass)['revision'],'rooms':{area.id:r}}
+    result=decoded(await view.post(Request(json.dumps(payload).encode())))
+    assert result['settings']['rooms'][area.id]['setup']['area_type']=='common'
+    assert not result['settings']['rooms'][area.id]['purposes']
+    r['setup']['area_type']='hallway';payload['revision']=1
+    assert (await view.post(Request(json.dumps(payload).encode()))).status==200
+
+@pytest.mark.asyncio
+async def test_area_label_bindings_survive_legacy_clients(host):
+    from custom_components.shabbat_flow.household import empty_label_filters, validate_label_filters
+    hass,_=host
+    bath=lr.async_get(hass).async_create('Bathroom areas');hall=lr.async_get(hass).async_create('Hallway areas')
+    inv=inventory(hass);filters={**empty_label_filters(),'bathroom_area':bath.label_id,'hallway_area':hall.label_id}
+    old={k:v for k,v in filters.items() if k not in ('bathroom_area','hallway_area')}
+    assert validate_label_filters(old,inv,filters)==filters
+    assert validate_label_filters(filters,inv,empty_label_filters())==filters

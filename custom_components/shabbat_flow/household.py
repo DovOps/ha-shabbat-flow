@@ -100,12 +100,12 @@ def migrate_settings(saved):
             if any(not ready(result['rooms'].get(a, {})) for a in room['shared_areas']):
                 room['setup']['status'] = 'draft'
         result['schema_version'] = 2
-    result.setdefault('label_filters', empty_label_filters())
+    result['label_filters'] = {**empty_label_filters(), **result.get('label_filters', {})}
     result.setdefault('post_shutoff', False)
     return result
 
 
-LABEL_ROLES = ('bathroom', 'main_lights', 'night_lights', 'bedroom', 'common_area')
+LABEL_ROLES = ('bathroom', 'main_lights', 'night_lights', 'bedroom', 'common_area', 'bathroom_area', 'hallway_area')
 
 
 def empty_label_filters():
@@ -113,7 +113,8 @@ def empty_label_filters():
 
 
 def validate_label_filters(value, inv, previous):
-    require(type(value) is dict and set(value) == set(LABEL_ROLES), 'invalid_mapping')
+    require(type(value) is dict and set(value) in (set(LABEL_ROLES), set(LABEL_ROLES) - {'bathroom_area', 'hallway_area'}), 'invalid_mapping')
+    value = {**empty_label_filters(), **previous, **value}
     known = {label['id'] for label in inv.get('labels', [])}
     for role, label_id in value.items():
         require(label_id is None or isinstance(label_id, str) and 0 < len(label_id) <= 100
@@ -160,7 +161,9 @@ def validate_settings(rooms, inv):
         require(set(room) == {'enabled', 'purposes', 'roles', 'shared_areas', 'hvac'} | ({'setup'} if 'setup' in room else set()))
         setup = room.get('setup')
         if setup is not None:
-            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()))
+            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()) | ({'area_type'} if 'area_type' in setup else set()))
+            require(setup.get('area_type', 'legacy') in ('legacy', 'room', 'common', 'bathroom', 'hallway'))
+            require('area_type' not in setup or setup['area_type'] == 'legacy' or setup['service'] == (setup['area_type'] != 'room'))
             phase = room_phases(room)
             require(type(phase) is dict and set(phase) == {'night', 'night_start', 'night_end', 'morning', 'morning_start', 'evening_main', 'evening_meal', 'daytime_meal'})
             require(phase['night'] in ('none', 'after_use', 'home'))
@@ -193,8 +196,8 @@ def validate_settings(rooms, inv):
                 phase = room_phases(room)
                 require(phase['night'] == 'none' or bool(room['roles']['night_lights']), 'phase_needs_lights')
                 require(not (phase['morning'] or phase['evening_main']) or bool(room['roles']['main_lights']), 'phase_needs_lights')
-                require(phase['night'] != 'after_use' or 'recreation' in room['purposes'], 'phase_needs_recreation')
-                require(not ((phase['night'] != 'none' or phase['morning']) and (bathroom_policy(room)['mode'] != 'always' or bathroom_policy(room)['night_enabled'])), 'phase_bathroom_conflict')
+                require(phase['night'] != 'after_use' or 'recreation' in room['purposes'] or phase['evening_meal'], 'phase_needs_recreation')
+                require(not ((phase['night'] != 'none' or phase['morning']) and bathroom_policy(room)['night_enabled']), 'phase_bathroom_conflict')
                 require(not bathroom_policy(room)['night_enabled'] or bool(room['roles']['main_lights'] and room['roles']['night_lights']), 'bathroom_night_needs_lights')
                 require(hvac['mode'] != 'profile', 'hvac_profile_required')
                 require(hvac['mode'] == 'none' or bool(room['roles']['hvac']), 'needs_hvac_device')
@@ -203,9 +206,9 @@ def validate_settings(rooms, inv):
                 if setup:
                     require(bool(room['purposes']) or setup['service'], 'needs_purpose')
                     require(bool(room['roles']['main_lights'] or room['roles']['night_lights'] or room['shared_areas']) or bool(room['roles']['hvac'] and hvac['mode'] != 'none'), 'needs_roles')
-                    require(not setup['service'] or bool(room['roles']['main_lights'] or room['roles']['night_lights']), 'needs_roles')
+                    require(not is_bathroom(room) or bool(room['roles']['main_lights'] or room['roles']['night_lights']), 'needs_roles')
                     require(not setup['home'] or setup['service'], 'invalid_mapping')
-                    require(not setup['service'] or not room['shared_areas'], 'invalid_mapping')
+                    require(not is_bathroom(room) or not room['shared_areas'], 'invalid_mapping')
                     require(all(not rooms[a]['shared_areas'] for a in room['shared_areas']), 'invalid_mapping')
                     require(all(rooms[a]['roles']['main_lights'] or rooms[a]['roles']['night_lights'] for a in room['shared_areas']), 'missing_shared')
         for role, ids in room['roles'].items():
@@ -233,6 +236,11 @@ def room_phases(room):
     return room.get('setup', {}).get('phases', {'night': 'after_use' if 'recreation' in room.get('purposes', []) and room.get('roles', {}).get('night_lights') else 'none',
         'night_start': 360, 'night_end': -60, 'morning': False, 'morning_start': 120,
         'evening_main': False, 'evening_meal': False, 'daytime_meal': False})
+
+
+def is_bathroom(room):
+    setup = room.get('setup', {})
+    return setup.get('area_type', 'legacy') == 'bathroom' or (setup.get('area_type', 'legacy') == 'legacy' and setup.get('service', False))
 
 
 def bathroom_policy(room):
@@ -400,6 +408,28 @@ def workspace(settings, inv, snapshot):
                         'end':{'anchor':'sunrise','offset_minutes':phase['night_end']},'action':{'type':'state','state':'on'},
                         'release':{'type':'state','state':'off'},'skip_empty':True})
                 if rules: config['groups'][internal_id('meal_',aid+kind)]={'label':label(areas[aid]['name']), 'track_only':False,'rules':rules}
+    # Daylight is an independent lighting mask, never an HVAC override.
+    for aid, room in rooms.items():
+        if bathroom_policy(room)['mode'] != 'daylight': continue
+        daylight_room = deepcopy(room)
+        daylight_room['setup']['lighting'] = {**bathroom_policy(room), 'night_enabled': False}
+        allowed, notices = bathroom_windows(daylight_room, calendar)
+        light_ids = {internal_id('load_', rid) for role in ('main_lights', 'night_lights') for rid in room['roles'][role]}
+        for group in config['groups'].values():
+            for rule in group['rules']:
+                if rule['action'] != {'type': 'state', 'state': 'on'} or not light_ids.intersection(rule['targets']): continue
+                require(set(rule['targets']) <= light_ids, 'invalid_mapping')
+                windows = allowed['main_lights']
+                if 'active_windows' in rule:
+                    intersections = []
+                    for a in rule['active_windows']:
+                        for b in windows:
+                            start = max(datetime.fromisoformat(a['start']), datetime.fromisoformat(b['start']))
+                            end = min(datetime.fromisoformat(a['end']), datetime.fromisoformat(b['end']))
+                            if start < end: intersections.append({'start': start.isoformat(), 'end': end.isoformat()})
+                    windows = intersections
+                rule['active_windows'] = windows
+                rule['warnings'] = sorted(set(rule.get('warnings', []) + notices))
     # Explicit zero-target groups are valid, but compiler requires at least one mapped load.
     require(bool(config['loads']) and (bool(config['groups'])), 'invalid_mapping')
     validate_configuration(config)
