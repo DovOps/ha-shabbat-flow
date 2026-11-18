@@ -14,6 +14,23 @@ class ScheduleTests(unittest.TestCase):
         self.bundle = json.loads((ROOT / 'examples/period-preview.json').read_text())
         self.config, self.plan = self.bundle['config'], self.bundle['plan']
 
+    def test_allowed_windows_clip_union_and_empty(self):
+        group=self.config['groups']['room_a_sleep_standard']
+        rule=group['rules'][0]
+        rule['active_windows']=[{'start':'2027-01-07T23:00:00+02:00','end':'2027-01-08T05:00:00+02:00'}]
+        before=copy.deepcopy(self.bundle)
+        result=self.compile()
+        target=rule['targets'][0];physical=self.config['loads'][target]['physical_id']
+        events=[e for e in result['events'] if e['physical_id']==physical and any(r['group']=='room_a_sleep_standard' for r in e['reasons'])]
+        assert any(e['local']=='2027-01-07T23:00:00+02:00' for e in events)
+        assert any(e['local']=='2027-01-08T05:00:00+02:00' for e in events)
+        self.assertEqual(self.bundle,before)
+        rule['active_windows']=[]
+        result=self.compile()
+        assert not any(any(r['group']=='room_a_sleep_standard' and r['rule']==rule['id'] for r in e['reasons']) for e in result['events'])
+        rule['active_windows']=[{'start':'2027-01-08T05:00:00+02:00','end':'2027-01-07T23:00:00+02:00'}]
+        self.fails('invalid_sequence')
+
     def compile(self):
         return compile_schedule(self.config, self.plan)
 

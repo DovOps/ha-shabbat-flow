@@ -117,5 +117,14 @@ async def test_real_provider_event_contract():
                 results.append([{'summary':e.summary,'start':e.start} for e in events])
             snapshot=assemble(results[1],results[0],'Europe/London',diaspora,start)
             assert len(snapshot['segments'])==count
+            assert all('sunset' in segment for segment in snapshot['segments'])
             if month==9:assert [s['kind'] for s in snapshot['segments']]==['shabbat','yom_tov']
             if count==3:assert [s['kind'] for s in snapshot['segments']]==['yom_tov','yom_tov','shabbat']
+
+@pytest.mark.parametrize('fault',[None,'missing','duplicate','invalid'])
+def test_optional_sunset(fault):
+    y,d,now=fixtures()
+    if fault!='missing':d.append(event('Shkia','2027-01-08T16:30:00+00:00' if fault!='invalid' else 'invalid'))
+    if fault=='duplicate':d.append(d[-1])
+    snap=assemble(y,d,'Europe/London',False,now)
+    assert ('sunset' in snap['segments'][0])==(fault is None)

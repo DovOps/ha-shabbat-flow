@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Label-guided setup implemented and verified in installed preview 0.6.0; evidence recorded separately.
+**Status:** Bathroom policies and full night/morning/meal changeovers implemented and locally verified in packaged preview 0.7.0. Installed verification remains at 0.6.0; evidence recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -125,3 +125,25 @@ Before choosing rooms, homeowners may map existing HA labels to Bathroom lights,
 | WIZ-NFR-013 | Test label-free migration, entity/device matching, area-only labels, deleted/renamed labels, overlapping label roles, selected exceptions, disabled/unassigned entities, stale writes, persistence and unchanged compilation. Use registry snapshots without per-entity requests. Verify EN/HE and mobile layout. |
 
 Acceptance: creating or changing labels in HA refreshes candidate filters without changing selections; choosing labels and saving survives reload; clearing mappings restores area-only choices. No new external dependency, device execution or HA registry mutation is introduced.
+
+## US8 — Bathroom daylight and night-light policies
+Bathroom demand (explicit links/home availability) is separate from how its main and night lights run. No sunlight or occupancy is inferred from device activity.
+
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-022 | Offer Always on and Daylight break per shared/bathroom area. New setups default Always on; new bathroom links default whole-observance demand. Preserve existing saved link timing and legacy lighting behavior unless explicitly changed. Always on means throughout the applicable demand, not when the house/linked rooms are unused. |
+| WIZ-FR-023 | Daylight break defaults to sunrise +180 minutes through sunset −120 minutes, configurable from 0–360 minutes each. Apply each local day of a 1–3-day observance, clipped to demand and period boundaries. Turn both main and night lighting off during the break and restore the appropriate lighting afterwards. |
+| WIZ-FR-024 | Optionally switch main lights to separately selected night/background lights at candle lighting +360 minutes (configurable 0–720), returning main lights at sunrise +0 minutes (configurable 0–180). Require both light sets to enable this policy. Daylight break and night switchover are independent. Invalid night windows keep both sets on; no guessed substitute timing. |
+| WIZ-FR-025 | Read optional dated sunset from Jewish Calendar daily Shkia events. Preserve snapshots without sunset. Missing, ambiguous or invalid sunset disables the affected day's daylight break, retaining lighting and showing a localized preview warning. Invalid daylight intervals also retain lighting with a warning. Candle lighting remains the evening anchor; sunset is only the daylight-return anchor. |
+| WIZ-NFR-014 | Union bathroom lighting demands after policy clipping so one room cannot prematurely switch off another room's bathroom. Test shared/home overlap, disjoint windows, empty windows, old configurations, 1/2/3-day periods, DST-aware timestamps, missing sunset, offsets and night-light switchover. Preserve deterministic preview, EN/HE, no actuators and snapshot immutability. |
+
+Defaults are suggestions requiring explicit configuration, not religious guidance. A bathroom without adequate daylight should retain Always on. Night switching applies only when explicitly enabled. Existing main/night device selections alone do not enable it.
+
+## US9 — Complete evening, morning and meal changeovers
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-026 | Provide reusable background, kitchen and hallway night presets plus explicit custom/no-phase choices. Background lights start when a recreation use ends and default to off at sunrise −60 minutes. Kitchen night mode defaults to candle lighting +360 minutes, island/night lights until sunrise +120 minutes, then main lights while home. Hallway mode defaults to night lights from candle lighting until sunrise −60 minutes. No room names or device names are hard-coded. |
+| WIZ-FR-027 | Expose independent night-start candle offset, night-end sunrise offset, morning-main sunrise offset and evening-main enablement. Home-driven phases follow explicit availability; recreation-end phases follow explicit used-room choices. Invalid/empty phase intervals emit no reversed events and show a preview warning. New workspaces default recreation rooms with mapped background lights to recreation-end background switching; existing exported snapshots remain unchanged. |
+| WIZ-FR-028 | Allow each room to opt into evening and/or daytime meal lighting/HVAC. Populate meal target groups in new plans; only Family/Hosting meals activate them. Evening meals also trigger the room's recreation-end background lighting at meal end when enabled; lunch does not trigger night lighting. Use main lighting and selected HVAC intent with its independent preconditioning lead. Away/No meal do not activate these groups. Show linked rooms in the simple meal UI. Overlapping home, recreation and meal demands union without premature off. |
+| WIZ-FR-029 | Provide a global Post-observance shutoff option, default false for new workspaces. With false, omit release/off commands at the final observance boundary while retaining internal night/morning/daylight transitions. With true, emit normal boundary releases. This is an end-policy choice, not an instruction to disable existing HA automations. |
+| WIZ-NFR-015 | Test main-to-night-to-morning timelines, separate HVAC timing, meal Family/Hosting versus Away/No meal, shared demand union, empty intervals, multi-day/DST behavior and final-boundary policy. No household data from user exports enters fixtures or repository docs. No live device execution or external-automation ownership is implied. |

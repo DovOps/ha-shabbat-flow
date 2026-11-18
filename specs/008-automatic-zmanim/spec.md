@@ -19,3 +19,6 @@ Approved scope: read Jewish Calendar automatically, move manual dates into Advan
 
 ## Limits
 Only the next period is automatically selected. Custom date selection, multiple-location provider selection, automatic activation, family access and future non-Jewish-Calendar adapters are separate work. An observance already underway is skipped, avoiding a new plan whose first actions have passed.
+
+## Optional bathroom daylight anchor
+- CAL-FR-007: Supply optional dated `sunset` per segment from the existing Jewish Calendar daily Shkia event. Require a unique valid aware timestamp after sunrise on the same local date. Missing/duplicate/malformed optional sunset must not invalidate otherwise complete candle/sunrise/end coverage; omit it and let bathroom daylight policy retain lighting with a preview warning. Test actual provider events on both supported HA versions. No sunset substitution for candle lighting.

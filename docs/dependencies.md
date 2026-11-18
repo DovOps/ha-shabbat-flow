@@ -39,3 +39,5 @@ Feature 009 reuses the existing HA registry/state reads and Store. Current HVAC 
 Feature 009 power-only follow-up reads HA's `ClimateEntityFeature.TURN_ON/TURN_OFF` state flags as diagnostics. Inspection of the installed test runtime's HA 2026.8.2 `components/climate/__init__.py` confirms that the base `async_turn_on` can choose a mode. Flags therefore do not establish resume semantics. Typed `hvac_power` preview actions contain only on/off state; any future executor must verify a provider-specific adapter. No executor or extra dependency is introduced.
 
 Feature 009 label filtering reads HA's built-in label registry and direct area/device/entity memberships. No external dependency, registry writes or third-party design is introduced.
+
+Preview 0.7.0 reuses the accepted Jewish Calendar daily event feed for optional Shkia/sunset timestamps. Actual provider event generation is tested on both supported HA versions. No astronomical calculator, new external library, actuator or third-party design is added.

@@ -41,10 +41,19 @@ def assemble(yearly, daily, zone_name, diaspora, now):
             morning = candle.date() + timedelta(days=1)
             matches = [r for r in rises if r.date() == morning]
             require(len(matches) == 1, 'calendar_incomplete')
+            sunsets = []
+            for event in daily:
+                if event.get('summary') == 'Shkia':
+                    try:
+                        value = instant(event['start']).astimezone(zone)
+                        if value.date() == morning and value > matches[0]: sunsets.append(value)
+                    except (ValueError, TypeError, KeyError, PlanError):
+                        pass
             boundary = group[i+1] if i+1 < days else end
             segments.append({'id': f'day_{i+1}', 'kind': 'shabbat' if morning.weekday() == 5 else 'yom_tov',
                              'start': candle.isoformat(), 'end': boundary.isoformat(),
                              'candle_lighting': candle.isoformat(), 'sunrise': matches[0].isoformat()})
+            if len(sunsets) == 1: segments[-1]['sunset'] = sunsets[0].isoformat()
         snapshot = {'schema_version': 2, 'period_id': 'observance_' + first.strftime('%Y%m%d'),
                     'timezone': zone_name, 'observance': 'diaspora' if diaspora else 'israel',
                     'source': {'id': 'jewish_calendar', 'version': 'calendar_events_v1'},

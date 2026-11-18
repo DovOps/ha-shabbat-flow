@@ -22,3 +22,10 @@ Labels are optional. ShabbatFlow uses your chosen labels to narrow setup choices
 If no labels match, use the Show all controls or check entity/device labels and area assignments in HA. Disabled entities remain unavailable for new selection. A switch label is only a selection aid: review whether the switch actually controls the intended light.
 
 See [Home Assistant labels](https://www.home-assistant.io/docs/organizing/labels/) and [areas](https://www.home-assistant.io/docs/organizing/areas/).
+
+## Complete lighting changes
+- Keep main and night/background lights in distinct roles. For a kitchen, main can be spots and night can be island lights. For a dining area, night can be background lights. Presets never infer these devices from names.
+- Use the background preset for the end of recreation use; use kitchen or hallway presets for home-driven evening/morning behavior. Review offsets each season. Meal options link selected rooms' main lights and HVAC to Family/Hosting meals.
+- Bathrooms with natural light may use Daylight break; others should retain Always on. Independently enable bathroom night switching only when both main and night lights are mapped. These settings repeat each dated day of the supplied holiday.
+- Post-observance shutoff is unchecked by default. The preview ends without issuing a final off command. Existing automations are unaffected; inspect potential overlap before any future execution.
+- Save setup, then create a new dated workspace. Older exports retain their original group rules, meal targets and end behavior.

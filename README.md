@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current checkpoint: installable HA preview sample 0.6.0 plus local prototypes.** [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current checkpoint: installable HA preview sample 0.7.0 plus local prototypes.** [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
 
 ## Try the preview
 
@@ -56,3 +56,5 @@ All UI strings belong in catalogs; add language metadata and tests when adding l
 The project license is pending owner selection before public release. No blanket open-source license is asserted yet. Vendored official Spec Kit scaffolding retains its [upstream license](docs/vendor/spec-kit-LICENSE). The logo was generated for this project using an image-generation tool. Research references do not imply affiliation with their authors or with Home Assistant.
 
 Optional HA label filters simplify room setup; see [Setup tips](docs/setup-tips.md).
+
+Preview 0.7.0 adds bathroom daylight/night policies, room night/morning presets, meal lighting/HVAC groups, and optional final-observance shutoff (off by default). Existing workspace exports remain snapshots; create a new workspace after changing house setup.

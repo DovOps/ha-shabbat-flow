@@ -63,7 +63,8 @@ def validate_time(value):
 
 
 def validate_configuration(config):
-    keys(config, {'schema_version', 'rooms', 'loads', 'groups', 'profiles'})
+    keys(config, {'schema_version', 'rooms', 'loads', 'groups', 'profiles'} | ({'post_shutoff'} if 'post_shutoff' in config else set()))
+    if 'post_shutoff' in config: require(type(config['post_shutoff']) is bool)
     require(type(config['schema_version']) is int and config['schema_version'] == 2)
     for field in ('rooms', 'loads', 'groups', 'profiles'):
         catalog(config[field])
@@ -96,7 +97,8 @@ def validate_configuration(config):
         prior = physical.setdefault(load['physical_id'], identity)
         require(prior == identity, 'invalid_mapping')
     for group in config['groups'].values():
-        keys(group, {'label', 'track_only', 'rules'} | ({'activation'} if 'activation' in group else set()))
+        keys(group, {'label', 'track_only', 'rules'} | ({'activation'} if 'activation' in group else set()) | ({'include_preparation'} if 'include_preparation' in group else set()))
+        if 'include_preparation' in group: require(type(group['include_preparation']) is bool and group.get('activation') == 'home')
         if 'activation' in group:
             choice(group['activation'], ('home',))
         labels(group['label'])
@@ -104,7 +106,17 @@ def validate_configuration(config):
         bounded_list(group['rules'], 50)
         seen = set()
         for rule in group['rules']:
-            keys(rule, {'id', 'targets', 'start', 'end', 'action', 'release'})
+            keys(rule, {'id', 'targets', 'start', 'end', 'action', 'release'} | ({'active_windows'} if 'active_windows' in rule else set()) | ({'warnings'} if 'warnings' in rule else set()) | ({'skip_empty'} if 'skip_empty' in rule else set()))
+            if 'skip_empty' in rule: require(type(rule['skip_empty']) is bool)
+            if 'active_windows' in rule:
+                require(rule['end'] is not None)
+                bounded_list(rule['active_windows'], 20)
+                for window in rule['active_windows']:
+                    keys(window, {'start', 'end'})
+                    require(all(type(window[k]) is str and len(window[k]) <= 40 for k in ('start', 'end')))
+            if 'warnings' in rule:
+                bounded_list(rule['warnings'], 2)
+                for warning in rule['warnings']: choice(warning, ('bathroom_daylight_fallback', 'bathroom_night_fallback', 'phase_empty'))
             identifier(rule['id'])
             require(rule['id'] not in seen, 'invalid_mapping'); seen.add(rule['id'])
             references(rule['targets'], config['loads'])
@@ -238,7 +250,8 @@ def compile_schedule(config, plan):
             if state != 'home':
                 continue
             for sid, seg in calendar['segments'].items():
-                a, b = max(start, seg['start']), min(end, seg['end'])
+                boundary = calendar['preparation_start'] if group.get('include_preparation') and seg['start'] == calendar['start'] else seg['start']
+                a, b = max(start, boundary), min(end, seg['end'])
                 if a < b:
                     selections.append({'id': 'home_' + str(index), 'kind': 'group', 'segment': sid,
                                        'group': gid, 'use_start': a, 'use_end': b})
@@ -261,15 +274,15 @@ def compile_schedule(config, plan):
     for meal in clean_plan['meals']:
         meal['groups'].sort()
     result = {'preview_only': True, 'complete': not issues, 'issues': issues,
-              'digest': digest({'compiler': 'generic-v2.3', 'config': clean_config, 'plan': clean_plan}),
-              'events': []}
+              'digest': digest({'compiler': 'generic-v2.4', 'config': clean_config, 'plan': clean_plan}),
+              'events': [], 'warnings': []}
     if issues:
         result['issues'] = sorted(issues, key=canonical)
         return result
     demands, tracked = defaultdict(list), []
     count = 0
 
-    def resolve(time, selection):
+    def resolve(time, selection, clamp=False):
         if 'at' in time:
             instant = parse_instant(time['at'], calendar['zone'])
         else:
@@ -280,27 +293,44 @@ def compile_schedule(config, plan):
                 raise PlanError('invalid_time') from None
         if time.get('not_before') == 'preparation_start':
             instant = max(instant, calendar['preparation_start'])
+        if clamp: instant = max(calendar['preparation_start'], min(instant, calendar['end']))
         require(calendar['preparation_start'] <= instant <= calendar['end'], 'invalid_sequence')
         return instant
 
     for selected in sorted(selections, key=lambda v: (v['kind'], v['id'], v['segment'], v['group'])):
         group = config['groups'][selected['group']]
         for rule in group['rules']:
-            start = resolve(rule['start'], selected)
-            end = resolve(rule['end'], selected) if rule['end'] is not None else None
+            start = resolve(rule['start'], selected, rule.get('skip_empty', False))
+            end = resolve(rule['end'], selected, rule.get('skip_empty', False)) if rule['end'] is not None else None
+            if rule.get('skip_empty') and end is not None and start >= end:
+                entry = {'code': 'phase_empty', 'group': selected['group']}
+                if entry not in result['warnings']: result['warnings'].append(entry)
+                continue
             require(start < calendar['end'] and (end is None or start < end), 'invalid_sequence')
             reason = {k: selected[k] for k in ('id', 'kind', 'segment', 'group')}
             reason['rule'] = rule['id']
-            for target in rule['targets']:
-                count += 1
-                require(count <= MAX_EXPANDED)
-                physical = config['loads'][target]['physical_id']
-                demand = {'start': start, 'end': end, 'action': rule['action'],
-                          'release': rule['release'], 'reason': reason}
-                if group['track_only']:
-                    tracked.append((physical, demand))
-                else:
-                    demands[physical].append(demand)
+            for warning in rule.get('warnings', []):
+                entry = {'code': warning, 'group': selected['group']}
+                if entry not in result['warnings']: result['warnings'].append(entry)
+            windows = [(start, end)]
+            if 'active_windows' in rule:
+                windows = []
+                for window in rule['active_windows']:
+                    a, b = (parse_instant(window[k], calendar['zone']) for k in ('start', 'end'))
+                    require(calendar['preparation_start'] <= a < b <= calendar['end'], 'invalid_sequence')
+                    left, right = max(start, a), min(end, b)
+                    if left < right: windows.append((left, right))
+            for left, right in windows:
+                for target in rule['targets']:
+                    count += 1
+                    require(count <= MAX_EXPANDED)
+                    physical = config['loads'][target]['physical_id']
+                    demand = {'start': left, 'end': right, 'action': rule['action'],
+                              'release': rule['release'], 'reason': reason}
+                    if group['track_only']:
+                        tracked.append((physical, demand))
+                    else:
+                        demands[physical].append(demand)
 
     def event(physical, when, action, reasons, intent):
         reasons = sorted({canonical(v): v for v in reasons}.values(), key=canonical)
@@ -316,11 +346,11 @@ def compile_schedule(config, plan):
         for when in times:
             active = [v for v in items if v['end'] is not None and v['start'] <= when < v['end']]
             points = [v for v in items if v['end'] is None and v['start'] == when]
-            ending = [v for v in items if v['end'] == when]
+            ending = [v for v in items if v['end'] == when and (when != calendar['end'] or config.get('post_shutoff', True))]
             wanted = [(v['action'], v['reason']) for v in active + points]
             if not wanted:
                 wanted = [(v['release'], v['reason']) for v in ending]
-            require(bool(wanted))
+            if not wanted: continue
             actions = {canonical(action) for action, _ in wanted}
             require(len(actions) == 1, 'event_conflict')
             action = wanted[0][0]
@@ -335,7 +365,7 @@ def compile_schedule(config, plan):
                                       action, merged, 'set_state'))
     for physical, item in tracked:
         result['events'].append(event(physical, item['start'], item['action'], [item['reason']], 'track_only'))
-        if item['end'] is not None:
+        if item['end'] is not None and (item['end'] != calendar['end'] or config.get('post_shutoff', True)):
             result['events'].append(event(physical, item['end'], item['release'], [item['reason']], 'track_only'))
     result['events'] = sorted({v['id']: v for v in result['events']}.values(), key=lambda v: (v['utc'], v['physical_id'], v['id']))
     return result

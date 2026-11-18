@@ -20,3 +20,11 @@
 - [x] W014 Implement registry reads, bounded settings persistence and compatibility.
 - [x] W015 Implement optional label setup, room-purpose suggestions and lighting/bathroom filters in EN/HE.
 - [x] W016 Add setup Tips, regression tests, browser verification and package checkpoint.
+
+## Bathroom daylight and night lighting
+- [x] W017 Specify independent demand, daylight-break and night-light policies.
+- [x] W018 Implement optional sunset input, validated policies and demand-window intersection.
+- [x] W019 Implement EN/HE controls and preview fallback notices.
+- [x] W020 Verify regression/compatibility and package the checkpoint.
+- [x] W021 Implement night/morning presets, explicit meal-room groups and default no post-observance shutoff.
+- [x] W022 Verify complete phase transitions and meal behavior with fictional fixtures; document export findings generically.

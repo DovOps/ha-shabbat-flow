@@ -50,7 +50,7 @@ def validate_calendar(snapshot):
     prior_sunrise = None
     prior_candle = None
     for segment in snapshot['segments']:
-        keys(segment, {'id', 'kind', 'start', 'end', 'candle_lighting', 'sunrise'})
+        keys(segment, {'id', 'kind', 'start', 'end', 'candle_lighting', 'sunrise'} | ({'sunset'} if 'sunset' in segment else set()))
         identifier(segment['id'])
         require(segment['id'] not in segments, 'invalid_mapping')
         choice(segment['kind'], ('shabbat', 'yom_tov'))
@@ -60,6 +60,9 @@ def validate_calendar(snapshot):
                 'invalid_sequence')
         require(preparation <= parsed['candle_lighting'] < parsed['sunrise']
                 and cursor < parsed['sunrise'] < parsed['end'], 'invalid_sequence')
+        if segment.get('sunset') is not None:
+            parsed['sunset'] = parse_instant(segment['sunset'], zone)
+            require(parsed['sunrise'] < parsed['sunset'] and parsed['sunrise'].astimezone(zone).date() == parsed['sunset'].astimezone(zone).date(), 'invalid_sequence')
         if prior_sunrise is not None:
             require(parsed['sunrise'].astimezone(zone).date()
                     == prior_sunrise.astimezone(zone).date() + timedelta(days=1),
