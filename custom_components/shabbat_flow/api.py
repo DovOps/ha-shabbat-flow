@@ -159,11 +159,11 @@ class HouseholdView(BaseView):
                               "observed_at": datetime.now(timezone.utc).isoformat()})
 
     async def post(self, request):
-        from .household import inventory, validate_settings
+        from .household import inventory, validate_settings, validate_label_filters, empty_label_filters
         self.check(request)
         try:
             payload = await read_body(request)
-            if set(payload) != {"revision", "inventory_revision", "rooms"} or type(payload["revision"]) is not int:
+            if set(payload) not in ({"revision", "inventory_revision", "rooms"}, {"revision", "inventory_revision", "rooms", "label_filters"}) or type(payload["revision"]) is not int:
                 raise ValueError("invalid_request")
             data = self.hass.data[DOMAIN]
             async with data["household_lock"]:
@@ -171,7 +171,9 @@ class HouseholdView(BaseView):
                 if payload["revision"] != data["household"]["revision"] or payload["inventory_revision"] != inv["revision"]:
                     return self.response({"error": "stale_household"}, 409)
                 bindings = validate_settings(payload["rooms"], inv)
-                saved = {"schema_version": 2, "revision": payload["revision"] + 1, "rooms": payload["rooms"], "bindings": bindings}
+                previous_filters = data["household"].get("label_filters", empty_label_filters())
+                filters = validate_label_filters(payload.get("label_filters", previous_filters), inv, previous_filters)
+                saved = {"label_filters": filters, "schema_version": 2, "revision": payload["revision"] + 1, "rooms": payload["rooms"], "bindings": bindings}
                 await data["household_store"].async_save(saved)
                 data["household"] = saved
         except PlanError as exc:

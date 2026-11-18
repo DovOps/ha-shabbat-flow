@@ -8,7 +8,7 @@ import pytest_asyncio
 from aiohttp import web
 from homeassistant.core import HomeAssistant
 from homeassistant.components import frontend
-from homeassistant.helpers import entity_registry as er, device_registry as dr, area_registry as ar, floor_registry as fr
+from homeassistant.helpers import entity_registry as er, device_registry as dr, area_registry as ar, floor_registry as fr, label_registry as lr
 from custom_components.shabbat_flow import async_setup_entry, async_unload_entry
 from custom_components.shabbat_flow.api import PreviewView, CalendarView, SampleView, MAX_BODY
 from custom_components.shabbat_flow.config_flow import ShabbatFlowConfigFlow, schema
@@ -23,6 +23,7 @@ async def host(tmp_path):
     hass.config.time_zone = 'Asia/Jerusalem'
     hass.http = SimpleNamespace(async_register_static_paths=AsyncMock(), register_view=Mock())
     hass.config_entries = SimpleNamespace(async_entries=Mock(return_value=[]), async_wait_initialized=AsyncMock())
+    await lr.async_load(hass)
     await fr.async_load(hass)
     await ar.async_load(hass)
     dr.async_setup(hass)
@@ -56,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.5.1/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.6.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -447,3 +448,45 @@ async def test_power_only_does_not_reinterpret_unscheduled_and_clamps_preparatio
     with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
     r['purposes']=['recreation'];r['hvac']['mode']='profile'
     with pytest.raises(ValueError):validate_settings({bed.id:r},inv)
+
+@pytest.mark.asyncio
+async def test_label_inventory_revision_and_settings_persistence(host):
+    from custom_components.shabbat_flow.household import empty_label_filters, migrate_settings
+    hass,entry=host;bed,bath,light,shared=fixtures(hass);labels=lr.async_get(hass)
+    label=labels.async_create('Example bathroom',description='Excluded private note')
+    before=inventory(hass)
+    er.async_get(hass).async_update_entity(shared.entity_id,labels={label.label_id})
+    ar.async_get(hass).async_update(bed.id,labels={label.label_id})
+    hass.config_entries.async_get_entry=Mock(return_value=SimpleNamespace(domain='test',pref_disable_new_entities=False,disabled_by=None,entry_id='fixture'))
+    device=dr.async_get(hass).async_get_or_create(config_entry_id='fixture',identifiers={('test','label-device')},name='Example device')
+    dr.async_get(hass).async_update_device(device.id,labels={label.label_id},area_id=bath.id)
+    other=er.async_get(hass).async_get_or_create('light','test','label-light',device_id=device.id)
+    inv=inventory(hass)
+    assert inv['revision']!=before['revision']
+    assert inv['labels']==[{'id':label.label_id,'name':'Example bathroom'}]
+    assert next(a for a in inv['areas'] if a['id']==bed.id)['labels']==[label.label_id]
+    assert next(e for e in inv['entities'] if e['id']==shared.id)['labels']==[label.label_id]
+    assert next(e for e in inv['entities'] if e['id']==other.id)['device_labels']==[label.label_id]
+    assert 'Excluded private note' not in json.dumps(inv)
+    filters={**empty_label_filters(),'bathroom':label.label_id}
+    rooms={bed.id:room(['sleeping'],[light.id])};view=HouseholdView(hass)
+    payload={'revision':0,'inventory_revision':inv['revision'],'rooms':rooms,'label_filters':filters}
+    result=decoded(await view.post(Request(json.dumps(payload).encode())))
+    assert result['settings']['label_filters']==filters
+    await async_unload_entry(hass,entry);hass.data[DOMAIN].pop('household');await async_setup_entry(hass,entry)
+    assert hass.data[DOMAIN]['household']['label_filters']==filters
+    labels.async_update(label.label_id,name='Renamed example')
+    assert inventory(hass)['revision']!=inv['revision']
+    stale={**payload,'revision':1}
+    assert (await view.post(Request(json.dumps(stale).encode()))).status==409
+    # Older clients must not erase configured filters.
+    legacy={'revision':1,'inventory_revision':inventory(hass)['revision'],'rooms':rooms}
+    assert decoded(await view.post(Request(json.dumps(legacy).encode())))['settings']['label_filters']==filters
+    labels.async_delete(label.label_id)
+    missing={'revision':2,'inventory_revision':inventory(hass)['revision'],'rooms':rooms,'label_filters':filters}
+    assert (await view.post(Request(json.dumps(missing).encode()))).status==200
+    invalid={**missing,'revision':3,'label_filters':{**filters,'main_lights':'never_existed'}}
+    assert (await view.post(Request(json.dumps(invalid).encode()))).status==400
+    assert migrate_settings(empty_settings())['label_filters']==empty_label_filters()
+    saved=hass.data[DOMAIN]['household'];snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    assert workspace(saved,inventory(hass),snapshot)==workspace({**saved,'label_filters':empty_label_filters()},inventory(hass),snapshot)

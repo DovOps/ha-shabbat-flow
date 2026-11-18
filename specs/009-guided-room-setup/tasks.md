@@ -14,3 +14,9 @@
 - [x] W010 Implement WIZ-FR-014: distinct planned On/Off badges, explicit HVAC mode labels, EN/HE and contrast checks; verify mixed events without changing compilation output.
 - [x] W011 Implement WIZ-FR-015–016 and WIZ-NFR-011: typed power-only HVAC, distinct setup intent, diagnostics and tests.
 - [x] W012 Package, verify installed badge/power controls, record evidence and merge checkpoint.
+
+## Label-guided setup
+- [x] W013 Specify label mappings, matching rules, fallbacks and FR/NFR acceptance.
+- [x] W014 Implement registry reads, bounded settings persistence and compatibility.
+- [x] W015 Implement optional label setup, room-purpose suggestions and lighting/bathroom filters in EN/HE.
+- [x] W016 Add setup Tips, regression tests, browser verification and package checkpoint.

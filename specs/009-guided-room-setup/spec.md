@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Wizard plus badge and power-only HVAC follow-ups implemented in preview 0.5.1; verification recorded separately.
+**Status:** Label-guided setup implemented and locally verified in preview 0.6.0. Installed verification remains at 0.5.1; evidence recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -97,9 +97,8 @@ The final schedule preview must make On and Off actions immediately distinguisha
 - Recorder pattern analysis, automatic inferred mappings, automatic activation, family non-admin access and chat/MCP remain separate roadmap items. No new external dependency or third-party design is adopted.
 
 
-## Setup feedback to consider separately
-The homeowner may need to correct HA area associations for HVAC devices. An optional homeowner-selected HA label for bathroom-light candidates could make bathroom selection easier. This is a follow-up design candidate, not a mandatory label dependency or an implemented label filter: preserve explicit area/device selection as a fallback and never infer room-to-bathroom relationships merely from a light's label. No household registry or label changes are authorized by this specification update.
-
+## Setup feedback promoted to requirements
+Bathroom-label filtering and additional role/area labels are now approved in US7 below.
 
 ## US6 — Schedule HVAC power without overriding settings (P1)
 The homeowner selects an HVAC device and schedules On/Off while leaving its heating/cooling mode, target temperature and fan setting to the device/integration.
@@ -111,3 +110,18 @@ The homeowner selects an HVAC device and schedules On/Off while leaving its heat
 | WIZ-NFR-011 | Test power-only versus specific-profile versus unscheduled behavior, HVAC-only rooms, currently-off devices, absent temperature/fan metadata, overlapping demands, incompatible intents, strict rejection of setting overrides in power actions, unchanged legacy settings, and multilingual summaries. No actuator or HA control service calls are introduced. |
 
 Acceptance: a used room with power-only HVAC produces an On event at use start minus its lead time (clamped to the supplied preparation start) and an Off at use end, regardless of its current heat/cool/off state; the actions contain no explicit settings. Unscheduled HVAC produces neither event. Explicit profiles retain their existing target/mode behavior. Old saved `none` choices and existing workspace snapshots remain unchanged; a user explicitly selects power-only, saves, and opens a new workspace to use it. Devices reporting no native power support still allow an explicitly labelled intention preview, never a claim of executable compatibility.
+
+## US7 — Optional HA labels simplify setup (P1, approved follow-up)
+Before choosing rooms, homeowners may map existing HA labels to Bathroom lights, Room main lights, Background/night lights, Bedroom areas and Common areas. Suggested names are examples, never reserved names or automatically adopted mappings.
+
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-017 | Read the HA label registry and area/device/entity label IDs. Persist five optional label mappings by stable ID in ShabbatFlow settings. Offer an explicit no-label fallback and editing from every wizard stage. Never create or modify HA labels. |
+| WIZ-FR-018 | Filter main/night lighting candidates by the chosen role label and current area. A match on the entity or its parent device qualifies; area labels never implicitly label all its lights. Bathroom/service main lighting uses the bathroom label when configured. Keep selected entities visible even when they no longer match. Provide separate Show all devices for this room and Show devices from all areas controls; HVAC remains domain/area-scoped. |
+| WIZ-FR-019 | Filter bathroom area choices to areas containing light/switch entities matching the configured bathroom label (entity or device). Keep existing links visible, allow Show all bathroom areas, and explicitly review lights once per bathroom. Unassigned labeled lights remain accessible through all-area selection; labels never infer which bedroom shares which bathroom. |
+| WIZ-FR-020 | Offer Bedroom/Common Area filters for selecting HA areas, retaining selected areas and a Show all rooms fallback. Area labels suggest sleeping/recreation purposes only through an explicit Apply suggestions action; support both labels and preserve existing purposes. Never auto-select rooms or entities, mark rooms ready, or alter a dated workspace from a label change. |
+| WIZ-FR-021 | Provide a Tips documentation page and localized in-app guidance explaining area assignment, entity versus device labeling, example role labels, room-use labels, missing-label recovery and explicit review. |
+| WIZ-NFR-012 | Include label identities/names/membership in structural inventory revisions. Preserve unsaved label mappings and room edits during polling and reject stale saves. Deleted mapped labels remain visible with a warning and all-device fallback; renames retain ID mappings. Unknown saved IDs may be retained, but newly submitted nonexistent label IDs are rejected. Legacy clients omitting mappings preserve saved mappings. |
+| WIZ-NFR-013 | Test label-free migration, entity/device matching, area-only labels, deleted/renamed labels, overlapping label roles, selected exceptions, disabled/unassigned entities, stale writes, persistence and unchanged compilation. Use registry snapshots without per-entity requests. Verify EN/HE and mobile layout. |
+
+Acceptance: creating or changing labels in HA refreshes candidate filters without changing selections; choosing labels and saving survives reload; clearing mappings restores area-only choices. No new external dependency, device execution or HA registry mutation is introduced.
