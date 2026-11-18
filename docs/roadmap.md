@@ -33,3 +33,6 @@ See `specs/005-chat-interface/spec.md`. Offer plan inspection, future-draft edit
 
 ## Decisions still open
 Production executor reuse; license choice before public release; supported HA versions; precise default freeze policy; temperature limits; all household defaults; late-time versus relative-time precedence; lifecycle for manual overrides; role permissions; retention policy. No unknown value is silently promoted to an approved default.
+
+### Approved next iteration: bedroom rest schedules
+Feature 009 US12 adds optional daytime naps and independent late wake-up/HVAC-off choices per bedroom and dated day. Nap HVAC is separate from overnight lighting, supports preconditioning and preserves settings when requested; overlapping compatible demands keep units running continuously. Requirements and acceptance cases are recorded, but implementation and installation remain pending.

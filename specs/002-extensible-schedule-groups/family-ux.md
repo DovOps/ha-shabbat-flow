@@ -9,3 +9,5 @@ Copy previous day is a staged draft operation. Show copied room/meal choices and
 Expose independent bedroom HVAC and sleep-light candle offsets through optional timing controls with clear scope: these edit reusable profile defaults for all days using that profile. Show the resulting local times for the selected day. No hidden conversion of fixed-time or differently anchored rules.
 
 English/Hebrew and RTL remain supported. Do not claim live calendar calculation: dates are still supplied illustrative inputs. Keep technical details accessible without requiring a family member to edit them during normal planning. Browser verification remains separate from model/HTTP tests.
+
+Approved next iteration: separate overnight wake-up/HVAC-off from bedtime, and offer optional dated bedroom naps with independent preconditioning. Feature 009 US12 is authoritative. Nap defaults are HVAC-only, including nap-only rooms unused overnight; lighting and linked bathroom demand require their own explicit choices. Current Early/Standard/Late bedtime profiles are not a substitute for independent sleep-late and nap controls. This interaction remains unimplemented.
