@@ -23,9 +23,15 @@ Use optional bounded presentation metadata on dated calendar segments and loads.
 - [x] Implement metadata validation and read-only provider mapping.
 - [x] Implement shared HTML/PDF day cards and lighting map.
 - [x] Add semantic-digest, metadata and DST/carryover regression tests.
-- [ ] Install 0.9.0 and verify the live interface.
+- [x] Install 0.9.0 and verify the live interface.
 
 ## 0.9.0 verification
 66 core Python tests, 33 web tests and 72 HA tests on each supported HA version passed. Coverage includes three-day PDF structure, EN/HE labels, optional provider metadata, strict length/type bounds, unchanged semantic digest/events, unknown initial state, overnight continuation, track-only exclusion, absent final Off and 23/25-hour DST axes. Package consistency and repository hygiene passed.
 
 The user confirmed the previous PDF export worked in the local browser. Actual new multi-page print pagination remains subject to browser print settings; installed visual verification is recorded separately below.
+
+### Installed verification — 2026-11-18
+- Verified archive SHA-256 `2571296e828eb202f4d9066aa39df2c27f36e4d2f1eb9608dd81029fc8c54126`, all 32 extracted files and Python syntax. Integration and household Store backups remain inside HA. Stored setup was byte-for-byte unchanged during installation. One Core restart loaded 0.9.0.
+- Opened a new workspace and observed actual dated Hebrew-date and weekly-portion summaries from Jewish Calendar. Generated an unsaved test preview with home availability and meals, without saving household settings or browser drafts. Visually inspected both local-day charts, main/night changeover and daylight-break bars against the event list. Existing unclassified areas remain explicit rather than inferred from their names.
+- Live Export PDF / Print control is available. Automated interaction with Chrome's print flow timed out; actual new PDF pagination was not visually verified in this pass. The shared report renderer and multi-day structure are regression-tested. Screenshots remain outside the repository.
+- GitHub CI run `44289419389` passed for implementation `8bfda60`. No device calls or automation changes.
