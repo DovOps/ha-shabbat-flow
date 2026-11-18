@@ -111,3 +111,8 @@ WIZ-FR-014 / US5 was not part of the 0.4.0 completion evidence above. Its implem
 - 65 Python unit tests, 31 Node tests and 71 HA tests on each of HA 2026.8.2 and 2026.11.2 passed. Coverage includes 1/2/3-day combined lighting/HVAC timelines, missing sunset fallback, legacy label clients and classification conversion. Repository hygiene, package consistency and whitespace checks passed.
 - Fictional browser fixture: applied the Common Area label suggestion to a legacy conflict, saved successfully with main/night/HVAC devices, both meal profiles and daylight settings retained; English and Hebrew summaries showed Ready. No production mappings were saved in this test.
 - Archive SHA-256: `6a1565c24274d777c74391f088f4686f0ed57ba857947fbbb66e32541111cdf3`. Installation verification pending.
+
+### Installed 0.8.0 verification — 2026-11-18
+- Uploaded the tested archive, verified SHA-256, manifest, path scope, Python syntax and all 30 extracted files. Backed up the integration and household Store inside HA; settings remained byte-for-byte unchanged during extraction.
+- Restarted HA Core once; verified the live panel serves `/shabbat_flow_static/0.8.0/household.html`, existing label mappings are retained, new bathroom-area/hallway bindings are available, and the current common-area label produces the expected type suggestion. No household settings were saved or devices controlled. Other editing tabs remained untouched. Screenshot evidence is outside the repository.
+- Implementation `a077560` passed GitHub CI run `44273638234` and merged to main as `1a2917a`. Existing legacy rooms need explicit type selection or Apply suggested area type, then Save & next; create a new dated workspace to use updated profiles.
