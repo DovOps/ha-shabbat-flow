@@ -1,0 +1,11 @@
+# Preview 0.10.0 — bedroom rest and afternoon hosting
+
+Implemented WIZ-FR-036–041 / WIZ-NFR-018–019 and MD-FR-018–019 / MD-NFR-008 using optional naps, independent overnight HVAC end overrides and opt-in afternoon meal groups. Existing workspaces and HVAC intent are preserved; no execution adapter or external runtime dependency was added. Reusable bedroom defaults persist locally. EN/HE controls, copy-day, summary and report support are included.
+
+MD-FR-020–022 / MD-NFR-009 specify a future read-only existing-automation overlay. Scope includes fixed/sun time triggers and known mapped issur-melacha triggers/conditions from dated provider snapshots. Unresolved inputs must remain explicit. This overlay is not implemented in 0.10.0.
+
+Verification: 75 Python compiler/foundation tests, 38 Node tests, 73 HA tests on 2026.8.2 and 73 on 2026.11.2 passed. Cases include nap-only control, unchanged lighting with late wake, compatible overlap union, power-only commands, existing-control conflict, home coverage through preconditioning, segment bounds, optional bathroom daylight mask, afternoon opt-in and overlap, immutable day copying, persisted defaults, old inputs and language parity. Repository hygiene, generated-file synchronization and diff checks passed.
+
+Deployment: authorized upload of the versioned archive, SHA-256 verification, syntax checks and byte-for-byte installed-file verification succeeded. All 33 integration files were installed after backing up the previous integration and household store locally on HA; saved household bytes were unchanged. Restart requested. Live verification is recorded below when complete. PDF event/summary rendering is covered by shared code and tests; exported pagination for this release has not been visually inspected.
+
+Live verification after restart: HA served the 0.10.0 versioned panel and preserved all ready room mappings. A fresh unsaved test workspace compiled independent late wake-up, nap preconditioning/release and afternoon hosting successfully; the whole-period HVAC chart showed the distinct demand windows. Hebrew labels and event reasons rendered successfully. Test choices were not saved to the household setup or browser draft. No devices or existing automations were changed. Browser control ended after verification.

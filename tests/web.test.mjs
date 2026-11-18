@@ -376,3 +376,35 @@ test('HVAC chart uses actual multi-day and DST elapsed bounds, not fixed 25 hour
   const map=hvacMap(bundle,{complete:true,events:[{physical_id:'unit',local:start,action:{type:'hvac_power',state:'on'}}]});assert.equal((map.end-map.start)/3600000,hours);assert.equal(map.lanes[0].cells.length,hours*2);
  }
 });
+
+const {addNap,restDefaults,afternoonActivity,napBathroomTargets}=await import('../src/shabbat_flow/web/period-model.mjs');
+test('nap is optional, independently dated, immutable, and copied with wake overrides',()=>{
+ const before=structuredClone(period),next=addNap(period,'day_1','room_a');
+ assert.deepEqual(period,before);assert.equal(next.plan.naps.length,1);
+ assert.equal(next.plan.naps[0].start,'2027-01-08T14:00:00+02:00');
+ assert.equal(next.plan.naps[0].end,'2027-01-08T16:00:00+02:00');
+ assert.deepEqual(next.plan.naps[0].bathroom_targets,[]);
+ next.plan.room_uses[0].hvac_end='2027-01-08T11:00:00+02:00';
+ const copied=copyPreviousDay(next,'day_2');
+ assert.equal(copied.plan.naps[1].start,'2027-01-09T14:00:00+02:00');
+ assert.equal(copied.plan.room_uses.find(u=>u.segment==='day_2').hvac_end,'2027-01-09T11:00:00+02:00');
+ assert.deepEqual(parsePeriodDraft(JSON.stringify(copied)),copied);
+});
+test('saved rest defaults drive new naps but not existing selections',()=>{
+ const input=structuredClone(period);
+ input.config.profiles.room_a_standard.rest_defaults={nap_after_sunrise:360,nap_duration:90,lead_minutes:30,late_wake_after_sunrise:300};
+ const next=addNap(input,'day_1','room_a');
+ assert.equal(next.plan.naps[0].start,'2027-01-08T12:00:00+02:00');
+ assert.equal(next.plan.naps[0].end,'2027-01-08T13:30:00+02:00');
+ assert.equal(next.plan.naps[0].lead_minutes,30);
+ assert.deepEqual(next.plan.room_uses,input.plan.room_uses);
+});
+test('afternoon hosting is disabled initially, only Shabbat, end-relative only at reliable final end',()=>{
+ assert.deepEqual(afternoonActivity(period,'day_1'),period);
+ const next=afternoonActivity(period,'day_3'),activity=next.plan.meals.at(-1);
+ assert.equal(activity.choice,'none');assert.equal(activity.start,'2027-01-10T14:30:00+02:00');
+ assert.deepEqual(activity.groups,['meal']);assert.deepEqual(afternoonActivity(next,'day_3'),next);
+ const intermediate=structuredClone(period);intermediate.plan.snapshot.segments[0].kind='shabbat';
+ const manual=afternoonActivity(intermediate,'day_1').plan.meals.at(-1);
+ assert.equal(manual.start,'');assert.equal(manual.end,'');
+});

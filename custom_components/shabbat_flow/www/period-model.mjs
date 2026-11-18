@@ -71,7 +71,7 @@ export function setRoomChoice(bundle,segmentId,room,purpose,profileId){
     window=Object.fromEntries(['start','end'].map(k=>[k,resolveWindowTime(profile.window[k],segment,plan.snapshot.timezone)]));
   }
   plan.room_uses.push({id:existing?.id??nextId('use',plan.room_uses),room,purpose,segment:segmentId,
-    control:profileId==='existing'?'existing':'planner',profile:profileId==='existing'?null:profileId,...window});
+    control:profileId==='existing'?'existing':'planner',profile:profileId==='existing'?null:profileId,...window,...(existing?.hvac_end&&profileId!=='existing'?{hvac_end:existing.hvac_end}:{})});
   return next;
 }
 function wallDate(iso,zone){const p=zonedParts(iso,zone);return Date.UTC(+p.year,+p.month-1,+p.day);}
@@ -99,12 +99,14 @@ export function copyPreviousDay(bundle,targetId){
   const source=plan.snapshot.segments[index-1],target=plan.snapshot.segments[index],zone=plan.snapshot.timezone;
   const state=dayHomeState(plan,source);if(state==='custom')throw new Error('copy_custom');
   const days=(wallDate(target.start,zone)-wallDate(source.start,zone))/86400000;
-  for(const field of ['room_uses','meals']){
+  for(const field of ['room_uses','meals',...('naps' in plan?['naps']:[])]){
     const sourceItems=plan[field].filter(v=>v.segment===source.id);
     plan[field]=plan[field].filter(v=>v.segment!==targetId);
     for(const item of sourceItems){
-      const copy={...item,id:nextId(field==='meals'?'meal':'use',plan[field]),segment:targetId,
+      const copy={...item,id:nextId(field==='meals'?'meal':field==='naps'?'nap':'use',plan[field]),segment:targetId,
         start:shiftWallDays(item.start,days,zone),end:shiftWallDays(item.end,days,zone)};
+      if(item.hvac_end)copy.hvac_end=shiftWallDays(item.hvac_end,days,zone);
+      if(copy.kind==='afternoon'&&target.kind!=='shabbat')continue;
       if(new Date(copy.start)<new Date(plan.snapshot.preparation_start)||new Date(copy.end)>new Date(plan.snapshot.end))throw new Error('copy_bounds');
       plan[field].push(copy);
     }
@@ -120,4 +122,23 @@ export function actionBadge(event){
   if(['state','hvac_power'].includes(a.type)&&['on','off'].includes(a.state)){key=a.state;semantic=a.state;}
   else if(a.type==='hvac'&&['heat','cool','off'].includes(a.mode)){key='mode_'+a.mode;semantic=a.mode;}
   return {key,className:'state '+(tracked?'tracked':semantic),preserve:a.type==='hvac_power',tracked};
+}
+
+export function restDefaults(profile){return profile?.rest_defaults??{nap_after_sunrise:480,nap_duration:120,lead_minutes:60,late_wake_after_sunrise:240};}
+export function addNap(bundle,segmentId,room){
+ const next=structuredClone(bundle),seg=next.plan.snapshot.segments.find(v=>v.id===segmentId),profiles=availableProfiles(next.config,room,'sleeping');
+ if(!profiles.length)throw new Error('invalid_mapping');
+ const [id,profile]=profiles.find(([,p])=>p.label.en==='Standard')??profiles[0],d=restDefaults(profile),zone=next.plan.snapshot.timezone;
+ const start=+new Date(seg.sunrise)+d.nap_after_sunrise*60000,end=start+d.nap_duration*60000;
+ const naps=next.plan.naps??=[];naps.push({id:nextId('nap',naps),room,profile:id,segment:segmentId,start:zonedISO(start,zone),end:zonedISO(end,zone),lead_minutes:d.lead_minutes,bathroom_targets:[]});return next;
+}
+export function napBathroomTargets(config,nap){
+ const profile=config.profiles[nap.profile];
+ return [...new Set(profile.groups.flatMap(g=>config.groups[g].rules.filter(r=>r.release&&r.action.type==='state'&&r.action.state==='on').flatMap(r=>r.targets)))].filter(id=>config.loads[id].display?.room&&config.loads[id].display.room!==nap.room);
+}
+export function afternoonActivity(bundle,segmentId){
+ const next=structuredClone(bundle),seg=next.plan.snapshot.segments.find(v=>v.id===segmentId);
+ if(seg.kind!=='shabbat'||next.plan.meals.some(m=>m.segment===segmentId&&m.kind==='afternoon'))return next;
+ const final=seg.id===next.plan.snapshot.segments.at(-1).id,zone=next.plan.snapshot.timezone;
+ next.plan.meals.push({id:nextId('afternoon',next.plan.meals),segment:segmentId,kind:'afternoon',choice:'none',start:final?zonedISO(+new Date(seg.end)-150*60000,zone):'',end:final?seg.end:'',groups:[...new Set(next.plan.meals.filter(m=>m.segment===segmentId&&m.kind==='daytime').flatMap(m=>m.groups))]});return next;
 }

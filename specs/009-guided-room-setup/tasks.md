@@ -38,8 +38,8 @@
 
 ## Bedroom naps and late wake-up (US12)
 - [x] W028 Specify independent nap/wake behavior, FRs/NFRs and fictional acceptance cases.
-- [ ] W029 Define additive setup/workspace schema and migrations; update compiler contract.
-- [ ] W030 Implement HVAC-only nap demand and independent overnight wake-up overrides, including union/conflict and optional bathroom demand.
-- [ ] W031 Implement multilingual day controls, reusable defaults and dated copy review.
-- [ ] W032 Add nap/wake reasons to summaries, event lists, HVAC chart and PDF; verify regression and compatibility cases.
-- [ ] W033 Package and verify an authorized deployment; do not describe the spec-only checkpoint as installed functionality.
+- [x] W029 Define additive setup/workspace schema and migrations; update compiler contract.
+- [x] W030 Implement HVAC-only nap demand and independent overnight wake-up overrides, including union/conflict and optional bathroom demand.
+- [x] W031 Implement multilingual day controls, reusable defaults and dated copy review.
+- [x] W032 Add nap/wake reasons to summaries, event lists, HVAC chart and PDF; verify regression and compatibility cases.
+- [x] W033 Package and verify an authorized deployment; do not describe the spec-only checkpoint as installed functionality.

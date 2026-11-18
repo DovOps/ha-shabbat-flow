@@ -159,6 +159,12 @@ function renderRooms(){
   card.append(viewToggle('all_room_entities',allRoom,v=>allRoom=v),viewToggle('all_entities',showAll,v=>showAll=v),el('p',t('filter_help'),'hint'));
   drawRole(card,aid,'main_lights');drawRole(card,aid,'night_lights');drawHvac(card,aid);drawPhases(card,aid);
   drawBathroomLighting(card,aid);
+  if(r.purposes.includes('sleeping')){
+   const rest=el('details');rest.append(el('summary',t('rest_defaults')),el('p',t('rest_defaults_help'),'hint'));
+   const values=s.rest_defaults??{nap_after_sunrise:480,nap_duration:120,lead_minutes:r.hvac.lead_minutes,late_wake_after_sunrise:240};
+   for(const key of Object.keys(values)){const control=input(t('rest_'+key),values[key],'number',v=>mutate(aid,()=>s.rest_defaults={...(s.rest_defaults??values),[key]:Number(v)}));const n=control.querySelector('input');n.min=key==='nap_duration'?15:0;n.max=key==='lead_minutes'?240:key==='nap_duration'?480:720;rest.append(control);}card.append(rest);
+  }
+
   if(s.service){
    card.append(checkbox(t('when_home'),s.home,v=>mutate(aid,()=>s.home=v)),el('p',t('home_help'),'hint'));
    const links=Object.entries(draft).filter(([id,room])=>room.enabled&&room.shared_areas.includes(aid));card.append(el('p',`${t('linked_rooms')}: ${links.map(([id])=>roomName(id)).join(', ')||t('none_linked')}`));

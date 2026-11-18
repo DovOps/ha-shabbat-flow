@@ -8,7 +8,7 @@ from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.helpers import area_registry as ar, floor_registry as fr, label_registry as lr
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from .engine.compiler import PlanError, require
-from .engine.schedule import validate_configuration
+from .engine.schedule import validate_configuration, validate_rest_defaults
 from .engine.planning import validate_calendar
 
 ROLES = ('main_lights', 'night_lights', 'hvac')
@@ -161,7 +161,8 @@ def validate_settings(rooms, inv):
         require(set(room) == {'enabled', 'purposes', 'roles', 'shared_areas', 'hvac'} | ({'setup'} if 'setup' in room else set()))
         setup = room.get('setup')
         if setup is not None:
-            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()) | ({'area_type'} if 'area_type' in setup else set()))
+            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()) | ({'area_type'} if 'area_type' in setup else set()) | ({'rest_defaults'} if 'rest_defaults' in setup else set()))
+            if 'rest_defaults' in setup: validate_rest_defaults(setup['rest_defaults'])
             require(setup.get('area_type', 'legacy') in ('legacy', 'room', 'common', 'bathroom', 'hallway'))
             require('area_type' not in setup or setup['area_type'] == 'legacy' or setup['service'] == (setup['area_type'] != 'room'))
             phase = room_phases(room)
@@ -354,6 +355,8 @@ def workspace(settings, inv, snapshot):
                           'end': {'anchor': 'sunrise' if purpose == 'sleeping' else 'candle_lighting', 'offset_minutes': duration}}
                 config['profiles'][internal_id('profile_', aid + purpose + name)] = {'label': {'en': en, 'he': he}, 'room': room_id,
                     'purpose': purpose, 'groups': [gid], 'window': window}
+                if purpose == 'sleeping':
+                    config['profiles'][internal_id('profile_', aid + purpose + name)]['rest_defaults'] = deepcopy(room.get('setup', {}).get('rest_defaults', {'nap_after_sunrise':480,'nap_duration':120,'lead_minutes':room['hvac']['lead_minutes'],'late_wake_after_sunrise':240}))
         if room.get('setup', {}).get('home') and phase['night'] == 'none' and not phase['morning']:
             allowed, warnings = bathroom_windows(room, calendar)
             home_rules = []
