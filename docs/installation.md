@@ -94,3 +94,6 @@ Red warning boxes explain validation and save blockers beside the room and its s
 
 ## Area types and label suggestions (0.8.0)
 Map existing HA area labels to Bedroom, Common Area, Bathroom and Hallway separately from light-role labels. Existing configured rooms require explicit type selection or Apply suggested area type, followed by Save & next. Common areas support meal lighting/HVAC, night/morning phases and optional daylight breaks together without a sleeping purpose or bathroom link. See [setup tips](setup-tips.md).
+
+## PDF export development checkpoint (0.8.1, not yet installed)
+The schedule page includes Export PDF / Print beside JSON. After a complete preview, use it and choose Save as PDF in the browser dialog. The report includes the logo, dated daily context, meals, room use, availability, warnings and schedule. Household plan details remain in the report; review before sharing. Edits require a fresh preview. Native HA app print support may vary; open in a browser when necessary. Visual PDF verification is pending because local browser access was denied.

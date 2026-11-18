@@ -324,3 +324,25 @@ test('area classification uses explicit labels and safely converts legacy night 
  common.roles.main_lights=[];
  assert.deepEqual(roleCandidates(inventory,common,'a','main_lights',{main_lights:'main',bathroom:'bath'}).map(e=>e.id),['main']);
 });
+
+
+test('print report contains all dated days and events, localized warnings, and no raw config',async()=>{
+ const {renderPrintReport}=await import('../src/shabbat_flow/web/period-report.mjs');
+ const bundle=JSON.parse(fs.readFileSync(new URL('../examples/period-preview.json',import.meta.url)));
+ const before=JSON.stringify(bundle),catalog=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
+ const node=(tag,text='',className='')=>({tag,text,children:[],className,append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},cloneNode(){const copy=node(this.tag,this.text,this.className);copy.children=this.children.map(c=>c.cloneNode());return copy;},classList:{contains:value=>className.split(' ').includes(value)}});
+ const text=n=>[n.text,...n.children.map(text)].join(' ');
+ const event=node('div','','event');event.append(node('time','Jan 8 10:00'),node('div','Example light'),node('bdi','Off','state off'));
+ const timeline=node('div');timeline.append(node('p','Example retained warning'),event);timeline.querySelectorAll=()=>[event];
+ for(const language of ['en','he']){
+  const report=node('article'),t=key=>{const value=catalog[language][key]??catalogs[language][key];assert.ok(value,key);return value;};
+  renderPrintReport({report,bundle,result:{complete:true},t,lang:()=>language,dayLabel:s=>s.id,node,timeline,logo:node('img')});
+  assert.equal(report.children.filter(n=>n.tag==='section').length,3);
+  assert.match(text(report),/Asia\/Jerusalem/);assert.match(text(report),/2027/);assert.match(text(report),/Example retained warning/);
+  const table=report.children.find(n=>n.tag==='table');assert.equal(table.children[0].tag,'thead');assert.equal(table.children[1].children.length,1);
+  assert.match(text(table),/Example light.*Off/);assert.doesNotMatch(text(report),/physical_id|schema_version/);
+  renderPrintReport({report,bundle,result:null,t,lang:()=>language,dayLabel:s=>s.id,node,timeline,logo:node('img')});
+  assert.equal(report.children.length,1);assert.equal(text(report).trim(),t('report_unavailable'));
+ }
+ assert.equal(JSON.stringify(bundle),before);
+});

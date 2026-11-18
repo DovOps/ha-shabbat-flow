@@ -1,3 +1,4 @@
+import {renderPrintReport} from './period-report.mjs';
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
 import {actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
@@ -10,7 +11,7 @@ const t=key=>translate(catalogs,lang(),key);
 function node(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
 function message(key,error=false){lastMessage={key,error};$('status').textContent=t(key);$('status').className=error?'error':'';}
 function error(error){const key='error_'+error.message;message(Object.hasOwn(catalogs[lang()],key)?key:'error_internal',true);}
-function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('timeline').replaceChildren();message('period_dirty');}
+function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('export-pdf').disabled=true;$('print-report').replaceChildren();$('timeline').replaceChildren();message('period_dirty');}
 function button(key,fn){const n=node('button',t(key));n.type='button';n.addEventListener('click',fn);return n;}
 function field(key,value,fn,options,sourceRole){
   const label=node('label',undefined,'field');label.append(node('span',t(key)));
@@ -226,11 +227,12 @@ function renderTimeline(){
     row.append(time,description,node('bdi',value,badge.className));root.append(row);
   }
 }
+function printReport(){renderPrintReport({report:$('print-report'),bundle,result,t,lang,dayLabel,node,timeline:$('timeline'),logo:document.querySelector('.brand-logo')});}
 async function validate(candidate){
   const response=await fetch('/api/v2/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(candidate)});
   const value=await response.json();if(!response.ok)throw new Error(value.error);return value;
 }
-async function preview(){const token=revision;try{const next=await validate(structuredClone(bundle));if(token!==revision)return;result=next;$('export').disabled=!next.complete;renderTimeline();message(next.complete?'preview_ready':'period_incomplete',!next.complete);}catch(e){if(token===revision)error(e);}}
+async function preview(){const token=revision;try{const next=await validate(structuredClone(bundle));if(token!==revision)return;result=next;$('export').disabled=!next.complete;$('export-pdf').disabled=!next.complete;renderTimeline();message(next.complete?'preview_ready':'period_incomplete',!next.complete);}catch(e){if(token===revision)error(e);}}
 async function boot(){
   try{
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
@@ -238,6 +240,8 @@ async function boot(){
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
     $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();});
     $('preview').addEventListener('click',preview);
+    window.addEventListener('beforeprint',printReport);
+    $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;printReport();window.print();});
     $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(draftKey,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
     $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(draftKey));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
     $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(draftKey);message('deleted');}catch(e){error(e);}});
