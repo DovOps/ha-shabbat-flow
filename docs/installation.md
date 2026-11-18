@@ -1,10 +1,10 @@
-# Installable preview 0.5.1
+# Installable preview 0.6.0
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.5.1.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.6.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
 4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
@@ -75,3 +75,5 @@ Save the room and open a new dated planner, then select its use/profile. Existin
 HA's advertised TURN_ON/TURN_OFF flags are shown as diagnostics only. The base climate turn-on fallback can select a mode, so these flags do not prove that an integration restores previous settings. This preview does not execute anything. A future executor must verify a device-specific resume adapter and refuse unsupported or unverified restoration; it must not substitute a guessed mode or setting-bearing command.
 
 בתפריט המיזוג בחדר ניתן לבחור הפעלה וכיבוי בלבד תוך שמירת ההגדרות, פרופיל חימום/קירור מוגדר, או ללא תזמון. לאחר שמירה יש לפתוח מתכנן מתוארך חדש ולבחור שימוש בחדר. תגי הפעלה ירוקים ותגי כיבוי כהים, עם טקסט ברור. התאימות לשחזור ההגדרות במכשיר דורשת אימות לפני ביצוע עתידי.
+
+Optional label mappings are available in house setup; see [Setup tips](setup-tips.md). No HA label changes are performed by the app.

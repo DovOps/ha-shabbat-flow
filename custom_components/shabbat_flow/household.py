@@ -5,7 +5,7 @@ from hashlib import sha256
 import json
 import math
 from homeassistant.components.climate import ClimateEntityFeature
-from homeassistant.helpers import area_registry as ar, floor_registry as fr
+from homeassistant.helpers import area_registry as ar, floor_registry as fr, label_registry as lr
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from .engine.compiler import PlanError, require
 from .engine.schedule import validate_configuration
@@ -28,7 +28,7 @@ def strings(value):
 
 
 def inventory(hass):
-    areas = [{'id': a.id, 'name': a.name, 'floor_id': a.floor_id} for a in ar.async_get(hass).async_list_areas()]
+    areas = [{'id': a.id, 'name': a.name, 'floor_id': a.floor_id, 'labels': sorted(a.labels)} for a in ar.async_get(hass).async_list_areas()]
     floors = [{'id': f.floor_id, 'name': f.name} for f in fr.async_get(hass).async_list_floors()]
     device_registry = dr.async_get(hass)
     devices = {}
@@ -53,7 +53,8 @@ def inventory(hass):
                     'max_temperature': attrs.get('max_temp') if finite(attrs.get('max_temp')) else None,
                     'unit': {'°C': 'C', '°F': 'F'}.get(hass.config.units.temperature_unit)}
         entities.append({'id': e.id, 'entity_id': e.entity_id, 'name': e.name or attrs.get('friendly_name') or e.original_name or e.entity_id,
-                         'domain': domain, 'device_id': e.device_id,
+                         'domain': domain, 'device_id': e.device_id, 'labels': sorted(e.labels),
+                         'device_labels': sorted(device.labels) if device else [],
                          'area_id': e.area_id or (device.area_id if device else None),
                          'area_source': 'entity' if e.area_id else ('device' if device and device.area_id else 'unassigned'),
                          'disabled': e.disabled_by is not None,
@@ -66,8 +67,8 @@ def inventory(hass):
                                      'fan_mode': attrs.get('fan_mode') if attrs.get('fan_mode') in caps.get('fan_modes', []) else None,
                                      'observed_at': datetime.now(timezone.utc).isoformat()} if domain == 'climate' else None})
     used_devices = {e['device_id'] for e in entities}
-    result = {'floors': sorted(floors, key=lambda v: v['id']), 'areas': sorted(areas, key=lambda v: v['id']),
-              'devices': sorted([{'id': d.id, 'name': d.name_by_user or d.name or d.id, 'area_id': d.area_id}
+    result = {'labels': sorted([{'id': l.label_id, 'name': l.name} for l in lr.async_get(hass).async_list_labels()], key=lambda v: v['id']), 'floors': sorted(floors, key=lambda v: v['id']), 'areas': sorted(areas, key=lambda v: v['id']),
+              'devices': sorted([{'id': d.id, 'name': d.name_by_user or d.name or d.id, 'area_id': d.area_id, 'labels': sorted(d.labels)}
                                  for d in devices.values() if d.id in used_devices], key=lambda v: v['id']),
               'entities': sorted(entities, key=lambda v: v['id']), 'timezone': hass.config.time_zone}
     # Availability is live telemetry; renames/moves/capability changes affect the structural revision.
@@ -99,7 +100,24 @@ def migrate_settings(saved):
             if any(not ready(result['rooms'].get(a, {})) for a in room['shared_areas']):
                 room['setup']['status'] = 'draft'
         result['schema_version'] = 2
+    result.setdefault('label_filters', empty_label_filters())
     return result
+
+
+LABEL_ROLES = ('bathroom', 'main_lights', 'night_lights', 'bedroom', 'common_area')
+
+
+def empty_label_filters():
+    return dict.fromkeys(LABEL_ROLES, None)
+
+
+def validate_label_filters(value, inv, previous):
+    require(type(value) is dict and set(value) == set(LABEL_ROLES), 'invalid_mapping')
+    known = {label['id'] for label in inv.get('labels', [])}
+    for role, label_id in value.items():
+        require(label_id is None or isinstance(label_id, str) and 0 < len(label_id) <= 100
+                and (label_id in known or label_id == previous.get(role)), 'invalid_mapping')
+    return deepcopy(value)
 
 
 def binding(entity):

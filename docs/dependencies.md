@@ -37,3 +37,5 @@ Feature 008 uses the supported read-only `calendar.get_events` service and entit
 Feature 009 reuses the existing HA registry/state reads and Store. Current HVAC reads are limited to mode, target temperature and supported fan setting. The wizard and bathroom demand policies add no external package or third-party design dependency.
 
 Feature 009 power-only follow-up reads HA's `ClimateEntityFeature.TURN_ON/TURN_OFF` state flags as diagnostics. Inspection of the installed test runtime's HA 2026.8.2 `components/climate/__init__.py` confirms that the base `async_turn_on` can choose a mode. Flags therefore do not establish resume semantics. Typed `hvac_power` preview actions contain only on/off state; any future executor must verify a provider-specific adapter. No executor or extra dependency is introduced.
+
+Feature 009 label filtering reads HA's built-in label registry and direct area/device/entity memberships. No external dependency, registry writes or third-party design is introduced.

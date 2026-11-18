@@ -144,7 +144,7 @@ test('household polling preserves the form-bound draft until a redraw is needed'
   const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
   const refresh=source.slice(source.indexOf('async function refresh('),source.indexOf('async function save('));
   const initial={inventory:{revision:'a'},settings:{revision:0,rooms:{}}};
-  const context={data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
+  const context={labelFilters:{...emptyLabelFilters(),bathroom:"draft_label"},emptyLabelFilters,data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
     api:async()=>structuredClone(context.next),render:()=>{context.renders++;},renderRooms:()=>{context.renders++;},updateAvailability:()=>{},syncLabel:()=>{},status:value=>{context.message=value;},renders:0};
   runInNewContext(refresh,context);
   const boundRoom=context.draft.room_a;
@@ -152,7 +152,7 @@ test('household polling preserves the form-bound draft until a redraw is needed'
   assert.equal(context.draft.room_a,boundRoom);
   boundRoom.enabled=true;context.dirty=true;
   context.next.inventory.revision='b';await context.refresh();
-  assert.equal(context.draft.room_a,boundRoom);assert.equal(context.needsReview,true);
+  assert.equal(context.draft.room_a,boundRoom);assert.equal(context.needsReview,true);assert.equal(context.labelFilters.bathroom,'draft_label');
   await context.refresh(true);assert.equal(context.needsReview,false);
   context.next.settings.revision=1;await context.refresh();
   assert.equal(context.message,'stale_household');assert.equal(context.data.settings.revision,0);
@@ -200,7 +200,7 @@ test('wizard saves freeze controls, reject duplicate submits and preserve edits 
  const {runInNewContext}=await import('node:vm');
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const controls=[{disabled:false},{disabled:true}],button={disabled:false};let resolve;
- const context={needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
+ const context={labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
   document:{querySelectorAll:()=>controls},$:()=>button,status:()=>{},fail:()=>{},wizardError:()=>{},catalogs:{en:{}},language:'en',api:()=>new Promise(r=>resolve=r)};
  runInNewContext(source.slice(source.indexOf('async function save('),source.indexOf('function planProblems(')),context);
  const pending=context.save();assert.ok(controls.every(c=>c.disabled));assert.equal(await context.save(),false);
@@ -237,4 +237,43 @@ test('planned badge foreground/background colors meet 4.5 to 1 text contrast',()
  const colors=[];
  for(const semantic of ['on','off','heat','cool','neutral']){const matches=[...css.matchAll(new RegExp('\\.state\\.'+semantic+'\\{background:#([0-9a-f]{6});color:#([0-9a-f]{6})','g'))];assert.ok(matches.length,semantic);const [,bg,fg]=matches.at(-1);const a=lum(bg),b=lum(fg);assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,semantic);colors.push(bg);}
  assert.equal(new Set(colors).size,colors.length);
+});
+
+import {emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from '../src/shabbat_flow/web/household-model.mjs';
+test('label candidates combine entity/device labels, preserve selection and separate area scope',()=>{
+ const entities=[
+  {id:'direct',domain:'light',area_id:'a',labels:['main']},
+  {id:'device',domain:'switch',area_id:'a',device_labels:['main','night']},
+  {id:'plain',domain:'light',area_id:'a',labels:[]},
+  {id:'outside',domain:'light',area_id:null,labels:['main']},
+  {id:'selected',domain:'switch',area_id:'b',labels:[]},
+  {id:'disabled',domain:'light',area_id:'a',labels:['main'],disabled:true},
+  {id:'sensor',domain:'sensor',area_id:'a',labels:['main']},
+  {id:'hvac',domain:'climate',area_id:'a',labels:[]},
+ ];
+ const inventory={entities,areas:[{id:'a',labels:['main']},{id:'b',labels:[]}]};
+ const room={roles:{main_lights:['selected'],night_lights:[],hvac:[]},setup:{service:false}};
+ const filters={...emptyLabelFilters(),main_lights:'main',night_lights:'night'};
+ const ids=(role,options)=>roleCandidates(inventory,room,'a',role,filters,options).map(e=>e.id);
+ assert.deepEqual(ids('main_lights'),['direct','device','selected','disabled']);
+ assert.deepEqual(ids('night_lights'),['device']);
+ assert.deepEqual(ids('hvac'),['hvac']);
+ assert.ok(ids('main_lights',{allRoom:true}).includes('plain'));
+ assert.ok(!ids('main_lights',{allRoom:true}).includes('outside'));
+ assert.ok(ids('main_lights',{allAreas:true}).includes('outside'));
+ assert.ok(!ids('main_lights',{allAreas:true}).includes('plain'));
+ assert.equal(roleCandidates(inventory,room,'a','main_lights',{...filters,main_lights:'deleted'}).length,1);
+ assert.ok(roleCandidates(inventory,room,'a','main_lights',emptyLabelFilters()).some(e=>e.id==='plain'));
+ const original=structuredClone({inventory,room,filters});ids('main_lights');assert.deepEqual({inventory,room,filters},original);
+});
+test('bathrooms follow labeled lights, room labels only suggest explicit purposes',()=>{
+ const inventory={areas:[{id:'bed',labels:['sleep','common']},{id:'bath',labels:[]},{id:'other',labels:['bath']}],entities:[{id:'lamp',domain:'light',area_id:'bath',device_labels:['bath']}]};
+ const filters={...emptyLabelFilters(),bathroom:'bath',bedroom:'sleep',common_area:'common'};
+ assert.deepEqual(bathroomCandidates(inventory,'bed',[],filters).map(a=>a.id),['bath']);
+ assert.deepEqual(bathroomCandidates(inventory,'bed',['bath'],filters),[]);
+ assert.equal(bathroomCandidates(inventory,'bed',[],filters,true).length,2);
+ assert.deepEqual(suggestedPurposes(inventory.areas[0],filters),['sleeping','recreation']);
+ assert.deepEqual(filteredAreas(inventory.areas,{other:{enabled:true}},filters,'bedroom').map(a=>a.id),['bed','other']);
+ const room={roles:{main_lights:[],night_lights:[],hvac:[]},setup:{service:true}};
+ assert.deepEqual(roleCandidates(inventory,room,'bath','main_lights',filters).map(e=>e.id),['lamp']);
 });
