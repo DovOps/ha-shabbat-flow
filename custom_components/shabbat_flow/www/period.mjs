@@ -1,3 +1,4 @@
+import {renderLightingMap} from './lighting-map.mjs';
 import {renderPrintReport} from './period-report.mjs';
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
@@ -95,6 +96,7 @@ function render(){
   });root.append(nav);
   const main=section('family_plan');main.querySelector('h2').textContent=`${t(segment.kind)} · ${dayLabel(segment,index)}`;
   main.append(node('p',`${t('candle_lighting')}: ${safeTime(segment.candle_lighting)}`,'hint'));
+  if(segment.calendar_details?.length)main.append(node('p',segment.calendar_details.join(' · '),'calendar-details'));
   const state=dayHomeState(bundle.plan,segment),homeOptions=options(['home_state','away_state','unset']).map(([id,label])=>[id.replace('_state',''),label]);
   if(state==='custom')homeOptions.push(['custom',t('custom_windows')]);
   main.append(field('home_question',state,v=>{if(v!=='custom')applyChange(setDayHome(bundle,segment.id,v));},homeOptions));
@@ -213,6 +215,7 @@ function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
   for(const warning of result.warnings??[]){const text=node('p',t(warning.code),'hint');text.append(node('bdi',' · '+(bundle.config.groups[warning.group]?.label[lang()]??warning.group)));root.append(text);}
+  root.append(renderLightingMap({bundle,result,node,t,lang}));
   root.append(node('p',`${t('event_count')}: ${result.events.length}`));
   if(result.events.some(e=>e.action.type==='hvac_power'))root.append(node('p',t('power_support_notice'),'hint'));
   for(const event of result.events){

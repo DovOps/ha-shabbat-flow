@@ -15,3 +15,17 @@ Use an isolated report renderer and dedicated print CSS alongside the existing J
 No new runtime dependency, external service, device control or plan mutation. JSON remains available. Native HA WebViews may lack a print UI; guidance directs the owner to open the planner in a browser and select Save as PDF. This is a print-to-PDF flow, not a direct binary PDF download.
 
 65 Python and 32 Node tests passed. Report tests verify three dated sections, year/timezone, complete event rows, retained warnings, no raw configuration, unchanged inputs and incomplete-preview refusal in both languages. Generated package, repository hygiene and whitespace checks passed. Browser visual verification was blocked by a saved local-origin permission. Do not claim visual pagination or native-app compatibility as verified; 0.8.0 remains installed.
+
+## Calendar cards and lighting map plan
+Use optional bounded presentation metadata on dated calendar segments and loads. Exclude it from semantic digests. Read all-day summaries from the existing accepted Jewish Calendar event feed; do not query a current-day sensor for future metadata. Render one local calendar day per chart, with eight-light chunks for pagination and a lane per load. Derive intervals from compiled state intentions, carrying state across dates. Keep unknown intervals hatched and ignore track-only events. Preserve the event list for exact details.
+
+- [x] Specify MD-FR-013–015 and MD-NFR-006.
+- [x] Implement metadata validation and read-only provider mapping.
+- [x] Implement shared HTML/PDF day cards and lighting map.
+- [x] Add semantic-digest, metadata and DST/carryover regression tests.
+- [ ] Install 0.9.0 and verify the live interface.
+
+## 0.9.0 verification
+66 core Python tests, 33 web tests and 72 HA tests on each supported HA version passed. Coverage includes three-day PDF structure, EN/HE labels, optional provider metadata, strict length/type bounds, unchanged semantic digest/events, unknown initial state, overnight continuation, track-only exclusion, absent final Off and 23/25-hour DST axes. Package consistency and repository hygiene passed.
+
+The user confirmed the previous PDF export worked in the local browser. Actual new multi-page print pagination remains subject to browser print settings; installed visual verification is recorded separately below.

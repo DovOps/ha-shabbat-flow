@@ -14,6 +14,18 @@ class ScheduleTests(unittest.TestCase):
         self.bundle = json.loads((ROOT / 'examples/period-preview.json').read_text())
         self.config, self.plan = self.bundle['config'], self.bundle['plan']
 
+    def test_display_metadata_does_not_change_schedule(self):
+        before = self.compile()
+        self.plan['snapshot']['segments'][0]['calendar_details'] = ['Example Hebrew date', 'Example weekly portion']
+        load = next(iter(self.config['loads'].values()))
+        load['display'] = {'room': next(iter(self.config['rooms'])), 'area_type': 'common', 'role': 'main_lights'}
+        self.assertEqual(self.compile(), before)
+        load['display']['area_type'] = 'invented'
+        with self.assertRaises(PlanError): self.compile()
+        load['display']['area_type'] = 'common'
+        self.plan['snapshot']['segments'][0]['calendar_details'] = ['x' * 241]
+        with self.assertRaises(PlanError): self.compile()
+
     def test_allowed_windows_clip_union_and_empty(self):
         group=self.config['groups']['room_a_sleep_standard']
         rule=group['rules'][0]

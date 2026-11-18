@@ -305,6 +305,7 @@ def workspace(settings, inv, snapshot):
             power_only = role == 'hvac' and rooms[aid]['hvac']['mode'] == 'preserve'
             config['loads'][lid] = {'label': label(e['name']), 'physical_id': lid, 'owner': 'planner',
                                     'kind': 'hvac_power' if power_only else 'hvac' if role == 'hvac' else 'binary', 'capabilities': e['capabilities'] if role == 'hvac' and not power_only else {}}
+            config['loads'][lid]['display'] = {'room': internal_id('room_', aid), 'area_type': rooms[aid].get('setup', {}).get('area_type', 'legacy'), 'role': role}
             result.append(lid)
         return result
 

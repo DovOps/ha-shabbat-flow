@@ -1,10 +1,10 @@
-# Installable preview 0.8.0
+# Installable preview 0.9.0
 
 This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
-1. Obtain `shabbat-flow-0.8.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
+1. Obtain `shabbat-flow-0.9.0.zip` and its SHA-256 file from a successful GitHub Actions **checks** run (artifact `shabbat-flow-preview`), or build locally with `python3 scripts/build_ha.py --check --zip`.
 2. Back up any existing `custom_components/shabbat_flow` folder before replacing it. Unzip into the HA configuration directory: the resulting path must be `custom_components/shabbat_flow/manifest.json`, without another nested directory.
 3. Restart Home Assistant yourself, then open **Settings → Devices & services → Add integration → ShabbatFlow Preview**. Confirm setup.
 4. As an administrator, open **ShabbatFlow Preview** in the sidebar. Switch English/עברית, include planning areas, select sleeping/recreation purposes, assign device roles and shared bathrooms, then save. Review the automatically sourced upcoming Shabbat/Yom Tov summary and open a household plan. No device commands will be sent.
@@ -97,3 +97,6 @@ Map existing HA area labels to Bedroom, Common Area, Bathroom and Hallway separa
 
 ## PDF export development checkpoint (0.8.1, not yet installed)
 The schedule page includes Export PDF / Print beside JSON. After a complete preview, use it and choose Save as PDF in the browser dialog. The report includes the logo, dated daily context, meals, room use, availability, warnings and schedule. Household plan details remain in the report; review before sharing. Edits require a fresh preview. Native HA app print support may vary; open in a browser when necessary. Visual PDF verification is pending because local browser access was denied.
+
+## Visual plan (0.9.0)
+Generate a new workspace to capture area types and provider-supplied Hebrew date/parsha/holiday labels. The complete preview includes per-day lighting charts grouped by room type, plus the event list. Export PDF / Print includes the same charts and boxed day summaries. Unknown before the first scheduled state is hatched; On bars are planned intentions, never occupancy or confirmed device state. Existing automations may act differently. Time axes follow local calendar days and show UTC offsets at DST transitions. Missing provider metadata stays absent.

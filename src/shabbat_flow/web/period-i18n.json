@@ -126,7 +126,23 @@
     "report_action": "Action",
     "report_windows": "Home / away windows",
     "report_uses": "Room use",
-    "report_unavailable": "Generate a complete preview before exporting."
+    "report_unavailable": "Generate a complete preview before exporting.",
+    "map_title": "Planned lighting at a glance",
+    "map_help": "Shaded = planned On; pale = planned Off; hatched = state not yet established. Blank = outside the plan. These are lighting intentions, not occupancy or live device states. Hover or focus a chart using accessibility tools for exact intervals. Existing automations may differ.",
+    "map_hours": "hours",
+    "map_load": "Room / light",
+    "map_unassigned": "Unclassified area",
+    "map_type_room": "Bedrooms",
+    "map_type_common": "Common areas",
+    "map_type_bathroom": "Bathrooms",
+    "map_type_hallway": "Hallways",
+    "map_type_legacy": "Unclassified",
+    "map_role_main_lights": "Main lighting",
+    "map_role_night_lights": "Night / background",
+    "map_role_hvac": "HVAC",
+    "map_on": "On",
+    "map_off": "Off",
+    "map_unknown": "Unknown"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -255,6 +271,22 @@
     "report_action": "פעולה",
     "report_windows": "זמני שהייה בבית / מחוץ לבית",
     "report_uses": "שימוש בחדרים",
-    "report_unavailable": "יש ליצור תצוגה מקדימה מלאה לפני הייצוא."
+    "report_unavailable": "יש ליצור תצוגה מקדימה מלאה לפני הייצוא.",
+    "map_title": "מפת תאורה מתוכננת",
+    "map_help": "מוצל = הפעלה מתוכננת; בהיר = כיבוי מתוכנן; מפוספס = מצב שטרם נקבע. ריק = מחוץ לתוכנית. אלה כוונות תאורה, לא נוכחות או מצב מכשיר בפועל. זמני המקטעים זמינים בריחוף ובכלי נגישות. אוטומציות קיימות עשויות לפעול אחרת.",
+    "map_hours": "שעות",
+    "map_load": "חדר / תאורה",
+    "map_unassigned": "אזור ללא סיווג",
+    "map_type_room": "חדרי שינה",
+    "map_type_common": "אזורים משותפים",
+    "map_type_bathroom": "חדרי רחצה",
+    "map_type_hallway": "מסדרונות",
+    "map_type_legacy": "ללא סיווג",
+    "map_role_main_lights": "תאורה ראשית",
+    "map_role_night_lights": "תאורת לילה / רקע",
+    "map_role_hvac": "מיזוג וחימום",
+    "map_on": "פועל",
+    "map_off": "כבוי",
+    "map_unknown": "לא ידוע"
   }
 }

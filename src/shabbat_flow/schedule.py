@@ -73,7 +73,13 @@ def validate_configuration(config):
         labels(label)
     physical = {}
     for load in config['loads'].values():
-        keys(load, {'label', 'physical_id', 'owner', 'kind', 'capabilities'})
+        keys(load, {'label', 'physical_id', 'owner', 'kind', 'capabilities'} | ({'display'} if 'display' in load else set()))
+        if 'display' in load:
+            display = load['display']
+            keys(display, {'room', 'area_type', 'role'})
+            require(display['room'] in config['rooms'], 'invalid_mapping')
+            choice(display['area_type'], ('room', 'common', 'bathroom', 'hallway', 'legacy'))
+            choice(display['role'], ('main_lights', 'night_lights', 'hvac'))
         labels(load['label'])
         identifier(load['physical_id'])
         identifier(load['owner'])
@@ -259,6 +265,7 @@ def compile_schedule(config, plan):
     clean_config = json.loads(canonical(config))
     for load in clean_config['loads'].values():
         del load['label']
+        load.pop('display', None)
     for group in clean_config['groups'].values():
         del group['label']
         group['rules'].sort(key=lambda v: v['id'])
@@ -269,6 +276,8 @@ def compile_schedule(config, plan):
     clean_config['rooms'] = sorted(config['rooms'])
     clean_plan = {k: v for k, v in plan.items() if k != 'language'}
     clean_plan = json.loads(canonical(clean_plan))
+    for segment in clean_plan['snapshot']['segments']:
+        segment.pop('calendar_details', None)
     for field in ('room_uses', 'meals', 'groups'):
         clean_plan[field].sort(key=lambda v: v['id'])
     for meal in clean_plan['meals']:
