@@ -28,3 +28,5 @@ input[type=datetime-local]{font:inherit;width:100%;min-width:0;max-width:100%;pa
 @media(max-width:650px){.event{grid-template-columns:95px minmax(0,1fr) minmax(50px,auto)}.event .state{max-width:100px}}
 
 .room-feedback{padding:12px 16px;margin-block:12px;border:2px solid;border-radius:10px;overflow-wrap:anywhere}.room-feedback.blocked{background:#fff1f2;color:#991b1b;border-color:#b91c1c}.room-feedback.draft{background:#fff8e1;color:#704300;border-color:#a66b00}.room-feedback.ready{background:#e5f4ef;color:#155e50;border-color:#31806c}.room-feedback p{margin-block:8px 0}.room-feedback ul{margin-block:8px;padding-inline-start:22px}.room-feedback[hidden]{display:none}
+
+#status:empty{display:none}

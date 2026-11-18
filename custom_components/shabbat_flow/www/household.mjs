@@ -244,7 +244,7 @@ async function save(){
  // Freeze controls while a write is pending so late edits cannot be lost.
  const controls=[...document.querySelectorAll('#rooms input,#rooms select,#rooms button,#language,#refresh,#discard')];
  const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
- try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;status('saved');return true;}
+ try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;status('saved');updateRoomFeedback();return true;}
  catch(e){fail(e);wizardError(catalogs[language][e.message]?e.message:'error');return false;}
  finally{saving=false;$('save').disabled=false;controls.forEach((c,i)=>c.disabled=disabled[i]);}
 }
