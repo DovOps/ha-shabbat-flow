@@ -30,3 +30,8 @@ Share pure room validation between proactive status rendering and completion. Re
 
 ## Common areas and composable daylight policy
 Add optional explicit area_type to schema-2 setup; absent values retain legacy behavior. Separate area classification from purposes and reusable lighting policy. General phases own night transitions when enabled; daylight masks clip lighting rules across home/meal/recreation demands, never HVAC or one-shot sleeping Off rules. Keep backend compatibility and require explicit user conversion of legacy common/service areas. No new dependencies.
+
+## Bedroom rest follow-up — specification only
+Implement US12 as explicit dated overnight wake-up overrides and separately identified nap windows. Preserve existing overnight profiles and their lighting behavior; do not model a nap by blindly cloning the overnight sleeping group. Compile nap windows into HVAC-only demand plus explicitly opted-in bathroom demand, using existing physical-load conflict/union handling and independent preconditioning. Keep displayed room-use duration separate from lighting triggers where a wake-up override extends HVAC.
+
+Persist reusable rest defaults in household setup and actual selections in the dated workspace. Define and version the additive schema before implementation, with old inputs meaning no naps and unchanged wake-up behavior. Reuse supplied local timezone/calendar coverage and the existing local date/time ambiguity handling. Extend reasons and summaries so the existing HVAC chart and PDF can explain nap versus overnight demand. Update compiler contracts and migration tests together; no new calendar or execution dependency is approved.
