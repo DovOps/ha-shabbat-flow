@@ -36,3 +36,10 @@ See [Home Assistant labels](https://www.home-assistant.io/docs/organizing/labels
 Choose Bedroom, Common Area, Bathroom or Hallway based on use, regardless of the HA name. Common areas can combine meal lighting/HVAC, home night/morning phases and a daylight break without a sleeping purpose or bathroom link. Hallways expose a selectable night preset; classification does not automatically enable it.
 
 Daylight breaks suppress selected main/night lighting, including meals, but leave HVAC running according to its own demand. Missing sunset retains lights with a warning. Converting a legacy service area to Common Area preserves device choices, meals and daylight settings, keeps existing general phases (or converts legacy bathroom night timing when none exist), and disables the conflicting bathroom night policy. Save and create a new workspace to preview the change.
+
+## Naps, late wake-up and afternoon hosting
+In the dated planner, expand a selected bedroom's wake-up controls to keep its HVAC running later without delaying bedroom-light shutoff. The default leaves the existing profile unchanged; Late uses the room's sunrise-relative default, and Custom accepts a local date/time.
+
+Add a nap separately for any configured bedroom, including a room unused overnight. Review its start/end and HVAC lead time. A nap normally adds only HVAC; shared bathroom lights are optional and retain their configured daylight/night policy. A room without planner HVAC shows an explanation and will not acquire HVAC commands. Reusable defaults are in bedroom setup; changing them does not rewrite existing dated workspaces.
+
+On Shabbat, add Afternoon hosting / Seudah Shlishit if needed and choose Hosting. Review the lunch-linked groups and local time window. The final Shabbat segment defaults to end minus 2.5 hours through end; an internal Shabbat-to-holiday boundary requires explicit times. Existing daylight breaks can suppress light demand. Compatible concurrent demands keep a device on until all have ended. The post-observance shutoff option still controls final releases.

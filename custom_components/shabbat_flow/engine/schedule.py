@@ -62,6 +62,12 @@ def validate_time(value):
         require(type(value['offset_minutes']) is int and abs(value['offset_minutes']) <= 1440)
 
 
+def validate_rest_defaults(value):
+    keys(value, {'nap_after_sunrise', 'nap_duration', 'lead_minutes', 'late_wake_after_sunrise'})
+    for key, low, high in [('nap_after_sunrise',0,720), ('nap_duration',15,480), ('lead_minutes',0,240), ('late_wake_after_sunrise',0,720)]:
+        require(type(value[key]) is int and low <= value[key] <= high)
+
+
 def validate_configuration(config):
     keys(config, {'schema_version', 'rooms', 'loads', 'groups', 'profiles'} | ({'post_shutoff'} if 'post_shutoff' in config else set()))
     if 'post_shutoff' in config: require(type(config['post_shutoff']) is bool)
@@ -140,7 +146,8 @@ def validate_configuration(config):
     for profile in config['profiles'].values():
         require(type(profile) is dict)
         expected = {'label', 'room', 'purpose', 'groups'}
-        keys(profile, expected | ({'window'} if 'window' in profile else set()))
+        keys(profile, expected | ({'window'} if 'window' in profile else set()) | ({'rest_defaults'} if 'rest_defaults' in profile else set()))
+        if 'rest_defaults' in profile: validate_rest_defaults(profile['rest_defaults'])
         if 'window' in profile:
             keys(profile['window'], {'start', 'end'})
             for value in profile['window'].values():
@@ -160,7 +167,7 @@ def interval(item, calendar):
 
 def compile_schedule(config, plan):
     validate_configuration(config)
-    keys(plan, {'schema_version', 'language', 'snapshot', 'availability', 'room_uses', 'meals', 'groups'})
+    keys(plan, {'schema_version', 'language', 'snapshot', 'availability', 'room_uses', 'meals', 'groups'} | ({'naps'} if 'naps' in plan else set()))
     require(type(plan['schema_version']) is int and plan['schema_version'] == 2)
     choice(plan['language'], ('en', 'he'))
     calendar = validate_calendar(plan['snapshot'])
@@ -203,14 +210,22 @@ def compile_schedule(config, plan):
         references(groups, config['groups'])
         for group in groups:
             selections.append({'id': item['id'], 'kind': kind, 'segment': item['segment'],
-                               'group': group, 'use_start': start, 'use_end': end})
+                               'group': group, 'use_start': start, 'use_end': end,
+                               **({'hvac_end': parse_instant(item['hvac_end'], calendar['zone'])} if 'hvac_end' in item else {}),
+                               **({'nap': item} if kind == 'nap' else {})})
         return start, end
 
     bounded_list(plan['room_uses'], 300)
     uses = []
     for use in plan['room_uses']:
-        keys(use, {'id', 'room', 'purpose', 'control', 'profile', 'start', 'end', 'segment'})
-        uses.append({k: v for k, v in use.items() if k != 'segment'})
+        keys(use, {'id', 'room', 'purpose', 'control', 'profile', 'start', 'end', 'segment'} | ({'hvac_end'} if 'hvac_end' in use else set()))
+        if 'hvac_end' in use:
+            require(use['purpose'] == 'sleeping' and use['control'] == 'planner', 'invalid_mapping')
+            wake = parse_instant(use['hvac_end'], calendar['zone'])
+            require(use['segment'] in calendar['segments'], 'invalid_mapping')
+            require(parse_instant(use['start'], calendar['zone']) < wake <= calendar['segments'][use['segment']]['end'], 'invalid_sequence')
+            at_home(parse_instant(use['start'], calendar['zone']), max(wake, parse_instant(use['end'], calendar['zone'])))
+        uses.append({k: v for k, v in use.items() if k not in ('segment','hvac_end')})
     room_result = validate_room_uses(plan['snapshot'], uses, list(config['rooms']),
                                      {k: v['purpose'] for k, v in config['profiles'].items()})
     for conflict in room_result['overlap_conflicts']:
@@ -223,6 +238,35 @@ def compile_schedule(config, plan):
             groups = profile['groups']
         start, end = selection(use, groups, 'room_use')
         at_home(start, end)
+    naps = plan.get('naps', [])
+    bounded_list(naps, 100)
+    nap_ids = set()
+    for nap in naps:
+        keys(nap, {'id','room','profile','segment','start','end','lead_minutes','bathroom_targets'})
+        identifier(nap['id']); require(nap['id'] not in nap_ids, 'invalid_mapping'); nap_ids.add(nap['id'])
+        identifier(nap['room']); identifier(nap['profile'])
+        require(nap['room'] in config['rooms'] and nap['profile'] in config['profiles'], 'invalid_mapping')
+        profile = config['profiles'][nap['profile']]
+        require(profile['room'] == nap['room'] and profile['purpose'] == 'sleeping', 'invalid_mapping')
+        require(type(nap['lead_minutes']) is int and 0 <= nap['lead_minutes'] <= 240)
+        references(nap['bathroom_targets'], config['loads'])
+        allowed = {target for gid in profile['groups'] for rule in config['groups'][gid]['rules']
+                   if rule['release'] is not None and rule['action'] == {'type':'state','state':'on'} for target in rule['targets']
+                   if config['loads'][target].get('display', {}).get('room') not in (None, nap['room'])}
+        require(set(nap['bathroom_targets']) <= allowed, 'invalid_mapping')
+        a, b = selection(nap, profile['groups'], 'nap')
+        seg = calendar['segments'][nap['segment']]
+        require(seg['sunrise'] <= a < b <= seg['end'], 'invalid_sequence')
+        lead = max(calendar['preparation_start'], a-timedelta(minutes=nap['lead_minutes']))
+        at_home(lead,b)
+        for use in plan['room_uses']:
+            if use['room'] == nap['room'] and use['control'] == 'existing' and parse_instant(use['start'],calendar['zone']) < b and lead < parse_instant(use['end'],calendar['zone']):
+                issues.append({'code':'room_overlap','room':nap['room'],'uses':sorted([nap['id'],use['id']])})
+    for use in plan['room_uses']:
+        if 'hvac_end' not in use: continue
+        for other in plan['room_uses']:
+            if other['room'] == use['room'] and other['control'] == 'existing' and parse_instant(other['start'],calendar['zone']) < parse_instant(use['hvac_end'],calendar['zone']) and parse_instant(use['start'],calendar['zone']) < parse_instant(other['end'],calendar['zone']):
+                issues.append({'code':'room_overlap','room':use['room'],'uses':sorted([use['id'],other['id']])})
     bounded_list(plan['meals'], 100)
     meal_segments, seen = set(), set()
     for meal in plan['meals']:
@@ -278,12 +322,13 @@ def compile_schedule(config, plan):
     clean_plan = json.loads(canonical(clean_plan))
     for segment in clean_plan['snapshot']['segments']:
         segment.pop('calendar_details', None)
-    for field in ('room_uses', 'meals', 'groups'):
+    for field in ('room_uses', 'meals', 'groups', *(['naps'] if 'naps' in clean_plan else [])):
         clean_plan[field].sort(key=lambda v: v['id'])
+    for nap in clean_plan.get('naps', []): nap['bathroom_targets'].sort()
     for meal in clean_plan['meals']:
         meal['groups'].sort()
     result = {'preview_only': True, 'complete': not issues, 'issues': issues,
-              'digest': digest({'compiler': 'generic-v2.4', 'config': clean_config, 'plan': clean_plan}),
+              'digest': digest({'compiler': 'generic-v2.5', 'config': clean_config, 'plan': clean_plan}),
               'events': [], 'warnings': []}
     if issues:
         result['issues'] = sorted(issues, key=canonical)
@@ -308,9 +353,20 @@ def compile_schedule(config, plan):
 
     for selected in sorted(selections, key=lambda v: (v['kind'], v['id'], v['segment'], v['group'])):
         group = config['groups'][selected['group']]
-        for rule in group['rules']:
-            start = resolve(rule['start'], selected, rule.get('skip_empty', False))
-            end = resolve(rule['end'], selected, rule.get('skip_empty', False)) if rule['end'] is not None else None
+        for original_rule in group['rules']:
+            rule = original_rule
+            hvac_rule = rule['action']['type'] in ('hvac','hvac_power')
+            if 'nap' in selected:
+                nap = selected['nap']
+                if rule['release'] is None or (hvac_rule and rule['action'].get('state', rule['action'].get('mode')) == 'off'): continue
+                targets = rule['targets'] if hvac_rule else [t for t in rule['targets'] if t in nap['bathroom_targets'] and rule['action'] == {'type':'state','state':'on'}]
+                if not targets: continue
+                rule = {**rule, 'targets':targets, 'start':{'anchor':'use_start','offset_minutes':-nap['lead_minutes'] if hvac_rule else 0,'not_before':'preparation_start'}, 'end':{'anchor':'use_end','offset_minutes':0}, 'release':rule['release']}
+            effective = {**selected, 'use_end':selected['hvac_end']} if hvac_rule and 'hvac_end' in selected else selected
+            start = resolve(rule['start'], effective, rule.get('skip_empty', False))
+            end = resolve(rule['end'], effective, rule.get('skip_empty', False)) if rule['end'] is not None else None
+            if hvac_rule and 'hvac_end' in selected and end is not None and rule['action'].get('state', rule['action'].get('mode')) != 'off':
+                end = selected['hvac_end']
             if rule.get('skip_empty') and end is not None and start >= end:
                 entry = {'code': 'phase_empty', 'group': selected['group']}
                 if entry not in result['warnings']: result['warnings'].append(entry)
@@ -318,6 +374,7 @@ def compile_schedule(config, plan):
             require(start < calendar['end'] and (end is None or start < end), 'invalid_sequence')
             reason = {k: selected[k] for k in ('id', 'kind', 'segment', 'group')}
             reason['rule'] = rule['id']
+            if hvac_rule and 'hvac_end' in selected: reason['kind'] = 'overnight_hvac'
             for warning in rule.get('warnings', []):
                 entry = {'code': warning, 'group': selected['group']}
                 if entry not in result['warnings']: result['warnings'].append(entry)

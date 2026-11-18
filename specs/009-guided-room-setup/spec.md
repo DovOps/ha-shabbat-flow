@@ -169,7 +169,7 @@ Hallway classification exposes the explicit hallway night preset (candles to sun
 | --- | --- |
 | WIZ-FR-035 | Bind Bedroom/Common Area/Bathroom area/Hallway area labels separately from entity light-role labels. Suggest types using direct HA area labels only; unique matches default newly selected empty areas. Existing configured areas require Apply suggested area type; explicit types remain fixed across refreshes. Conflicting matches require explicit choice. Common Area labels do not imply recreation or sleeping. Preserve the original five-label request format and saved mappings when adding the two new area bindings. |
 
-## US12 — Bedroom naps and independent late wake-up (approved, not implemented)
+## US12 — Bedroom naps and independent late wake-up (preview 0.10.0)
 A homeowner can plan daytime rest in selected bedrooms and keep overnight HVAC running later in rooms where people sleep in. These choices describe room use, not identities or ages; an office configured for sleeping is eligible too. Existing Early/Standard/Late bedtime profiles must not be presented as an independent wake-up control.
 
 | ID | Requirement |

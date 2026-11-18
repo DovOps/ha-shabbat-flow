@@ -222,7 +222,13 @@
     "label_hallway_area": "Hallway areas label",
     "suggested_type": "Area type suggested by HA labels",
     "apply_area_type": "Apply suggested area type",
-    "conflicting_area_labels": "Multiple area-type labels match. Choose Bedroom, Bathroom, Common Area or Hallway explicitly."
+    "conflicting_area_labels": "Multiple area-type labels match. Choose Bedroom, Bathroom, Common Area or Hallway explicitly.",
+    "rest_defaults": "Nap and late wake-up defaults",
+    "rest_defaults_help": "Suggestions for new weekly choices only; no naps are enabled automatically. All values are minutes.",
+    "rest_nap_after_sunrise": "Nap start after sunrise",
+    "rest_nap_duration": "Nap duration",
+    "rest_lead_minutes": "Nap HVAC preconditioning",
+    "rest_late_wake_after_sunrise": "Late wake-up after sunrise"
   },
   "he": {
     "language": "שפה",
@@ -447,6 +453,12 @@
     "label_hallway_area": "תווית אזורי מסדרונות",
     "suggested_type": "סוג אזור מוצע לפי תוויות HA",
     "apply_area_type": "החלת סוג האזור המוצע",
-    "conflicting_area_labels": "נמצאו כמה תוויות סוג אזור. בחרו במפורש חדר שינה, חדר רחצה, אזור משותף או מסדרון."
+    "conflicting_area_labels": "נמצאו כמה תוויות סוג אזור. בחרו במפורש חדר שינה, חדר רחצה, אזור משותף או מסדרון.",
+    "rest_defaults": "ברירות מחדל למנוחה וליקיצה מאוחרת",
+    "rest_defaults_help": "הצעות לבחירות שבועיות חדשות בלבד; מנוחה אינה מופעלת אוטומטית. כל הערכים בדקות.",
+    "rest_nap_after_sunrise": "תחילת מנוחה אחרי זריחה",
+    "rest_nap_duration": "משך מנוחה",
+    "rest_lead_minutes": "הכנת מיזוג למנוחה",
+    "rest_late_wake_after_sunrise": "יקיצה מאוחרת אחרי זריחה"
   }
 }

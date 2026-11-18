@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.9.1/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.10.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -693,3 +693,21 @@ async def test_area_label_bindings_survive_legacy_clients(host):
     old={k:v for k,v in filters.items() if k not in ('bathroom_area','hallway_area')}
     assert validate_label_filters(old,inv,filters)==filters
     assert validate_label_filters(filters,inv,empty_label_filters())==filters
+
+@pytest.mark.asyncio
+async def test_rest_defaults_persist_without_enabling_naps(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    r=wizard_room(room(['sleeping'],[light.id]))
+    defaults={'nap_after_sunrise':420,'nap_duration':90,'lead_minutes':30,'late_wake_after_sunrise':300}
+    r['setup']['rest_defaults']=defaults
+    rooms={bed.id:r};saved={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,inv)}
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    before=deepcopy(saved);b=workspace(saved,inv,snapshot)
+    assert saved==before and not b['plan'].get('naps') and not b['plan']['room_uses']
+    assert all(p['rest_defaults']==defaults for p in b['config']['profiles'].values() if p['purpose']=='sleeping')
+    view=HouseholdView(hass)
+    result=decoded(await view.post(Request(json.dumps({'revision':0,'inventory_revision':inv['revision'],'rooms':rooms}).encode())))
+    assert result['settings']['rooms'][bed.id]['setup']['rest_defaults']==defaults
+    assert (await Store(hass,1,DOMAIN+'.household').async_load())['rooms'][bed.id]['setup']['rest_defaults']==defaults
+    r['setup']['rest_defaults']['nap_duration']=0
+    with pytest.raises(ValueError):validate_settings(rooms,inv)

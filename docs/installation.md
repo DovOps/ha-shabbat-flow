@@ -101,5 +101,8 @@ The schedule page includes Export PDF / Print beside JSON. After a complete prev
 ## Visual plan (0.9.0)
 Generate a new workspace to capture area types and provider-supplied Hebrew date/parsha/holiday labels. The complete preview includes per-day lighting charts grouped by room type, plus the event list. Export PDF / Print includes the same charts and boxed day summaries. Unknown before the first scheduled state is hatched; On bars are planned intentions, never occupancy or confirmed device state. Existing automations may act differently. Time axes follow local calendar days and show UTC offsets at DST transitions. Missing provider metadata stays absent.
 
-## HVAC chart (0.9.1 deployed; post-restart visual check pending)
+## HVAC chart (introduced in 0.9.1; live verification completed in 0.10.0)
 The complete preview and PDF include a single first-candle-to-final-end HVAC chart for scheduled units. Small 30-minute cells distinguish planned On, Off and Unknown; cells containing transitions are split at exact times. Heating/cooling and preserve-settings control share the On/Off view; the detailed event list retains settings. Older workspaces can use this chart after re-previewing. The period follows actual anchors rather than assuming exactly 25 hours.
+
+## Bedroom rest and afternoon hosting (0.10.0)
+Refresh the integration page after upgrading. The dated planner adds independent bedroom HVAC wake-up overrides and optional HVAC-only nap windows, including preconditioning and explicitly selected shared bathroom lighting. Bedroom setup can store reusable rest defaults. Old plans without these fields retain their previous behavior. On Shabbat, use Add afternoon hosting / Seudah Shlishit, select Hosting and review lunch-linked rooms and times. Final-segment default is end minus 150 minutes; internal holiday boundaries require explicit review. These remain previews, not device automation execution.

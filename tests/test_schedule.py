@@ -14,6 +14,100 @@ class ScheduleTests(unittest.TestCase):
         self.bundle = json.loads((ROOT / 'examples/period-preview.json').read_text())
         self.config, self.plan = self.bundle['config'], self.bundle['plan']
 
+    def nap(self, start='2027-01-08T14:00:00+02:00', end='2027-01-08T16:00:00+02:00'):
+        return {'id':'nap_1','room':'room_a','profile':'room_a_standard','segment':'day_1',
+                'start':start,'end':end,'lead_minutes':60,'bathroom_targets':[]}
+
+    def hvac_events(self, result):
+        physical=self.config['loads']['room_a_hvac']['physical_id']
+        return [e for e in result['events'] if e['physical_id']==physical]
+
+    def test_nap_only_preserves_profile_and_does_not_add_lighting(self):
+        self.plan['room_uses']=[]
+        baseline=self.compile()
+        self.plan['naps']=[self.nap()]
+        before=copy.deepcopy(self.bundle)
+        result=self.compile();self.assertTrue(result['complete'])
+        events=self.hvac_events(result)
+        self.assertEqual([e['local'] for e in events],['2027-01-08T13:00:00+02:00','2027-01-08T16:00:00+02:00'])
+        self.assertEqual(events[0]['action'],self.config['groups']['room_a_sleep_standard']['rules'][0]['action'])
+        self.assertTrue(all(r['kind']=='nap' for e in events for r in e['reasons']))
+        self.assertEqual([e for e in result['events'] if e not in events],baseline['events'])
+        self.assertEqual(self.bundle,before)
+
+    def test_wake_override_changes_hvac_release_not_lighting(self):
+        baseline=self.compile()
+        self.plan['room_uses'][0]['hvac_end']='2027-01-08T11:00:00+02:00'
+        result=self.compile();physical=self.config['loads']['room_a_hvac']['physical_id']
+        self.assertEqual([e for e in result['events'] if e['physical_id']!=physical],
+                         [e for e in baseline['events'] if e['physical_id']!=physical])
+        self.assertEqual(self.hvac_events(result)[1]['local'],'2027-01-08T11:00:00+02:00')
+        self.assertEqual(self.hvac_events(result)[1]['reasons'][0]['kind'],'overnight_hvac')
+
+    def test_wake_and_nap_union_has_no_intermediate_off(self):
+        self.plan['room_uses'][0]['hvac_end']='2027-01-08T14:00:00+02:00'
+        self.plan['naps']=[self.nap()]
+        events=self.hvac_events(self.compile())
+        self.assertEqual(events[1]['local'],'2027-01-08T16:00:00+02:00')
+        self.assertEqual(len(events),6)
+
+    def test_power_only_nap_has_no_temperature_or_mode(self):
+        self.plan['room_uses']=[];self.plan['naps']=[self.nap()]
+        self.config['loads']['room_a_hvac']['kind']='hvac_power'
+        self.config['loads']['room_a_hvac']['capabilities']={}
+        for group in self.config['groups'].values():
+            for rule in group['rules']:
+                if 'room_a_hvac' in rule['targets']:
+                    rule['action']={'type':'hvac_power','state':'on'}
+                    rule['release']={'type':'hvac_power','state':'off'}
+        events=self.hvac_events(self.compile())
+        self.assertEqual([e['action'] for e in events],[{'type':'hvac_power','state':'on'},{'type':'hvac_power','state':'off'}])
+
+    def test_nap_existing_control_overlap_blocks_preview(self):
+        self.plan['room_uses']=[{**self.plan['room_uses'][0], 'control':'existing','profile':None,
+            'start':'2027-01-08T12:00:00+02:00','end':'2027-01-08T15:00:00+02:00'}]
+        self.plan['naps']=[self.nap()]
+        result=self.compile();self.assertFalse(result['complete'])
+        self.assertIn('room_overlap',[i['code'] for i in result['issues']])
+
+    def test_nap_lead_requires_home_coverage(self):
+        self.plan['room_uses']=[]
+        for m in self.plan['meals']:m['choice']='none'
+        self.plan['availability']=[{'id':'away','start':self.plan['snapshot']['preparation_start'],'end':'2027-01-08T13:30:00+02:00','state':'away'},
+            {'id':'home','start':'2027-01-08T13:30:00+02:00','end':self.plan['snapshot']['end'],'state':'home'}]
+        self.plan['naps']=[self.nap()];self.fails('away_conflict')
+
+    def test_nap_optional_shared_lights_obey_daylight_mask(self):
+        self.plan['room_uses']=[];self.plan['naps']=[self.nap()]
+        target='room_a_spots';self.config['loads'][target]['display']={'room':'room_b','area_type':'bathroom','role':'main_lights'}
+        rule={'id':'shared_nap','targets':[target],'start':{'anchor':'use_start','offset_minutes':0},
+              'end':{'anchor':'use_end','offset_minutes':0},'action':{'type':'state','state':'on'},'release':{'type':'state','state':'off'},
+              'active_windows':[{'start':'2027-01-08T15:00:00+02:00','end':'2027-01-08T17:00:00+02:00'}]}
+        self.config['groups']['room_a_sleep_standard']['rules'].append(rule)
+        physical=self.config['loads'][target]['physical_id']
+        self.assertFalse(any(e['physical_id']==physical for e in self.compile()['events']))
+        self.plan['naps'][0]['bathroom_targets']=[target]
+        events=[e for e in self.compile()['events'] if e['physical_id']==physical]
+        self.assertEqual([e['local'] for e in events],['2027-01-08T15:00:00+02:00','2027-01-08T16:00:00+02:00'])
+
+    def test_nap_bounds_and_wake_segment_are_validated(self):
+        self.plan['naps']=[self.nap(start='2027-01-08T05:00:00+02:00')]
+        self.fails('invalid_sequence')
+        self.plan['naps']=[self.nap()];self.plan['naps'][0]['lead_minutes']=True;self.fails()
+        self.plan['naps']=[];self.plan['room_uses'][0]['hvac_end']='2027-01-09T10:00:00+02:00'
+        self.fails('invalid_sequence')
+
+    def test_afternoon_hosting_is_opt_in_and_unions_with_lunch(self):
+        baseline=self.compile()
+        activity={'id':'afternoon_3','segment':'day_3','kind':'afternoon','choice':'none',
+            'start':'2027-01-10T13:30:00+02:00','end':'2027-01-10T17:00:00+02:00','groups':['meal']}
+        self.plan['meals'].append(activity)
+        self.assertEqual(self.compile()['events'],baseline['events'])
+        activity['choice']='hosting';result=self.compile();self.assertTrue(result['complete'])
+        self.assertTrue(any(r['id']=='afternoon_3' for e in result['events'] for r in e['reasons']))
+        physical=self.config['loads'][self.config['groups']['meal']['rules'][0]['targets'][0]]['physical_id']
+        self.assertFalse(any(e['physical_id']==physical and e['local']=='2027-01-10T14:00:00+02:00' for e in result['events']))
+
     def test_display_metadata_does_not_change_schedule(self):
         before = self.compile()
         self.plan['snapshot']['segments'][0]['calendar_details'] = ['Example Hebrew date', 'Example weekly portion']

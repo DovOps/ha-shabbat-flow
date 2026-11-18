@@ -3,7 +3,7 @@ import {renderLightingMap} from './lighting-map.mjs';
 import {renderPrintReport} from './period-report.mjs';
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
-import {actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
+import {addNap,restDefaults,napBathroomTargets,afternoonActivity,zonedISO,actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
 const householdMode=new URLSearchParams(location.search).get('household')==='1';
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
 const draftKey=householdMode?'shabbat-flow-household-draft-v2':PERIOD_DRAFT_KEY;
@@ -18,7 +18,7 @@ function button(key,fn){const n=node('button',t(key));n.type='button';n.addEvent
 function field(key,value,fn,options,sourceRole){
   const label=node('label',undefined,'field');label.append(node('span',t(key)));
   const input=node(options?'select':'input');
-  const dateField=!options&&['window_start','window_end','preparation_start','candle_lighting','sunrise_anchor'].includes(key);
+  const dateField=!options&&['window_start','window_end','preparation_start','candle_lighting','sunrise_anchor','wake_time'].includes(key);
   if(options)for(const [val,text] of options){const option=node('option',text);option.value=val;input.append(option);}
   else{input.type=dateField?'datetime-local':'text';input.maxLength=100;input.dir='ltr';if(dateField)input.step='1';}
   if(dateField){
@@ -103,9 +103,9 @@ function render(){
   main.append(field('home_question',state,v=>{if(v!=='custom')applyChange(setDayHome(bundle,segment.id,v));},homeOptions));
   const dayUses=bundle.plan.room_uses.filter(v=>v.segment===segment.id),meals=bundle.plan.meals.filter(v=>v.segment===segment.id);
   if(state==='custom')main.append(button('review_custom',openAdvanced));
-  if(state==='away'&&(dayUses.length||meals.some(v=>['family','hosting'].includes(v.choice)))){
+  if(state==='away'&&(dayUses.length||(bundle.plan.naps??[]).some(n=>n.segment===segment.id)||meals.some(v=>['family','hosting'].includes(v.choice)))){
     const notice=node('div',undefined,'inline-issue');notice.append(node('p',t('away_selection_conflict')),button('clear_away_choices',()=>{
-      const next=structuredClone(bundle);next.plan.room_uses=next.plan.room_uses.filter(v=>v.segment!==segment.id);
+      const next=structuredClone(bundle);next.plan.room_uses=next.plan.room_uses.filter(v=>v.segment!==segment.id);if(next.plan.naps)next.plan.naps=next.plan.naps.filter(v=>v.segment!==segment.id);
       next.plan.meals.filter(v=>v.segment===segment.id&&v.choice!=='none').forEach(v=>v.choice='away');applyChange(next);
     }));main.append(notice);
   }
@@ -133,6 +133,13 @@ function render(){
       if(use){
         tile.append(node('p',`${safeTime(use.start)} — ${safeTime(use.end)}`,'hint'));
         const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,use);tile.append(custom);
+
+        if(purpose==='sleeping'&&use.control==='planner'){
+          const wake=node('details');wake.append(node('summary',t('wake_heading')),node('p',t('wake_help'),'hint'));
+          wake.append(field('wake_choice',use.hvac_end?'custom':'default',v=>{if(v==='default')delete use.hvac_end;else if(v==='late')use.hvac_end=zonedISO(+new Date(segment.sunrise)+restDefaults(bundle.config.profiles[use.profile]).late_wake_after_sunrise*60000,bundle.plan.snapshot.timezone);else use.hvac_end??=use.end;changed();render();},[['default',t('wake_default')],['late',t('wake_late')],['custom',t('wake_custom')]]));
+          if(use.hvac_end)wake.append(field('wake_time',use.hvac_end,v=>use.hvac_end=v));
+          wake.append(node('p',`${t('wake_time')}: ${safeTime(use.hvac_end??use.end)}`,'hint'));tile.append(wake);
+        }
         const overlap=bundle.plan.room_uses.some(v=>v.id!==use.id&&v.room===room&&new Date(v.start)<new Date(use.end)&&new Date(use.start)<new Date(v.end));
         if(overlap){const notice=node('div',undefined,'inline-issue');notice.append(node('p',t('room_overlap_help')),button('adjust_window',()=>{custom.open=true;custom.querySelector('input').focus();}));tile.append(notice);}
       }
@@ -140,13 +147,26 @@ function render(){
     }
     panel.append(tiles);root.append(panel);
   }
+  const napsPanel=section('naps_title');napsPanel.append(node('p',t('naps_help'),'hint'));
+  const napRooms=Object.entries(bundle.config.rooms).filter(([room])=>availableProfiles(bundle.config,room,'sleeping').length);
+  for(const [room,label] of napRooms){const row=node('div',undefined,'room-tile');row.append(node('h3',label[lang()]),button('add_nap',()=>applyChange(addNap(bundle,segment.id,room))));
+    for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id&&n.room===room)){
+      const item=node('div',undefined,'period-item');item.append(field('profile_label',nap.profile,v=>{nap.profile=v;nap.bathroom_targets=[];changed();render();},availableProfiles(bundle.config,room,'sleeping').map(([id,p])=>[id,p.label[lang()]])));windowFields(item,nap);
+      const lead=field('nap_lead',nap.lead_minutes,v=>nap.lead_minutes=Number(v));const input=lead.querySelector('input');input.type='number';input.min=0;input.max=240;item.append(lead);
+      const profile=bundle.config.profiles[nap.profile],hvac=profile.groups.some(g=>bundle.config.groups[g].rules.some(r=>['hvac','hvac_power'].includes(r.action.type)&&r.release&&r.action.mode!=='off'&&r.action.state!=='off'));
+      if(!hvac)item.append(node('p',t('nap_no_hvac'),'inline-issue'));
+      const bathrooms=node('details');bathrooms.append(node('summary',t('nap_bathroom')));
+      for(const id of napBathroomTargets(bundle.config,nap)){const label=node('label',undefined,'toggle');label.append(node('span',bundle.config.loads[id].label[lang()]));const check=node('input');check.type='checkbox';check.checked=nap.bathroom_targets.includes(id);check.addEventListener('change',()=>{nap.bathroom_targets=check.checked?[...nap.bathroom_targets,id]:nap.bathroom_targets.filter(v=>v!==id);changed();});label.append(check);bathrooms.append(label);}item.append(bathrooms,button('remove_item',()=>remove(bundle.plan.naps,nap)));row.append(item);
+    }napsPanel.append(row);
+  }root.append(napsPanel);
   const mealPanel=section('meals_title'),mealTiles=node('div',undefined,'room-tiles');
   for(const meal of meals){
     const tile=node('div',undefined,'room-tile');tile.append(node('h3',catalogs[lang()]['meal_'+meal.kind]??meal.kind),
-      field('meal_choice',meal.choice,v=>{meal.choice=v;changed();render();},options(['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(meal.end)}`,'hint'));
+      field('meal_choice',meal.choice,v=>{meal.choice=v;changed();render();},options(meal.kind==='afternoon'?['none','hosting']:['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(meal.end)}`,'hint'));
     tile.append(node('p',`${t('meal_rooms')}: ${meal.groups.map(id=>bundle.config.groups[id]?.label[lang()]??id).join(', ')||t('meal_rooms_none')}`,'hint'));
-    const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);mealTiles.append(tile);
+    const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);if(meal.kind==='afternoon'){tile.append(node('p',t(segment.id===bundle.plan.snapshot.segments.at(-1).id?'afternoon_help':'afternoon_manual'),'hint'));const groups=node('details');groups.append(node('summary',t('meal_rooms')));const candidates=[...new Set(bundle.plan.meals.filter(m=>m.kind==='daytime').flatMap(m=>m.groups))];for(const id of candidates){const label=node('label',undefined,'toggle');label.append(node('span',bundle.config.groups[id].label[lang()]));const input=node('input');input.type='checkbox';input.checked=meal.groups.includes(id);input.addEventListener('change',()=>{meal.groups=input.checked?[...meal.groups,id]:meal.groups.filter(v=>v!==id);changed();});label.append(input);groups.append(label);}tile.append(groups,button('remove_item',()=>remove(bundle.plan.meals,meal)));}mealTiles.append(tile);
   }
+  if(segment.kind==='shabbat'&&!meals.some(m=>m.kind==='afternoon'))mealPanel.append(button('add_afternoon',()=>applyChange(afternoonActivity(bundle,segment.id))));
   mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel);
   const timing=node('details',undefined,'card');timing.append(node('summary',t('family_timing')),node('p',t('timing_scope'),'hint'));
   const visited=new Set();
@@ -165,6 +185,8 @@ function render(){
   const summary=section('family_summary');
   const sleeping=dayUses.filter(v=>v.purpose==='sleeping'),recreation=dayUses.filter(v=>v.purpose==='recreation');
   summary.append(node('p',`${t('sleeping')}: ${sleeping.length? [...new Set(sleeping.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`),node('p',`${t('recreation')}: ${recreation.length?[...new Set(recreation.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`));
+  for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id))summary.append(node('p',`${t('naps_title')}: ${bundle.config.rooms[nap.room][lang()]} · ${safeTime(nap.start)} — ${safeTime(nap.end)} · ${t('nap_lead')}: ${nap.lead_minutes}`));
+  for(const use of sleeping.filter(u=>u.hvac_end))summary.append(node('p',`${bundle.config.rooms[use.room][lang()]} · ${t('wake_time')}: ${safeTime(use.hvac_end)}`));
   for(const meal of meals)summary.append(node('p',`${catalogs[lang()]['meal_'+meal.kind]??meal.kind}: ${t(meal.choice)}`));
   const extraUses=dayUses.some(v=>v.purpose==='other'),manual=bundle.plan.groups.some(v=>v.segment===segment.id);
   if(extraUses||manual)summary.append(node('p',t('additional_custom'),'hint'),button('review_custom',openAdvanced));
@@ -184,7 +206,7 @@ function renderAdvanced(root){
   for(const item of bundle.plan.availability){const row=node('div',undefined,'period-item');windowFields(row,item);row.append(field('home_status',item.state,v=>item.state=v,options(['home_state','away_state','unset']).map(([key,text])=>[key.replace('_state',''),text])),button('remove_item',()=>remove(bundle.plan.availability,item)));availability.append(row);}
   availability.append(button('add_window',()=>{bundle.plan.availability.push({id:nextId('window',bundle.plan.availability),start:snapshot.start,end:snapshot.end,state:'unset'});changed();render();}));root.append(availability);
   for(const segment of snapshot.segments){
-    const day=section('period_day');const removeDay=button('remove_day',()=>{snapshot.segments=snapshot.segments.filter(v=>v.id!==segment.id);for(const key of ['room_uses','meals','groups'])bundle.plan[key]=bundle.plan[key].filter(v=>v.segment!==segment.id);changed();render();});removeDay.disabled=snapshot.segments.length<=1;day.append(removeDay);day.querySelector('h2').append(node('bdi',' · '+segment.id));
+    const day=section('period_day');const removeDay=button('remove_day',()=>{snapshot.segments=snapshot.segments.filter(v=>v.id!==segment.id);for(const key of ['room_uses','meals','groups',...('naps' in bundle.plan?['naps']:[])])bundle.plan[key]=bundle.plan[key].filter(v=>v.segment!==segment.id);changed();render();});removeDay.disabled=snapshot.segments.length<=1;day.append(removeDay);day.querySelector('h2').append(node('bdi',' · '+segment.id));
     day.append(field('day_kind',segment.kind,v=>segment.kind=v,options(['shabbat','yom_tov'])));
     const anchors=node('details');anchors.append(node('summary',t('dated_anchors')));windowFields(anchors,segment);
     anchors.append(field('candle_lighting',segment.candle_lighting,v=>segment.candle_lighting=v),field('sunrise_anchor',segment.sunrise,v=>segment.sunrise=v));day.append(anchors);
@@ -224,7 +246,7 @@ function renderTimeline(){
     const row=node('div',undefined,'event');const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.local;
     const load=Object.values(bundle.config.loads).find(v=>v.physical_id===event.physical_id);
     const description=node('div',load?.label[lang()]??event.physical_id);
-    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
+    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${reason.kind==='nap'?t('naps_title')+' · ':reason.kind==='overnight_hvac'?t('wake_heading')+' · ':''}${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
     const action=event.action,badge=actionBadge(event);let value=t(badge.key);
     if(badge.preserve)description.append(node('small',t('power_only_preview')));
     if(action.temperature!==undefined)value+=` · ${action.temperature}°${action.unit} · ${catalogs[lang()]['fan_'+action.fan_mode]??action.fan_mode}`;

@@ -36,3 +36,6 @@ Production executor reuse; license choice before public release; supported HA ve
 
 ### Approved next iteration: bedroom rest schedules
 Feature 009 US12 adds optional daytime naps and independent late wake-up/HVAC-off choices per bedroom and dated day. Nap HVAC is separate from overnight lighting, supports preconditioning and preserves settings when requested; overlapping compatible demands keep units running continuously. Requirements and acceptance cases are recorded, but implementation and installation remain pending.
+
+### Existing automation schedule overlay (approved specification)
+Read-only forecasts for time/sun-based HA automations and conditions/triggers on the known mapped issur-melacha state. Show source badges and possible planner conflicts without changing automation ownership. Unsupported or unresolved schedules stay explicit. See MD-FR-020–022 and MD-NFR-009; implementation is deferred from the bedroom-rest/afternoon-hosting release.
