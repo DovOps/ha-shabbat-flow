@@ -13,7 +13,7 @@ MAX_BODY = 128 * 1024
 STATIC = {'/':('index.html','text/html'),'/app.mjs':('app.mjs','text/javascript'),'/model.mjs':('model.mjs','text/javascript'),'/style.css':('style.css','text/css')}
 
 STATIC['/transport.mjs']=('transport.mjs','text/javascript')
-STATIC.update({'/lighting-map.mjs': ('lighting-map.mjs', 'text/javascript'), '/period-report.mjs': ('period-report.mjs', 'text/javascript'), '/v2': ('period.html', 'text/html'), '/period.mjs': ('period.mjs', 'text/javascript'), '/period-model.mjs': ('period-model.mjs', 'text/javascript')})
+STATIC.update({'/hvac-map.mjs': ('hvac-map.mjs', 'text/javascript'), '/lighting-map.mjs': ('lighting-map.mjs', 'text/javascript'), '/period-report.mjs': ('period-report.mjs', 'text/javascript'), '/v2': ('period.html', 'text/html'), '/period.mjs': ('period.mjs', 'text/javascript'), '/period-model.mjs': ('period-model.mjs', 'text/javascript')})
 
 def reject_constant(_):
     raise ValueError('invalid_json')

@@ -100,3 +100,6 @@ The schedule page includes Export PDF / Print beside JSON. After a complete prev
 
 ## Visual plan (0.9.0)
 Generate a new workspace to capture area types and provider-supplied Hebrew date/parsha/holiday labels. The complete preview includes per-day lighting charts grouped by room type, plus the event list. Export PDF / Print includes the same charts and boxed day summaries. Unknown before the first scheduled state is hatched; On bars are planned intentions, never occupancy or confirmed device state. Existing automations may act differently. Time axes follow local calendar days and show UTC offsets at DST transitions. Missing provider metadata stays absent.
+
+## HVAC chart (0.9.1 package, deployment pending)
+The complete preview and PDF include a single first-candle-to-final-end HVAC chart for scheduled units. Small 30-minute cells distinguish planned On, Off and Unknown; cells containing transitions are split at exact times. Heating/cooling and preserve-settings control share the On/Off view; the detailed event list retains settings. Older workspaces can use this chart after re-previewing. The period follows actual anchors rather than assuming exactly 25 hours.

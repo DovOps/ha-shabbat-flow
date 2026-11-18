@@ -35,3 +35,14 @@ The user confirmed the previous PDF export worked in the local browser. Actual n
 - Opened a new workspace and observed actual dated Hebrew-date and weekly-portion summaries from Jewish Calendar. Generated an unsaved test preview with home availability and meals, without saving household settings or browser drafts. Visually inspected both local-day charts, main/night changeover and daylight-break bars against the event list. Existing unclassified areas remain explicit rather than inferred from their names.
 - Live Export PDF / Print control is available. Automated interaction with Chrome's print flow timed out; actual new PDF pagination was not visually verified in this pass. The shared report renderer and multi-day structure are regression-tested. Screenshots remain outside the repository.
 - GitHub CI run `44289419389` passed for implementation `8bfda60`. No device calls or automation changes.
+
+## Whole-period HVAC cells — 0.9.1
+- [x] Specify MD-FR-016–017 and MD-NFR-007.
+- [x] Add a pure interval/cell model and shared preview/PDF renderer, using existing assets and no dependencies.
+- [x] Gate on a complete current preview; preserve the event list and lighting map.
+- [x] Test heating/cooling and power-only intentions, unknown initial state, pre-candle state, short mixed episodes, final partial cells, track-only exclusion, physical aliases, multi-day and DST bounds, and unchanged inputs.
+- [ ] Deploy after a noninteractive route is available or the owner confirms a screen-use window.
+
+Implementation uses 30-minute elapsed cells across the supplied first candle and final end, with exact within-cell splits. Eight-unit print chunks repeat the complete axis; mobile charts scroll horizontally. The shared report renderer copies the HVAC chart alongside the lighting chart. No state is inferred from real device readings or settings.
+
+Local checks: 66 Python tests and 35 web tests passed; package consistency, hygiene and whitespace checks passed. Browser/screenshot verification was intentionally not attempted because the owner requested no interruption of their desktop session. SSH configuration has no HA alias and the saved local-network host was unreachable; deployment is pending an owner-confirmed window, with 0.9.0 still installed.
