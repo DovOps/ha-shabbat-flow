@@ -70,3 +70,9 @@ WIZ-FR-014 / US5 was not part of the 0.4.0 completion evidence above. Its implem
 - Added the linked EN/HE in-app Tips page and `docs/setup-tips.md`. Labels are selection aids only; room purposes require explicit application and no device is auto-selected.
 - Generated-package, repository hygiene and whitespace checks passed. Archive SHA-256: `f0dea05df9c09344cd5dc8f13236e8f0382ffd473e79322a7f2adefec3cbc4b6`.
 - This checkpoint is packaged, not deployed to a household instance. Installed evidence above remains for 0.5.1. No production household settings or HA labels were changed. A subsequent installed refresh/verification must be recorded separately.
+
+### Installed 0.6.0 verification — 2026-11-18
+- Following explicit installation authorization, uploaded the previously tested archive and verified its recorded SHA-256, Python syntax, package path scope and all 30 extracted file contents. Backed up the prior integration and its own stored household settings within HA before extraction.
+- Restarted HA after successful configuration validation. Confirmed the running panel serves `/shabbat_flow_static/0.6.0/household.html`, loads existing saved room configuration and exposes all five optional label mappings with live HA label choices and the Tips link.
+- No label mappings or household room settings were saved during verification; labels and existing selections remain homeowner-controlled. No device calls or automation edits were performed. Screenshot evidence stays outside the repository.
+- Source checkpoint `3880bb9` passed GitHub CI run `44252935456` and was merged to main as `b8e3f75`.
