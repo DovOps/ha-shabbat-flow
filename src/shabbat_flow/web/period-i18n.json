@@ -116,7 +116,17 @@
     "bathroom_night_fallback": "A bathroom night switchover has an invalid window. Both light sets remain on during demand for that day; review its offsets.",
     "phase_empty": "A night phase ends before it starts; it was omitted. Review the room-use time and sunrise offsets.",
     "meal_rooms": "Lighting / HVAC rooms",
-    "meal_rooms_none": "None configured — select meal rooms in house setup"
+    "meal_rooms_none": "None configured — select meal rooms in house setup",
+    "export_pdf": "Export PDF / Print",
+    "pdf_help": "Opens the print dialog: choose Save as PDF. In the HA app, open this page in your browser if printing is unavailable. The report contains household plan details; share thoughtfully.",
+    "report_title": "Shabbat / Yom Tov plan",
+    "report_preview": "Planning preview only — no devices have been activated.",
+    "report_time": "Date and time",
+    "report_device": "Device / reason",
+    "report_action": "Action",
+    "report_windows": "Home / away windows",
+    "report_uses": "Room use",
+    "report_unavailable": "Generate a complete preview before exporting."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -235,6 +245,16 @@
     "bathroom_night_fallback": "חלון החלפת הלילה בחדר הרחצה אינו תקין. שני סוגי התאורה נשארים דולקים בזמן הביקוש באותו יום; בדקו את ההיסטים.",
     "phase_empty": "שלב לילה מסתיים לפני תחילתו ולכן הושמט. בדקו את זמן השימוש בחדר ואת ההיסטים מהזריחה.",
     "meal_rooms": "חדרי תאורה / מיזוג",
-    "meal_rooms_none": "לא הוגדרו — בחרו חדרי ארוחות בהגדרות הבית"
+    "meal_rooms_none": "לא הוגדרו — בחרו חדרי ארוחות בהגדרות הבית",
+    "export_pdf": "ייצוא PDF / הדפסה",
+    "pdf_help": "פותח את חלון ההדפסה: בחרו שמירה כ־PDF. אם ההדפסה אינה זמינה באפליקציית HA, פתחו את העמוד בדפדפן. הדוח כולל פרטי תוכנית ביתית; שתפו בתשומת לב.",
+    "report_title": "תוכנית שבת / יום טוב",
+    "report_preview": "תצוגת תכנון בלבד — לא הופעלו מכשירים.",
+    "report_time": "תאריך ושעה",
+    "report_device": "מכשיר / סיבה",
+    "report_action": "פעולה",
+    "report_windows": "זמני שהייה בבית / מחוץ לבית",
+    "report_uses": "שימוש בחדרים",
+    "report_unavailable": "יש ליצור תצוגה מקדימה מלאה לפני הייצוא."
   }
 }

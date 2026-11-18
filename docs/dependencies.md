@@ -41,3 +41,5 @@ Feature 009 power-only follow-up reads HA's `ClimateEntityFeature.TURN_ON/TURN_O
 Feature 009 label filtering reads HA's built-in label registry and direct area/device/entity memberships. No external dependency, registry writes or third-party design is introduced.
 
 Preview 0.7.0 reuses the accepted Jewish Calendar daily event feed for optional Shkia/sunset timestamps. Actual provider event generation is tested on both supported HA versions. No astronomical calculator, new external library, actuator or third-party design is added.
+
+PDF export uses browser-native printing and the existing logo and language catalogs. No PDF library, external service or new runtime dependency is introduced.
