@@ -7,6 +7,7 @@ export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,tim
   report.append(node('p',`${snapshot.timezone} · ${t(snapshot.observance)} · ${date(snapshot.segments[0].start)} — ${date(snapshot.segments.at(-1).end)}`));
   for(const [i,segment] of snapshot.segments.entries()){
     const section=node('section',undefined,'report-day');section.append(node('h2',`${t(segment.kind)} · ${dayLabel(segment,i)}`));
+    if(segment.calendar_details?.length)section.append(node('p',segment.calendar_details.join(' · '),'calendar-details'));
     section.append(node('p',`${t('candle_lighting')}: ${date(segment.candle_lighting)} · ${t('sunrise_anchor')}: ${date(segment.sunrise)}`));
     section.append(node('h3',t('meals_title')));
     for(const meal of bundle.plan.meals.filter(m=>m.segment===segment.id))section.append(node('p',`${t('meal_'+meal.kind)}: ${t(meal.choice)} · ${date(meal.start)} — ${date(meal.end)}`));

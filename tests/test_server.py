@@ -42,7 +42,7 @@ class ServerTests(unittest.TestCase):
         result = json.loads(result)
         self.assertTrue(result['complete'] and result['preview_only'])
         self.assertTrue(result['events'])
-        for path in ('/v2', '/period.mjs', '/period-model.mjs', '/api/v2/i18n', '/logo.png'):
+        for path in ('/v2', '/period.mjs', '/period-model.mjs', '/period-report.mjs', '/lighting-map.mjs', '/api/v2/i18n', '/logo.png'):
             self.assertEqual(self.request('GET', path)[0], 200)
         self.assertEqual(self.request('POST', '/api/v2/activate', '{}', {'Content-Type': 'application/json'})[0], 404)
 

@@ -128,3 +128,11 @@ def test_optional_sunset(fault):
     if fault=='duplicate':d.append(d[-1])
     snap=assemble(y,d,'Europe/London',False,now)
     assert ('sunset' in snap['segments'][0])==(fault is None)
+
+
+def test_dated_calendar_details_are_optional_and_preserved():
+    yearly, daily, now = fixtures()
+    daily += [event('Example Hebrew date', '2027-01-08')]
+    yearly += [event('Example parsha', '2027-01-08'), event('Other day', '2027-01-09')]
+    snapshot = assemble(yearly, daily, 'Europe/London', False, now)
+    assert snapshot['segments'][0]['calendar_details'] == ['Example Hebrew date', 'Example parsha']

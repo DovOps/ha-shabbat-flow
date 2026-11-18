@@ -53,6 +53,8 @@ def assemble(yearly, daily, zone_name, diaspora, now):
             segments.append({'id': f'day_{i+1}', 'kind': 'shabbat' if morning.weekday() == 5 else 'yom_tov',
                              'start': candle.isoformat(), 'end': boundary.isoformat(),
                              'candle_lighting': candle.isoformat(), 'sunrise': matches[0].isoformat()})
+            details = sorted({e['summary'] for e in daily + yearly if str(e.get('start')) == morning.isoformat() and isinstance(e.get('summary'), str) and 0 < len(e['summary']) <= 240})
+            if details: segments[-1]['calendar_details'] = details[:20]
             if len(sunsets) == 1: segments[-1]['sunset'] = sunsets[0].isoformat()
         snapshot = {'schema_version': 2, 'period_id': 'observance_' + first.strftime('%Y%m%d'),
                     'timezone': zone_name, 'observance': 'diaspora' if diaspora else 'israel',

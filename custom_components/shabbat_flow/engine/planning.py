@@ -50,7 +50,10 @@ def validate_calendar(snapshot):
     prior_sunrise = None
     prior_candle = None
     for segment in snapshot['segments']:
-        keys(segment, {'id', 'kind', 'start', 'end', 'candle_lighting', 'sunrise'} | ({'sunset'} if 'sunset' in segment else set()))
+        keys(segment, {'id', 'kind', 'start', 'end', 'candle_lighting', 'sunrise'} | ({'sunset'} if 'sunset' in segment else set()) | ({'calendar_details'} if 'calendar_details' in segment else set()))
+        if 'calendar_details' in segment:
+            bounded_list(segment['calendar_details'], 20)
+            require(all(type(v) is str and 0 < len(v) <= 240 for v in segment['calendar_details']))
         identifier(segment['id'])
         require(segment['id'] not in segments, 'invalid_mapping')
         choice(segment['kind'], ('shabbat', 'yom_tov'))

@@ -346,3 +346,14 @@ test('print report contains all dated days and events, localized warnings, and n
  }
  assert.equal(JSON.stringify(bundle),before);
 });
+
+test('lighting map carries planned state, preserves unknown and plots DST days',async()=>{
+ const {lightingMap}=await import('../src/shabbat_flow/web/lighting-map.mjs');
+ const make=(start,end)=>({config:{loads:{light:{kind:'binary',physical_id:'light'}}},plan:{snapshot:{timezone:'America/New_York',preparation_start:start,end}}});
+ const bundle=make('2027-03-13T22:00:00-05:00','2027-03-15T02:00:00-04:00');
+ const result={complete:true,events:[{physical_id:'light',local:'2027-03-13T23:00:00-05:00',action:{type:'state',state:'on'},intent:'planner'},{physical_id:'light',local:'2027-03-14T02:00:00-05:00',action:{type:'state',state:'off'},intent:'track_only'}]};
+ const days=lightingMap(bundle,result);assert.equal(days.length,3);assert.equal((days[1].end-days[1].start)/3600000,23);
+ assert.deepEqual(days[0].lanes[0].intervals.map(x=>x.state),['unknown','on']);assert.deepEqual(days[1].lanes[0].intervals.map(x=>x.state),['on']);assert.equal(days[2].lanes[0].intervals.at(-1).end,Date.parse(bundle.plan.snapshot.end));
+ const fall=lightingMap(make('2027-11-07T00:00:00-04:00','2027-11-08T00:00:00-05:00'),{complete:true,events:[]});assert.equal((fall[0].end-fall[0].start)/3600000,25);
+ assert.deepEqual(lightingMap(bundle,{complete:false}),[]);
+});
