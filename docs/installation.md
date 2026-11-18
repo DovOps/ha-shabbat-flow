@@ -91,3 +91,6 @@ New bathroom links default to whole-observance demand; existing links keep their
 
 ## Room completion feedback (0.7.1)
 Red warning boxes explain validation and save blockers beside the room and its save controls. A draft with no validation problems explains that **Save & next** marks it ready, while **Save progress** leaves it excluded from dated room choices. Inventory review offers **Refresh inventory** without discarding edits. Conflicting saved revisions require deliberate review; **Reload saved setup** replaces unsaved edits. Server save failures remain visible after redraw.
+
+## Area types and label suggestions (0.8.0)
+Map existing HA area labels to Bedroom, Common Area, Bathroom and Hallway separately from light-role labels. Existing configured rooms require explicit type selection or Apply suggested area type, followed by Save & next. Common areas support meal lighting/HVAC, night/morning phases and optional daylight breaks together without a sleeping purpose or bathroom link. See [setup tips](setup-tips.md).

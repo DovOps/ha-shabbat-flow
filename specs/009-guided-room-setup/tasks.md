@@ -34,4 +34,4 @@
 
 - [x] W025 Common/bathroom classification, safe explicit conversion and label scope (WIZ-FR-032,034).
 - [x] W026 Composable daylight mask, independent meals/HVAC and regression coverage (WIZ-FR-033, WIZ-NFR-017).
-- [ ] W027 Verify EN/HE, package, install with backup and verify saved setup without changing device selections.
+- [x] W027 Verify EN/HE, package, install with backup and verify saved setup without changing device selections.
