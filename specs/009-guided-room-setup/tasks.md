@@ -28,3 +28,6 @@
 - [x] W020 Verify regression/compatibility and package the checkpoint.
 - [x] W021 Implement night/morning presets, explicit meal-room groups and default no post-observance shutoff.
 - [x] W022 Verify complete phase transitions and meal behavior with fictional fixtures; document export findings generically.
+
+- [x] W023 Explicit localized room/save blockers, accessible warning styling and persistent recovery guidance (WIZ-FR-030–031, WIZ-NFR-016).
+- [x] W024 Verify validation, refresh/conflict and failed-save paths; package checkpoint without production deployment.
