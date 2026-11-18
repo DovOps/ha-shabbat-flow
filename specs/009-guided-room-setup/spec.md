@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Preview 0.7.0 installed and verified. Explicit room/save feedback implemented and locally verified in packaged 0.7.1; not yet deployed.
+**Status:** Preview 0.7.1 installed and verified, including explicit room/save feedback.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
