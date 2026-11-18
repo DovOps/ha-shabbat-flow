@@ -140,6 +140,7 @@ function render(){
   for(const meal of meals){
     const tile=node('div',undefined,'room-tile');tile.append(node('h3',catalogs[lang()]['meal_'+meal.kind]??meal.kind),
       field('meal_choice',meal.choice,v=>{meal.choice=v;changed();render();},options(['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(meal.end)}`,'hint'));
+    tile.append(node('p',`${t('meal_rooms')}: ${meal.groups.map(id=>bundle.config.groups[id]?.label[lang()]??id).join(', ')||t('meal_rooms_none')}`,'hint'));
     const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);mealTiles.append(tile);
   }
   mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel);
@@ -210,6 +211,7 @@ function renderAdvanced(root){
 function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
+  for(const warning of result.warnings??[]){const text=node('p',t(warning.code),'hint');text.append(node('bdi',' · '+(bundle.config.groups[warning.group]?.label[lang()]??warning.group)));root.append(text);}
   root.append(node('p',`${t('event_count')}: ${result.events.length}`));
   if(result.events.some(e=>e.action.type==='hvac_power'))root.append(node('p',t('power_support_notice'),'hint'));
   for(const event of result.events){

@@ -111,7 +111,12 @@
     "household_notice": "Your HA household snapshot · Supplied dates · Preview only; no devices controlled. Changes in HA do not rewrite this workspace.",
     "power_only_preview": "Preserve existing settings",
     "action_unknown": "Unrecognized action",
-    "power_support_notice": "Power-only HVAC events are intentions. Device-specific restoration of previous settings must be verified before future execution."
+    "power_support_notice": "Power-only HVAC events are intentions. Device-specific restoration of previous settings must be verified before future execution.",
+    "bathroom_daylight_fallback": "A bathroom daylight break could not be resolved for one or more days. Lighting is retained during those breaks; check dated sunset and offsets.",
+    "bathroom_night_fallback": "A bathroom night switchover has an invalid window. Both light sets remain on during demand for that day; review its offsets.",
+    "phase_empty": "A night phase ends before it starts; it was omitted. Review the room-use time and sunrise offsets.",
+    "meal_rooms": "Lighting / HVAC rooms",
+    "meal_rooms_none": "None configured — select meal rooms in house setup"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -225,6 +230,11 @@
     "household_notice": "תמונת מצב של הבית מ־HA · תאריכים שסופקו · תצוגה בלבד ללא הפעלת מכשירים. שינויים ב־HA אינם משנים תוכנית זו.",
     "power_only_preview": "שמירת ההגדרות הקיימות",
     "action_unknown": "פעולה לא מזוהה",
-    "power_support_notice": "אירועי הפעלה וכיבוי למיזוג הם כוונות בלבד. לפני ביצוע עתידי יש לאמת שהמכשיר משחזר את הגדרותיו הקודמות."
+    "power_support_notice": "אירועי הפעלה וכיבוי למיזוג הם כוונות בלבד. לפני ביצוע עתידי יש לאמת שהמכשיר משחזר את הגדרותיו הקודמות.",
+    "bathroom_daylight_fallback": "לא ניתן לחשב הפסקת אור יום בחדר הרחצה ביום אחד או יותר. התאורה נשמרת בזמן ההפסקות האלה; בדקו את זמני השקיעה וההיסטים.",
+    "bathroom_night_fallback": "חלון החלפת הלילה בחדר הרחצה אינו תקין. שני סוגי התאורה נשארים דולקים בזמן הביקוש באותו יום; בדקו את ההיסטים.",
+    "phase_empty": "שלב לילה מסתיים לפני תחילתו ולכן הושמט. בדקו את זמן השימוש בחדר ואת ההיסטים מהזריחה.",
+    "meal_rooms": "חדרי תאורה / מיזוג",
+    "meal_rooms_none": "לא הוגדרו — בחרו חדרי ארוחות בהגדרות הבית"
   }
 }

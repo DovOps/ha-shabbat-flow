@@ -18,3 +18,9 @@ Add a dedicated `hvac_power` load/action contract with exact on/off-only keys, s
 
 ## Label-guided setup follow-up
 Read HA's built-in label registry and direct membership arrays. Add optional `label_filters` to schema 2 with empty defaults; old request shapes preserve stored mappings. Keep filtering in a pure frontend model, separate from schedule compilation. Add editable label setup ahead of room selection, explicit area-purpose suggestions, role-specific candidate filters and independent area/label escape controls. Supply EN/HE help and a repository Tips page. Verify both HA versions and fictional browser fixtures; package the next preview version.
+
+## Bathroom lighting policy
+Add optional bathroom lighting intent under room setup, preserving legacy defaults. Read optional dated sunset from the existing daily calendar. Resolve deterministic allowed intervals for each light set in the workspace snapshot, intersect demand intervals in the compiler before union, and carry localized fallback warnings into preview. Offer independent daylight and night toggles/offsets with EN/HE controls. Test calendar, policy, compiler and HA persistence before packaging; no device executor.
+
+## Full room changeovers and end behavior
+Use optional validated room phase settings and generated home-driven windows for kitchen/hallway/morning main lighting. Recreation-end background uses its own interval after the main-light interval. Generate separate evening/daytime meal groups; evening meals can begin background demand at meal end, lunch never does. Use the same HVAC intent/lead contract for meal HVAC. Keep final-boundary release behavior as explicit configuration (`post_shutoff`), default false in new household workspaces and preserved in legacy explicit exports. Generic old configurations without the new key retain their prior compiler behavior. Preview summaries display meal-linked rooms and fallback notices.
