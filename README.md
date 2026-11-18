@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current checkpoint: installable HA preview sample 0.7.1 plus local prototypes.** [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current checkpoint: installable HA preview sample 0.8.0 plus local prototypes.** [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
 
 ## Try the preview
 

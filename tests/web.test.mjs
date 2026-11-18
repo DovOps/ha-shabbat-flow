@@ -239,7 +239,7 @@ test('planned badge foreground/background colors meet 4.5 to 1 text contrast',()
  assert.equal(new Set(colors).size,colors.length);
 });
 
-import {roomProblems,phases,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from '../src/shabbat_flow/web/household-model.mjs';
+import {suggestedAreaTypes,classifyRoom,areaType,roomProblems,phases,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from '../src/shabbat_flow/web/household-model.mjs';
 test('label candidates combine entity/device labels, preserve selection and separate area scope',()=>{
  const entities=[
   {id:'direct',domain:'light',area_id:'a',labels:['main']},
@@ -272,7 +272,7 @@ test('bathrooms follow labeled lights, room labels only suggest explicit purpose
  assert.deepEqual(bathroomCandidates(inventory,'bed',[],filters).map(a=>a.id),['bath']);
  assert.deepEqual(bathroomCandidates(inventory,'bed',['bath'],filters),[]);
  assert.equal(bathroomCandidates(inventory,'bed',[],filters,true).length,2);
- assert.deepEqual(suggestedPurposes(inventory.areas[0],filters),['sleeping','recreation']);
+ assert.deepEqual(suggestedPurposes(inventory.areas[0],filters),['sleeping']);
  assert.deepEqual(filteredAreas(inventory.areas,{other:{enabled:true}},filters,'bedroom').map(a=>a.id),['bed','other']);
  const room={roles:{main_lights:[],night_lights:[],hvac:[]},setup:{service:true}};
  assert.deepEqual(roleCandidates(inventory,room,'bath','main_lights',filters).map(e=>e.id),['lamp']);
@@ -310,4 +310,17 @@ test('room warning and draft text meet accessible contrast',()=>{
  const css=fs.readFileSync(new URL('../src/shabbat_flow/web/style.css',import.meta.url),'utf8');
  const luminance=hex=>{const [r,g,b]=hex.match(/../g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*r+.7152*g+.0722*b;};
  for(const state of ['blocked','draft','ready']){const match=css.match(new RegExp('\\.room-feedback\\.'+state+'\\{background:#([0-9a-f]{6});color:#([0-9a-f]{6})'));assert.ok(match);const a=luminance(match[1]),b=luminance(match[2]);assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5);}
+});
+
+test('area classification uses explicit labels and safely converts legacy night policy',()=>{
+ const legacy={enabled:true,purposes:[],roles:{main_lights:['main'],night_lights:['night'],hvac:[]},shared_areas:[],hvac:{mode:'none'},setup:{service:true,status:'draft',home:false,lighting:{mode:'daylight',night_enabled:true,night_after_candles:300,morning_after_sunrise:90,off_after_sunrise:180,on_before_sunset:120}}};
+ const original=structuredClone(legacy),common=classifyRoom(legacy,'common');assert.deepEqual(legacy,original);
+ assert.equal(areaType(common),'common');assert.equal(common.setup.lighting.night_enabled,false);assert.equal(common.setup.lighting.mode,'daylight');assert.equal(common.setup.phases.night_start,300);assert.equal(common.setup.phases.morning_start,90);assert.deepEqual(common.roles,legacy.roles);assert.deepEqual(roomProblems(common,{common}),[]);
+ legacy.setup.phases={...phases(common),night_start:360,evening_meal:true};
+ const kept=classifyRoom(legacy,'common');assert.equal(kept.setup.phases.night_start,360);assert.ok(kept.setup.phases.evening_meal);
+ assert.deepEqual(suggestedAreaTypes({labels:['common']},{common_area:'common'}),['common']);
+ assert.deepEqual(suggestedAreaTypes({labels:['common','bath']},{common_area:'common',bathroom_area:'bath'}),['common','bathroom']);
+ const inventory={entities:[{id:'main',domain:'light',area_id:'a',labels:['main']},{id:'bath',domain:'light',area_id:'a',labels:['bath']}]};
+ common.roles.main_lights=[];
+ assert.deepEqual(roleCandidates(inventory,common,'a','main_lights',{main_lights:'main',bathroom:'bath'}).map(e=>e.id),['main']);
 });

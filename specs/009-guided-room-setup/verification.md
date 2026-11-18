@@ -104,3 +104,10 @@ WIZ-FR-014 / US5 was not part of the 0.4.0 completion evidence above. Its implem
 - Following explicit authorization, uploaded the tested archive, verified the recorded SHA-256, Python syntax, path scope and all 30 extracted file contents. Retained recoverable integration and household Store backups inside HA; settings remained byte-for-byte unchanged during extraction.
 - Restarted HA Core and verified the live panel serves `/shabbat_flow_static/0.7.1/household.html`. Existing mappings loaded and a pre-existing incomplete room visibly shows its specific HVAC-use blocker beside the heading and save controls. No configuration choices were changed or saved for verification. Other editing tabs were left untouched.
 - Screenshot evidence remains outside the repository. Implementation passed CI run `44263952399` and merged to main as `8883eb6`.
+
+## Preview 0.8.0 — explicit area types and combined profiles
+- Added Bedroom/Common Area/Bathroom/Hallway classification, optional area-label suggestions and backward-compatible seven-role label bindings. Existing explicit classifications survive label refresh; common labels no longer imply recreation.
+- Common areas accept meals, independent HVAC, general night/morning phases and daylight breaks together. Light demand is clipped before union; HVAC remains independent. Explicit conversion preserves selected devices and resolves competing legacy night policies.
+- 65 Python unit tests, 31 Node tests and 71 HA tests on each of HA 2026.8.2 and 2026.11.2 passed. Coverage includes 1/2/3-day combined lighting/HVAC timelines, missing sunset fallback, legacy label clients and classification conversion. Repository hygiene, package consistency and whitespace checks passed.
+- Fictional browser fixture: applied the Common Area label suggestion to a legacy conflict, saved successfully with main/night/HVAC devices, both meal profiles and daylight settings retained; English and Hebrew summaries showed Ready. No production mappings were saved in this test.
+- Archive SHA-256: `6a1565c24274d777c74391f088f4686f0ed57ba857947fbbb66e32541111cdf3`. Installation verification pending.

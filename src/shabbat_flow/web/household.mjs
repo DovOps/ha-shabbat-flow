@@ -1,4 +1,4 @@
-import {roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
+import {suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
 import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
 let postShutoff=false,saveError=null,staleSettings=false;
@@ -104,9 +104,10 @@ function drawLabels(root){
  const tips=el('a',t('setup_tips'));tips.href='./tips.html';tips.target='_blank';tips.rel='noopener';section.append(tips);root.append(section);
 }
 function drawPhases(card,aid){
- const r=draft[aid],s=setup(r),p=phases(r),section=el('details');section.id='phase-controls';section.open=phaseOpen;
+ const r=draft[aid],s=setup(r),p=phases(r),section=el('details');section.id='phase-controls';section.open=phaseOpen||areaType(r)==='hallway';
  section.append(el('summary',t('phase_title')),el('p',t('phase_help'),'hint'));
  const set=(key,value)=>{mutate(aid,()=>s.phases={...p,[key]:value});renderRooms();};
+ if(areaType(r)==='hallway')section.append(el('p',t('hallway_help'),'hint'));
  section.append(select(t('phase_preset'),'custom',['custom','none','background','kitchen','hallway'].map(k=>[k,t('phase_'+k)]),v=>{
   const presets={none:{night:'none',morning:false,evening_main:false},background:{night:'after_use',night_end:-60,morning:false,evening_main:false},kitchen:{night:'home',night_start:360,night_end:120,morning:true,morning_start:120,evening_main:true},hallway:{night:'home',night_start:0,night_end:-60,morning:false,evening_main:false}};
   if(presets[v]){mutate(aid,()=>s.phases={...p,...presets[v]});renderRooms();}
@@ -122,12 +123,12 @@ function drawPhases(card,aid){
 function drawBathroomLighting(card,aid){
  const s=setup(draft[aid]),policy=s.lighting??{mode:'always',off_after_sunrise:180,on_before_sunset:120,night_enabled:false,night_after_candles:360,morning_after_sunrise:0};
  const change=(key,value)=>{mutate(aid,()=>s.lighting={...policy,[key]:value});renderRooms();};
- card.append(el('h3',t('bathroom_lighting')),el('p',t('bathroom_lighting_help'),'hint'));
+ card.append(el('h3',t(isBathroom(draft[aid])?'bathroom_lighting':'area_lighting')),el('p',t('area_lighting_help'),'hint'));
  card.append(select(t('bathroom_day_policy'),policy.mode,['always','daylight'].map(v=>[v,t('bathroom_'+v)]),v=>change('mode',v)));
  const number=(key,max)=>{const field=input(t('bathroom_'+key),policy[key],'number',v=>mutate(aid,()=>s.lighting={...(s.lighting??policy),[key]:Number(v)}));const control=field.querySelector('input');control.min=0;control.max=max;control.step=1;card.append(field);};
  if(policy.mode==='daylight'){number('off_after_sunrise',360);number('on_before_sunset',360);}
- card.append(checkbox(t('bathroom_night_enabled'),policy.night_enabled,v=>change('night_enabled',v)));
- if(policy.night_enabled){number('night_after_candles',720);number('morning_after_sunrise',180);}
+ if(isBathroom(draft[aid]))card.append(checkbox(t('bathroom_night_enabled'),policy.night_enabled,v=>change('night_enabled',v)));
+ if(isBathroom(draft[aid])&&policy.night_enabled){number('night_after_candles',720);number('morning_after_sunrise',180);}
 }
 function renderRooms(){
  const focused=document.activeElement?.id;phaseOpen=$('phase-controls')?.open??phaseOpen;labelsOpen=$('label-setup')?.open??labelsOpen;hvacOpen=$('wizard-hvac')?.open??hvacOpen;
@@ -141,28 +142,32 @@ function renderRooms(){
  if(stage==='select'){
   root.append(el('p',t('selection_help')));
   const areaChoice=select(t('area_filter'),areaFilter,['all','bedroom','common_area'].map(k=>[k,t('area_filter_'+k)]),v=>{areaFilter=v;renderRooms();});areaChoice.querySelector('select').onchange=e=>{areaFilter=e.target.value;renderRooms();};root.append(areaChoice);const grid=el('div',undefined,'room-selection');
-  for(const area of filteredAreas(areas,draft,labelFilters,areaFilter)){const r=draft[area.id]??=defaults();const label=`${area.name} · ${data.inventory.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor')}`;grid.append(checkbox(label,r.enabled,v=>{mutate(area.id,()=>r.enabled=v);renderRooms();},'area-'+area.id));}
+  for(const area of filteredAreas(areas,draft,labelFilters,areaFilter)){const r=draft[area.id]??=defaults();const label=`${area.name} · ${data.inventory.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor')}`;grid.append(checkbox(label,r.enabled,v=>{mutate(area.id,()=>{r.enabled=v;const kinds=suggestedAreaTypes(area,labelFilters);if(v&&!r.setup?.area_type&&!r.purposes.length&&!Object.values(r.roles).some(ids=>ids.length)&&kinds.length===1)draft[area.id]=classifyRoom(r,kinds[0]);});renderRooms();},'area-'+area.id));}
   root.append(grid,button('start_setup',async()=>{if(!selectedRooms().length)return wizardError('select_one');if(await save()){const ids=selectedRooms();go('room',ids.find(id=>setup(draft[id]).status!=='ready')??ids[0]);}},true),button('review_setup',()=>go('summary')));
  }else if(stage==='room'){
   const aid=activeRoom,r=draft[aid],s=setup(r),ids=selectedRooms(),card=el('section',undefined,'card');
   card.append(el('p',`${t('room_progress')} ${ids.indexOf(aid)+1} / ${ids.length}`,'hint'),el('h3',roomName(aid)),feedbackBox(aid));
   if(!known.has(aid))card.append(el('p',t('missing_area'),'error'));
   card.append(el('p',t('purpose_help')));
+  const types=suggestedAreaTypes(areas.find(a=>a.id===aid)??{},labelFilters);
+  if(types.length===1)card.append(el('p',`${t('suggested_type')}: ${t('area_type_'+types[0])}`,'hint'),button('apply_area_type',()=>{mutate(aid,()=>draft[aid]=classifyRoom(r,types[0]));phaseOpen=true;renderRooms();}));
+  else if(types.length>1)card.append(el('p',t('conflicting_area_labels'),'room-feedback draft'));
   const suggestions=suggestedPurposes(areas.find(a=>a.id===aid)??{},labelFilters);if(suggestions.length){card.append(el('p',`${t('label_suggestions')}: ${suggestions.map(t).join(', ')}`,'hint'),button('apply_suggestions',()=>{mutate(aid,()=>r.purposes=[...new Set([...r.purposes,...suggestions])]);renderRooms();}));}
   for(const purpose of ['sleeping','recreation'])card.append(checkbox(t(purpose),r.purposes.includes(purpose),v=>mutate(aid,()=>r.purposes=v?[...r.purposes,purpose]:r.purposes.filter(p=>p!==purpose))));
-  card.append(checkbox(t('service_area'),s.service,v=>{mutate(aid,()=>{s.service=v;if(!v)s.home=false;});renderRooms();}));
+  card.append(select(t('area_type'),areaType(r),['room','common','bathroom','hallway',...(areaType(r)==='legacy'?['legacy']:[])].map(k=>[k,t('area_type_'+k)]),v=>{mutate(aid,()=>draft[aid]=classifyRoom(r,v));phaseOpen=true;renderRooms();}),el('p',t('area_type_help'),'hint'));
   const advanced=el('details');advanced.append(el('summary',t('profile_details')),el('p',t('profile_help')));card.append(advanced);
   card.append(viewToggle('all_room_entities',allRoom,v=>allRoom=v),viewToggle('all_entities',showAll,v=>showAll=v),el('p',t('filter_help'),'hint'));
   drawRole(card,aid,'main_lights');drawRole(card,aid,'night_lights');drawHvac(card,aid);drawPhases(card,aid);
+  drawBathroomLighting(card,aid);
   if(s.service){
-   drawBathroomLighting(card,aid);
    card.append(checkbox(t('when_home'),s.home,v=>mutate(aid,()=>s.home=v)),el('p',t('home_help'),'hint'));
    const links=Object.entries(draft).filter(([id,room])=>room.enabled&&room.shared_areas.includes(aid));card.append(el('p',`${t('linked_rooms')}: ${links.map(([id])=>roomName(id)).join(', ')||t('none_linked')}`));
-   if(r.shared_areas.length)card.append(button('remove_links',()=>{mutate(aid,()=>{r.shared_areas=[];s.bathroom_timing={};});renderRooms();}));
-  }else{
+   if(isBathroom(r)&&r.shared_areas.length)card.append(button('remove_links',()=>{mutate(aid,()=>{r.shared_areas=[];s.bathroom_timing={};});renderRooms();}));
+  }
+  if(!isBathroom(r)){
    card.append(el('h3',t('bathroom_question')),el('p',t('bathroom_help'),'hint'));
    card.append(viewToggle('all_bathrooms',allBathrooms,v=>allBathrooms=v),el('p',t('bathroom_filter_help'),'hint'));
-   const add=select(t('add_bathroom'),'', [['',t('none_later')],...bathroomCandidates(data.inventory,aid,r.shared_areas,labelFilters,allBathrooms).map(a=>[a.id,a.name])],id=>{if(!id)return;mutate(aid,()=>{r.shared_areas.push(id);s.bathroom_timing[id]='whole_observance';const bath=draft[id]??=defaults();bath.enabled=true;setup(bath).service=true;});renderRooms();});card.append(add);
+   const add=select(t('add_bathroom'),'', [['',t('none_later')],...bathroomCandidates(data.inventory,aid,r.shared_areas,labelFilters,allBathrooms).map(a=>[a.id,a.name])],id=>{if(!id)return;mutate(aid,()=>{r.shared_areas.push(id);s.bathroom_timing[id]='whole_observance';const bath=draft[id]??=defaults();bath.enabled=true;if(!setup(bath).area_type)setup(bath).service=true;});renderRooms();});card.append(add);
    for(const id of r.shared_areas){const bath=draft[id],link=el('section',undefined,'bathroom-link');link.append(el('strong',roomName(id)),feedbackBox(id),
     select(t('bathroom_timing'),s.bathroom_timing[id]??'use_window',['use_window','whole_observance'].map(v=>[v,t(v)]),v=>mutate(aid,()=>s.bathroom_timing[id]=v)),
     button('configure_bathroom',async()=>{if(await save()){returnToRoom=aid;go('room',id);}}),button('remove_link',()=>{mutate(aid,()=>{r.shared_areas=r.shared_areas.filter(a=>a!==id);delete s.bathroom_timing[id];});renderRooms();}));card.append(link);}
@@ -170,11 +175,11 @@ function renderRooms(){
   const nav=el('div',undefined,'toolbar');nav.append(button('back',()=>{const i=ids.indexOf(aid);go(i>0?'room':'select',ids[i-1]);}),button('save_next',()=>finishRoom(),true),button('skip_room',()=>finishRoom(true)),button('review_setup',()=>go('summary')));card.append(feedbackBox(aid),nav);root.append(card);
  }else{
   const ids=selectedRooms(),ready=ids.filter(id=>setup(draft[id]).status==='ready');root.append(el('p',`${ready.length} / ${ids.length} ${t('rooms_ready')}`),el('p',t('summary_help')));
-  for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),feedbackBox(id),el('p',[...r.purposes.map(t),...(s.service?[t('service_area')]:[])].join(' · ')));
+  for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),feedbackBox(id),el('p',[...r.purposes.map(t),t('area_type_'+areaType(r))].join(' · ')));
    for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length)card.append(el('p',`${t(role)}: ${r.roles[role].map(rid=>data.inventory.entities.find(e=>e.id===rid)?.name??rid).join(', ')}`));
    card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':r.hvac.mode==='preserve'?` · ${r.hvac.lead_minutes} ${t('minutes_early')}`:` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
    const phase=phases(r);card.append(el('p',`${t('phase_title')}: ${t('phase_night_'+phase.night)}${phase.morning?' · '+t('phase_morning'):''}${phase.evening_meal?' · '+t('phase_evening_meal'):''}${phase.daytime_meal?' · '+t('phase_daytime_meal'):''}`));
-   if(s.service){const p=s.lighting;card.append(el('p',`${t('bathroom_lighting')}: ${t('bathroom_'+(p?.mode??'always'))}${p?.night_enabled?' · '+t('bathroom_night_enabled'):''}`));}
+   {const p=s.lighting;card.append(el('p',`${t(isBathroom(r)?'bathroom_lighting':'area_lighting')}: ${t('bathroom_'+(p?.mode??'always'))}${p?.night_enabled?' · '+t('bathroom_night_enabled'):''}`));}
    if(r.hvac.mode==='preserve')card.append(el('p',t('preserve_help'),'hint'));
    for(const a of r.shared_areas)card.append(el('p',`${roomName(a)} · ${t(s.bathroom_timing[a]??'use_window')}`));if(s.home)card.append(el('p',t('when_home')));
    card.append(button('edit_room',()=>go('room',id)));root.append(card);

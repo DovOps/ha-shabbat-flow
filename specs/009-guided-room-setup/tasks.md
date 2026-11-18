@@ -31,3 +31,7 @@
 
 - [x] W023 Explicit localized room/save blockers, accessible warning styling and persistent recovery guidance (WIZ-FR-030–031, WIZ-NFR-016).
 - [x] W024 Verify validation, refresh/conflict and failed-save paths; package checkpoint without production deployment.
+
+- [x] W025 Common/bathroom classification, safe explicit conversion and label scope (WIZ-FR-032,034).
+- [x] W026 Composable daylight mask, independent meals/HVAC and regression coverage (WIZ-FR-033, WIZ-NFR-017).
+- [ ] W027 Verify EN/HE, package, install with backup and verify saved setup without changing device selections.
