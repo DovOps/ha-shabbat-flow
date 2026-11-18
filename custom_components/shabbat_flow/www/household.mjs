@@ -1,15 +1,15 @@
-import {labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
+import {roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
 import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
-let postShutoff=false;
+let postShutoff=false,saveError=null,staleSettings=false;
 let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
 const defaults=()=>({enabled:false,setup:{status:'draft',service:false,home:false,bathroom_timing:{}},purposes:[],roles:{main_lights:[],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
-function status(key){$('status').textContent=t(key);}
-function changed(){dirty=true;status('dirty');}
+function status(key){const problem=!['dirty','saved','inventory_reviewed'].includes(key);$('status').className=problem?'room-feedback blocked':'';$('status').textContent=(problem?'⚠ ':'')+t(key);}
+function changed(){dirty=true;saveError=null;status('dirty');updateRoomFeedback();}
 async function api(path,body){const r=await request('/api/v2/'+path,body===undefined?{}:{method:'POST',body:JSON.stringify(body)});const v=await r.json();if(!r.ok)throw new Error(v.error??'error');return v;}
-function fail(e){status(catalogs[language][e.message]?e.message:'error');}
+function fail(e){saveError=catalogs[language][e.message]?e.message:'error';status(saveError);updateRoomFeedback();}
 function checkbox(text,value,onChange,id){const label=el('label',undefined,'toggle'),input=el('input');input.type='checkbox';input.checked=value;if(id)input.id=id;input.onchange=()=>{onChange(input.checked);changed();};label.append(el('span',text),input);return label;}
 function select(text,value,options,onChange){const label=el('label',undefined,'field'),input=el('select');label.append(el('span',text));for(const [val,name] of options){const o=el('option',name);o.value=val;input.append(o);}input.value=value;input.onchange=()=>{onChange(input.value);changed();};label.append(input);return label;}
 function input(text,value,type,onChange){const label=el('label',undefined,'field'),control=el('input');control.type=type;control.value=value??'';control.oninput=()=>{onChange(control.value);changed();};label.append(el('span',text),control);return label;}
@@ -29,25 +29,33 @@ async function finishRoom(skip=false){
  if(saving)return;
  const r=draft[activeRoom],s=setup(r);
  if(!skip){
-  const phase=phases(r);
-  if((phase.night!=='none'&&!r.roles.night_lights.length)||((phase.morning||phase.evening_main)&&!r.roles.main_lights.length))return wizardError('phase_needs_lights');
-  if(phase.night==='after_use'&&!r.purposes.includes('recreation'))return wizardError('phase_needs_recreation');
-  if((phase.night!=='none'||phase.morning)&&(s.lighting?.mode==='daylight'||s.lighting?.night_enabled))return wizardError('phase_bathroom_conflict');
-  if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)return wizardError('needs_roles');
-  if(r.hvac.mode!=='none'&&!r.roles.hvac.length)return wizardError('needs_hvac_device');
-  if(r.hvac.mode!=='none'&&!r.purposes.length&&!phases(r).evening_meal&&!phases(r).daytime_meal)return wizardError('needs_hvac_use');
-  if(s.lighting?.night_enabled&&(!r.roles.main_lights.length||!r.roles.night_lights.length))return wizardError('bathroom_night_needs_lights');
-  if(r.hvac.mode==='profile')return wizardError('hvac_profile_required');
-  if(!r.purposes.length&&!s.service)return wizardError('needs_purpose');
-  if(s.service&&!r.roles.main_lights.length&&!r.roles.night_lights.length)return wizardError('needs_roles');
-  if(r.shared_areas.some(a=>!draft[a]?.enabled||setup(draft[a]).status!=='ready'))return wizardError('missing_shared');
+  const problems=roomProblems(r,draft);
+  if(problems.length)return wizardError(problems[0]);
  }
  if(skip)markDraft(activeRoom);else s.status='ready';changed();
  if(!await save()){s.status='draft';renderRooms();return;}
  if(returnToRoom){const previous=returnToRoom;returnToRoom=null;go('room',previous);return;}
  const ids=selectedRooms(),index=ids.indexOf(activeRoom);go(index+1<ids.length?'room':'summary',ids[index+1]);
 }
-function wizardError(key){const box=$('wizard-error');box.textContent=t(key);box.focus();box.scrollIntoView({block:'nearest'});}
+function wizardError(key){saveError=key;updateRoomFeedback();const box=$('wizard-error');box.textContent='⚠ '+t(key);box.hidden=false;box.focus();box.scrollIntoView({block:'nearest'});}
+function saveProblems(){return [...new Set([...(needsReview?['changed']:[]),...(staleSettings?['stale_household']:[]),...(offline?['offline_save']:[]),...(saveError?[saveError]:[])])];}
+function feedbackBox(aid){const box=el('div');box.dataset.roomFeedback=aid;box.setAttribute('aria-live','polite');return box;}
+function updateRoomFeedback(){
+ if(!data||!draft)return;
+ const error=$('wizard-error');if(error){error.hidden=!saveError;error.textContent=saveError?'⚠ '+t(saveError):'';}
+ for(const box of document.querySelectorAll('[data-room-feedback]')){
+  const aid=box.dataset.roomFeedback,r=draft[aid];if(!r)continue;
+  const problems=[...new Set([...saveProblems(),...roomProblems(r,draft),...(!data.inventory.areas.some(a=>a.id===aid)?['missing_area']:[])])];
+  const state=problems.length?'blocked':setup(r).status==='ready'?'ready':'draft';
+  const signature=JSON.stringify([language,state,problems]);if(box.dataset.signature===signature)continue;
+  box.dataset.signature=signature;box.className='room-feedback '+state;box.replaceChildren();
+  box.append(el('strong',(state==='blocked'?'⚠ ':state==='ready'?'✓ ':'○ ')+t('room_'+state)));
+  if(problems.length){const list=el('ul');for(const key of problems)list.append(el('li',t(key)));box.append(list);}
+  else if(state==='draft')box.append(el('p',t('draft_help')));
+  if(needsReview)box.append(button('refresh',()=>refresh(true)));
+ }
+}
+
 function drawRole(host,aid,role){
  const room=draft[aid],selected=room.roles[role],field=el('fieldset');field.append(el('legend',t(role)));
  const candidates=roleCandidates(data.inventory,room,aid,role,labelFilters,{allRoom,allAreas:showAll});
@@ -95,7 +103,6 @@ function drawLabels(root){
  }
  const tips=el('a',t('setup_tips'));tips.href='./tips.html';tips.target='_blank';tips.rel='noopener';section.append(tips);root.append(section);
 }
-function phases(r){return r.setup?.phases??{night:r.purposes.includes('recreation')&&r.roles.night_lights.length?'after_use':'none',night_start:360,night_end:-60,morning:false,morning_start:120,evening_main:false,evening_meal:false,daytime_meal:false};}
 function drawPhases(card,aid){
  const r=draft[aid],s=setup(r),p=phases(r),section=el('details');section.id='phase-controls';section.open=phaseOpen;
  section.append(el('summary',t('phase_title')),el('p',t('phase_help'),'hint'));
@@ -130,7 +137,7 @@ function renderRooms(){
  for(const [id,r] of Object.entries(draft))setup(r);
  if(stage==='room'&&!draft[activeRoom]?.enabled){stage='select';activeRoom=null;}
  const title=el('h2',t(stage==='select'?'select_rooms':stage==='summary'?'review_setup':'configure_room'));title.id='wizard-heading';title.tabIndex=-1;root.append(title);
- const error=el('p',undefined,'error');error.id='wizard-error';error.tabIndex=-1;error.setAttribute('role','alert');root.append(error);drawLabels(root);root.append(checkbox(t('post_shutoff'),postShutoff,v=>postShutoff=v),el('p',t('post_shutoff_help'),'hint'));
+ const error=el('p',saveError?'⚠ '+t(saveError):undefined,'room-feedback blocked');error.hidden=!saveError;error.id='wizard-error';error.tabIndex=-1;error.setAttribute('role','alert');root.append(error);drawLabels(root);root.append(checkbox(t('post_shutoff'),postShutoff,v=>postShutoff=v),el('p',t('post_shutoff_help'),'hint'));
  if(stage==='select'){
   root.append(el('p',t('selection_help')));
   const areaChoice=select(t('area_filter'),areaFilter,['all','bedroom','common_area'].map(k=>[k,t('area_filter_'+k)]),v=>{areaFilter=v;renderRooms();});areaChoice.querySelector('select').onchange=e=>{areaFilter=e.target.value;renderRooms();};root.append(areaChoice);const grid=el('div',undefined,'room-selection');
@@ -138,7 +145,7 @@ function renderRooms(){
   root.append(grid,button('start_setup',async()=>{if(!selectedRooms().length)return wizardError('select_one');if(await save()){const ids=selectedRooms();go('room',ids.find(id=>setup(draft[id]).status!=='ready')??ids[0]);}},true),button('review_setup',()=>go('summary')));
  }else if(stage==='room'){
   const aid=activeRoom,r=draft[aid],s=setup(r),ids=selectedRooms(),card=el('section',undefined,'card');
-  card.append(el('p',`${t('room_progress')} ${ids.indexOf(aid)+1} / ${ids.length}`,'hint'),el('h3',roomName(aid)),el('p',t(s.status==='ready'?'ready':'unfinished')));
+  card.append(el('p',`${t('room_progress')} ${ids.indexOf(aid)+1} / ${ids.length}`,'hint'),el('h3',roomName(aid)),feedbackBox(aid));
   if(!known.has(aid))card.append(el('p',t('missing_area'),'error'));
   card.append(el('p',t('purpose_help')));
   const suggestions=suggestedPurposes(areas.find(a=>a.id===aid)??{},labelFilters);if(suggestions.length){card.append(el('p',`${t('label_suggestions')}: ${suggestions.map(t).join(', ')}`,'hint'),button('apply_suggestions',()=>{mutate(aid,()=>r.purposes=[...new Set([...r.purposes,...suggestions])]);renderRooms();}));}
@@ -156,14 +163,14 @@ function renderRooms(){
    card.append(el('h3',t('bathroom_question')),el('p',t('bathroom_help'),'hint'));
    card.append(viewToggle('all_bathrooms',allBathrooms,v=>allBathrooms=v),el('p',t('bathroom_filter_help'),'hint'));
    const add=select(t('add_bathroom'),'', [['',t('none_later')],...bathroomCandidates(data.inventory,aid,r.shared_areas,labelFilters,allBathrooms).map(a=>[a.id,a.name])],id=>{if(!id)return;mutate(aid,()=>{r.shared_areas.push(id);s.bathroom_timing[id]='whole_observance';const bath=draft[id]??=defaults();bath.enabled=true;setup(bath).service=true;});renderRooms();});card.append(add);
-   for(const id of r.shared_areas){const bath=draft[id],link=el('section',undefined,'bathroom-link');link.append(el('strong',roomName(id)),el('p',t(bath?.enabled&&setup(bath).status==='ready'?'ready':'unfinished')),
+   for(const id of r.shared_areas){const bath=draft[id],link=el('section',undefined,'bathroom-link');link.append(el('strong',roomName(id)),feedbackBox(id),
     select(t('bathroom_timing'),s.bathroom_timing[id]??'use_window',['use_window','whole_observance'].map(v=>[v,t(v)]),v=>mutate(aid,()=>s.bathroom_timing[id]=v)),
     button('configure_bathroom',async()=>{if(await save()){returnToRoom=aid;go('room',id);}}),button('remove_link',()=>{mutate(aid,()=>{r.shared_areas=r.shared_areas.filter(a=>a!==id);delete s.bathroom_timing[id];});renderRooms();}));card.append(link);}
   }
-  const nav=el('div',undefined,'toolbar');nav.append(button('back',()=>{const i=ids.indexOf(aid);go(i>0?'room':'select',ids[i-1]);}),button('save_next',()=>finishRoom(),true),button('skip_room',()=>finishRoom(true)),button('review_setup',()=>go('summary')));card.append(nav);root.append(card);
+  const nav=el('div',undefined,'toolbar');nav.append(button('back',()=>{const i=ids.indexOf(aid);go(i>0?'room':'select',ids[i-1]);}),button('save_next',()=>finishRoom(),true),button('skip_room',()=>finishRoom(true)),button('review_setup',()=>go('summary')));card.append(feedbackBox(aid),nav);root.append(card);
  }else{
   const ids=selectedRooms(),ready=ids.filter(id=>setup(draft[id]).status==='ready');root.append(el('p',`${ready.length} / ${ids.length} ${t('rooms_ready')}`),el('p',t('summary_help')));
-  for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),el('strong',t(s.status==='ready'?'ready':'unfinished')),el('p',[...r.purposes.map(t),...(s.service?[t('service_area')]:[])].join(' · ')));
+  for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),feedbackBox(id),el('p',[...r.purposes.map(t),...(s.service?[t('service_area')]:[])].join(' · ')));
    for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length)card.append(el('p',`${t(role)}: ${r.roles[role].map(rid=>data.inventory.entities.find(e=>e.id===rid)?.name??rid).join(', ')}`));
    card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':r.hvac.mode==='preserve'?` · ${r.hvac.lead_minutes} ${t('minutes_early')}`:` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
    const phase=phases(r);card.append(el('p',`${t('phase_title')}: ${t('phase_night_'+phase.night)}${phase.morning?' · '+t('phase_morning'):''}${phase.evening_meal?' · '+t('phase_evening_meal'):''}${phase.daytime_meal?' · '+t('phase_daytime_meal'):''}`));
@@ -174,7 +181,7 @@ function renderRooms(){
   }
   root.append(button('select_rooms',()=>go('select')));
  }
- $('issues').replaceChildren();for(const item of data.issues)$('issues').append(el('p',`${t(item.code)} · ${item.id}`,'error'));
+ updateRoomFeedback();$('issues').replaceChildren();for(const item of data.issues)$('issues').append(el('p',`${t(item.code)} · ${item.id}`,'error'));
  $('unassigned').replaceChildren();const details=el('details');details.append(el('summary',`${data.inventory.entities.filter(e=>!e.area_id).length}`));
  for(const e of data.inventory.entities.filter(e=>!e.area_id))details.append(el('p',`${e.name} · ${e.entity_id}`));$('unassigned').append(details);if(focused)$(focused)?.focus({preventScroll:true});
 }
@@ -225,19 +232,19 @@ async function refresh(manual=false,discard=false){
  if(saving)return;
  try{const next=await api('household'),changedInventory=data&&next.inventory.revision!==data.inventory.revision;
   const staleSaved=data&&next.settings.revision!==data.settings.revision;
-  if(!data||discard||!dirty){const redraw=!data||discard||changedInventory||staleSaved;if(redraw){draft=structuredClone(next.settings.rooms);labelFilters={...emptyLabelFilters(),...next.settings.label_filters};postShutoff=next.settings.post_shutoff??false;dirty=false;needsReview=false;}data=next;if(redraw)render();}
-  else if(staleSaved){offline=false;status('stale_household');return;}
-  else {data=next;if(manual){renderRooms();needsReview=false;}else if(changedInventory){needsReview=true;status('changed');}}
-  offline=false;updateAvailability();syncLabel();
- }catch{offline=true;syncLabel();}
+  if(!data||discard||!dirty){const redraw=!data||discard||changedInventory||staleSaved;if(redraw){draft=structuredClone(next.settings.rooms);labelFilters={...emptyLabelFilters(),...next.settings.label_filters};postShutoff=next.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;}data=next;if(redraw)render();}
+  else if(staleSaved){offline=false;staleSettings=true;status('stale_household');updateRoomFeedback();return;}
+  else {data=next;if(manual){needsReview=false;saveError=null;renderRooms();status('inventory_reviewed');}else if(changedInventory){needsReview=true;status('changed');}}
+  offline=false;updateAvailability();syncLabel();updateRoomFeedback();
+ }catch{offline=true;syncLabel();updateRoomFeedback();}
 }
 async function save(){
- if(needsReview){status('changed');return false;}if(saving)return false;
+ if(needsReview||staleSettings||offline){wizardError(needsReview?'changed':staleSettings?'stale_household':'offline_save');return false;}if(saving)return false;
  saving=true;$('save').disabled=true;const payload=structuredClone(draft);
  // Freeze controls while a write is pending so late edits cannot be lost.
  const controls=[...document.querySelectorAll('#rooms input,#rooms select,#rooms button,#language,#refresh,#discard')];
  const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
- try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;status('saved');return true;}
+ try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;status('saved');return true;}
  catch(e){fail(e);wizardError(catalogs[language][e.message]?e.message:'error');return false;}
  finally{saving=false;$('save').disabled=false;controls.forEach((c,i)=>c.disabled=disabled[i]);}
 }

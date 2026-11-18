@@ -24,3 +24,6 @@ Add optional bathroom lighting intent under room setup, preserving legacy defaul
 
 ## Full room changeovers and end behavior
 Use optional validated room phase settings and generated home-driven windows for kitchen/hallway/morning main lighting. Recreation-end background uses its own interval after the main-light interval. Generate separate evening/daytime meal groups; evening meals can begin background demand at meal end, lunch never does. Use the same HVAC intent/lead contract for meal HVAC. Keep final-boundary release behavior as explicit configuration (`post_shutoff`), default false in new household workspaces and preserved in legacy explicit exports. Generic old configurations without the new key retain their prior compiler behavior. Preview summaries display meal-linked rooms and fallback notices.
+
+## Explicit completion feedback
+Share pure room validation between proactive status rendering and completion. Render persistent feedback at the room heading and save controls without replacing focused form fields during polling. Keep remote save errors separate from local draft validation. No new dependencies or changes to scheduling semantics.

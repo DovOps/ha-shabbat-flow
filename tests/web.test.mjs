@@ -144,7 +144,7 @@ test('household polling preserves the form-bound draft until a redraw is needed'
   const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
   const refresh=source.slice(source.indexOf('async function refresh('),source.indexOf('async function save('));
   const initial={inventory:{revision:'a'},settings:{revision:0,rooms:{}}};
-  const context={labelFilters:{...emptyLabelFilters(),bathroom:"draft_label"},emptyLabelFilters,data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
+  const context={updateRoomFeedback:()=>{},staleSettings:false,saveError:null,labelFilters:{...emptyLabelFilters(),bathroom:"draft_label"},emptyLabelFilters,data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
     api:async()=>structuredClone(context.next),render:()=>{context.renders++;},renderRooms:()=>{context.renders++;},updateAvailability:()=>{},syncLabel:()=>{},status:value=>{context.message=value;},renders:0};
   runInNewContext(refresh,context);
   const boundRoom=context.draft.room_a;
@@ -200,7 +200,7 @@ test('wizard saves freeze controls, reject duplicate submits and preserve edits 
  const {runInNewContext}=await import('node:vm');
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const controls=[{disabled:false},{disabled:true}],button={disabled:false};let resolve;
- const context={postShutoff:false,labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
+ const context={staleSettings:false,offline:false,saveError:null,postShutoff:false,labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
   document:{querySelectorAll:()=>controls},$:()=>button,status:()=>{},fail:()=>{},wizardError:()=>{},catalogs:{en:{}},language:'en',api:()=>new Promise(r=>resolve=r)};
  runInNewContext(source.slice(source.indexOf('async function save('),source.indexOf('function planProblems(')),context);
  const pending=context.save();assert.ok(controls.every(c=>c.disabled));assert.equal(await context.save(),false);
@@ -214,7 +214,7 @@ test('wizard next waits for persistence and blocks unfinished bathroom dependenc
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const room={enabled:true,purposes:['sleeping'],roles:{main_lights:['lamp'],night_lights:[],hvac:[]},hvac:{mode:'none'},shared_areas:['bath'],setup:{status:'draft'}};
  const bath={enabled:true,setup:{status:'draft'}};let error,navigation;
- const context={phases:()=>({night:'none'}),saving:false,draft:{room,bath},activeRoom:'room',setup:r=>r.setup,returnToRoom:null,changed:()=>{},wizardError:k=>error=k,renderRooms:()=>{},save:async()=>true,selectedRooms:()=>['room','bath'],go:(...v)=>navigation=v};
+ const context={roomProblems,saving:false,draft:{room,bath},activeRoom:'room',setup:r=>r.setup,returnToRoom:null,changed:()=>{},wizardError:k=>error=k,renderRooms:()=>{},save:async()=>true,selectedRooms:()=>['room','bath'],go:(...v)=>navigation=v};
  runInNewContext(source.slice(source.indexOf('async function finishRoom('),source.indexOf('function wizardError(')),context);
  await context.finishRoom();assert.equal(error,'missing_shared');assert.equal(navigation,undefined);
  bath.setup.status='ready';context.save=async()=>false;await context.finishRoom();assert.equal(navigation,undefined);assert.equal(room.setup.status,'draft');
@@ -239,7 +239,7 @@ test('planned badge foreground/background colors meet 4.5 to 1 text contrast',()
  assert.equal(new Set(colors).size,colors.length);
 });
 
-import {emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from '../src/shabbat_flow/web/household-model.mjs';
+import {roomProblems,phases,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from '../src/shabbat_flow/web/household-model.mjs';
 test('label candidates combine entity/device labels, preserve selection and separate area scope',()=>{
  const entities=[
   {id:'direct',domain:'light',area_id:'a',labels:['main']},
@@ -276,4 +276,38 @@ test('bathrooms follow labeled lights, room labels only suggest explicit purpose
  assert.deepEqual(filteredAreas(inventory.areas,{other:{enabled:true}},filters,'bedroom').map(a=>a.id),['bed','other']);
  const room={roles:{main_lights:[],night_lights:[],hvac:[]},setup:{service:true}};
  assert.deepEqual(roleCandidates(inventory,room,'bath','main_lights',filters).map(e=>e.id),['lamp']);
+});
+
+test('room completion explains valid drafts and all actionable missing selections without mutating them',()=>{
+ const bath={enabled:true,purposes:[],roles:{main_lights:['lamp'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'},setup:{status:'draft',service:true}};
+ const original=structuredClone(bath);
+ assert.deepEqual(roomProblems(bath,{bath}),[]);assert.deepEqual(bath,original);
+ bath.setup.lighting={night_enabled:true};assert.deepEqual(roomProblems(bath,{bath}),['bathroom_night_needs_lights']);
+ bath.setup.lighting={night_enabled:false};bath.roles.main_lights=[];
+ assert.deepEqual(roomProblems(bath,{bath}),['needs_roles']);
+ bath.setup.service=false;assert.deepEqual(roomProblems(bath,{bath}),['needs_roles','needs_purpose']);
+ bath.hvac.mode='preserve';assert.ok(roomProblems(bath,{bath}).includes('needs_hvac_device'));assert.ok(roomProblems(bath,{bath}).includes('needs_hvac_use'));
+ bath.roles.hvac=['unit'];bath.setup.phases={night:'none',daytime_meal:true};bath.purposes=['recreation'];assert.deepEqual(roomProblems(bath,{bath}),[]);
+});
+
+test('room feedback retains blocking reasons, offers non-destructive refresh and distinguishes draft from error',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
+ const element=(tag,text)=>({tag,text,children:[],dataset:{},append(...v){this.children.push(...v);},replaceChildren(){this.children=[];},setAttribute(){}});
+ const box=element('div');box.dataset.roomFeedback='bath';const error=element('p');
+ const room={enabled:true,purposes:[],roles:{main_lights:['lamp'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'},setup:{status:'draft',service:true}};
+ const context={data:{inventory:{areas:[{id:'bath'}]}},draft:{bath:room},saveError:null,needsReview:false,staleSettings:false,offline:false,language:'en',roomProblems,setup:r=>r.setup,t:k=>k,$:()=>error,el:element,document:{querySelectorAll:()=>[box]},button:(key,action)=>({key,action}),refresh:manual=>{context.refreshed=manual;}};
+ runInNewContext(source.slice(source.indexOf('function saveProblems('),source.indexOf('function drawRole(')),context);
+ context.updateRoomFeedback();assert.equal(box.className,'room-feedback draft');assert.equal(box.children[1].text,'draft_help');
+ context.needsReview=true;context.updateRoomFeedback();assert.equal(box.className,'room-feedback blocked');assert.equal(box.children[1].children[0].text,'changed');box.children[2].action();assert.equal(context.refreshed,true);assert.deepEqual(room.roles.main_lights,['lamp']);
+ context.needsReview=false;context.saveError='storage_failed';context.updateRoomFeedback();assert.equal(error.hidden,false);assert.equal(error.textContent,'⚠ storage_failed');assert.equal(box.children[1].children[0].text,'storage_failed');
+ context.saveError=null;context.staleSettings=true;context.updateRoomFeedback();assert.equal(box.children[1].children[0].text,'stale_household');
+ context.staleSettings=false;context.offline=true;context.updateRoomFeedback();assert.equal(box.children[1].children[0].text,'offline_save');
+ context.offline=false;room.setup.status='ready';context.updateRoomFeedback();assert.equal(box.className,'room-feedback ready');assert.equal(error.hidden,true);
+});
+
+test('room warning and draft text meet accessible contrast',()=>{
+ const css=fs.readFileSync(new URL('../src/shabbat_flow/web/style.css',import.meta.url),'utf8');
+ const luminance=hex=>{const [r,g,b]=hex.match(/../g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*r+.7152*g+.0722*b;};
+ for(const state of ['blocked','draft','ready']){const match=css.match(new RegExp('\\.room-feedback\\.'+state+'\\{background:#([0-9a-f]{6});color:#([0-9a-f]{6})'));assert.ok(match);const a=luminance(match[1]),b=luminance(match[2]);assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5);}
 });

@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Bathroom policies and full night/morning/meal changeovers implemented and locally verified in packaged preview 0.7.0. Installed 0.7.0 verification recorded separately.
+**Status:** Preview 0.7.0 installed and verified. Explicit room/save feedback implemented and locally verified in packaged 0.7.1; not yet deployed.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
@@ -147,3 +147,10 @@ Defaults are suggestions requiring explicit configuration, not religious guidanc
 | WIZ-FR-028 | Allow each room to opt into evening and/or daytime meal lighting/HVAC. Populate meal target groups in new plans; only Family/Hosting meals activate them. Evening meals also trigger the room's recreation-end background lighting at meal end when enabled; lunch does not trigger night lighting. Use main lighting and selected HVAC intent with its independent preconditioning lead. Away/No meal do not activate these groups. Show linked rooms in the simple meal UI. Overlapping home, recreation and meal demands union without premature off. |
 | WIZ-FR-029 | Provide a global Post-observance shutoff option, default false for new workspaces. With false, omit release/off commands at the final observance boundary while retaining internal night/morning/daylight transitions. With true, emit normal boundary releases. This is an end-policy choice, not an instruction to disable existing HA automations. |
 | WIZ-NFR-015 | Test main-to-night-to-morning timelines, separate HVAC timing, meal Family/Hosting versus Away/No meal, shared demand union, empty intervals, multi-day/DST behavior and final-boundary policy. No household data from user exports enters fixtures or repository docs. No live device execution or external-automation ownership is implied. |
+
+## US10 — Explain room completion and save blockers
+| ID | Requirement |
+| --- | --- |
+| WIZ-FR-030 | Replace ambiguous unfinished status with distinct Ready, Draft awaiting completion, and Needs attention states. Show actionable validation reasons beside the room heading, in review cards and near Save & next. A valid draft explains that Save & next completes it; Save progress retains its draft status. |
+| WIZ-FR-031 | Inventory changes, conflicting saved revisions, connectivity failures and server save errors must remain visible near save controls. Offer a Refresh inventory action for inventory review, preserving draft selections. Failed saves must not erase the explanation when the form redraws. Never silently discard edits or automatically acknowledge a conflicting saved revision. |
+| WIZ-NFR-016 | Problems use a red, high-contrast treatment plus warning icon and text, never color alone. Announce changes accessibly and focus the explanation after blocked completion. Support English/Hebrew and RTL; test draft preservation, stale inventory recovery, validation and failed-save messaging. |
