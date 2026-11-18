@@ -1,6 +1,6 @@
 # Feature 009 — Guided room setup and bathroom dependencies
 
-**Status:** Label-guided setup implemented and locally verified in preview 0.6.0. Installed verification remains at 0.5.1; evidence recorded separately.
+**Status:** Label-guided setup implemented and verified in installed preview 0.6.0; evidence recorded separately.
 **Created:** 2026-11-17
 **Branch:** `002-planning-foundation`
 **Input:** Select rooms first, configure one room at a time, explicitly link bathrooms and simplify lighting/HVAC choices. Include functional and nonfunctional requirements.
