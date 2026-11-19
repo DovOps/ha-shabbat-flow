@@ -1,6 +1,6 @@
 # Feature 010: controlled Home Assistant execution
 
-Status: **draft for owner review; specification only**. No execution code, activation, installation, device calls or automation changes are authorized by this document. Preview 0.11.0 remains unchanged.
+Status: defaults and native HA direction accepted. Current implementation scope is persistence, ownership diagnostics and observe-only collection. Live adapters, arming and corrective device calls remain disabled and out of this checkpoint.
 
 ## Outcome and scope
 
@@ -60,7 +60,7 @@ First live increment: native HA integration, admin-only approval/arming/disarmin
 | EX-FR-021 | Assign deterministic event IDs from run revision, physical load, scheduled UTC instant and canonical command. Persist intent/attempt state before dispatch, acknowledgement and observed outcome separately. Use explicit idempotent state-setting commands only; never toggle. Serialize per-load actions and bound global concurrency. |
 | EX-FR-022 | Validate the approved target, ownership epoch, run status and adapter immediately before every call. Never resolve a stored label/area into new execution targets. New entities and renamed/replaced registry IDs require review. A stale callback cannot dispatch after disarm, replacement, expiry or ownership invalidation. |
 | EX-FR-023 | On startup, load and validate the run/ledger before scheduling callbacks. Corrupt, unavailable or unsupported-version storage blocks execution; no empty-ledger fallback. Wait for valid wall clock and required entity/provider readiness within a bounded startup window. Never automatically arm a merely Approved record. |
-| EX-FR-024 | Recovery uses current intended state, not a replay of past transitions. Proposed first-release policy: within 120 seconds of an event and before its next contrary event/expiry/handoff, dispatch the still-valid idempotent target if not already observed. Beyond that grace, mark missed and block that affected resource for review; future callbacks for it do not continue under an unknown baseline. Other resources continue. A late final Off is never invented when none was planned. |
+| EX-FR-024 | Recovery uses current intended state, not a replay of past transitions. Accepted first-release policy: within 120 seconds of an event and before its next contrary event/expiry/handoff, dispatch the still-valid idempotent target if not already observed. Beyond that grace, mark missed and block that affected resource for review; future callbacks for it do not continue under an unknown baseline. Other resources continue. A late final Off is never invented when none was planned. |
 | EX-FR-025 | Crash between send and durable completion creates an uncertain attempt, not a known failure. Query fresh state: if the desired state/settings match, record observed satisfaction with attribution unknown. Otherwise repeat only when EX-FR-024 allows and the adapter declares the command repeat-safe. Physical exactly-once delivery is not promised. |
 | EX-FR-026 | Retry only transient, repeat-safe failures within the grace window, at most three total attempts at proposed delays 0/10/30 seconds and with a fresh validation before each. Authentication, invalid service, mapping, settings or ownership failures are terminal for the affected resource. Unknown/unavailable is not Off. Cancel retries on newer contrary intent or disarm. |
 | EX-FR-027 | Handle clock jumps: reevaluate eligibility on forward jumps under the same grace rules; on backward jumps never repeat completed event IDs. Persist UTC instants with local timezone/offset display; do not recompute daily events from wall-clock strings. Existing deterministic DST and continuous-period semantics apply. |
@@ -69,7 +69,7 @@ First live increment: native HA integration, admin-only approval/arming/disarmin
 
 ## Nonfunctional requirements
 
-Proposed numerical limits below are reviewable defaults, not claims of achieved performance.
+The owner accepted the numerical defaults below; performance limits remain targets, not claims of achieved performance.
 
 | ID | Requirement / measurable acceptance |
 |---|---|
@@ -105,10 +105,22 @@ Proposed numerical limits below are reviewable defaults, not claims of achieved 
 
 ## Decisions for review
 
-Recommended: native HA executor, explicit approve then arm, five-minute preparation deadline, no late activation, 120-second grace then block affected loads, no automatic automation suspension, native-resume HVAC only initially, 90-day completed-run retention. These policies are proposed, not accepted by preparing this specification. The first pilot's allowlist and adapter/provider qualification remain to be chosen from actual read-only discovery and authorized weekday tests. Temperature-profile execution, managed suspension, late activation and long-outage desired-state recovery require later reviewed increments.
+Recommended: native HA executor, explicit approve then arm, five-minute preparation deadline, no late activation, 120-second grace then block affected loads, no automatic automation suspension, native-resume HVAC only initially, 90-day completed-run retention. These defaults were accepted by the owner. The first pilot's allowlist and adapter/provider qualification remain to be chosen from actual read-only discovery and authorized weekday tests. Temperature-profile execution, managed suspension, late activation and long-outage desired-state recovery require later reviewed increments.
 
 ## References
 
 - Existing contracts: features 002/003 (deterministic schedule, external overlay), 004 (feedback), 005 (chat exclusions), 006–009 (preview, mappings, calendar, HVAC intent).
 - [HA climate entity contract](https://contributors.home-assistant.io/core/entities/climate/): generic turn-on fallback may select a supported mode; capability flags do not certify retained settings.
 - [HA event helpers](https://contributors.home-assistant.io/core/integrations/events/): UTC point scheduling is available; persistent ledger/recovery remains application responsibility.
+
+
+## Observe mode and bounded reconciliation extension
+
+- EX-FR-030: An administrator can explicitly start/stop an observe-only run from a complete household preview. Server recompiles and freezes plan/events/mappings and records actor/time and a request key. Observation can begin after preparation: report late-start coverage, never pretend earlier data was captured. Persist runs across HA restarts, independent of an open browser. No observation creates activation approval or actuation ownership.
+- EX-FR-031: Download a versioned bundle containing the original plan, expected events, independent unmanaged automation forecast with provenance/uncertainty, observed state changes, per-device compared/unknown/mismatched seconds, observation gaps and lifecycle diagnostics. Power agreement and HVAC settings agreement are distinct; observation is not proof that the planner executed an event. Include unmapped/unresolved loads and collection limits. Never export user credentials or context user IDs.
+- EX-FR-032: Show predictable existing automation events interleaved by time in preview and PDF, distinctly labeled Existing automation — unmanaged. No controls to toggle them. Their events do not alter compiler digest or planner demands/charts. Unsupported conditions/actions/times remain an explicit unresolved list. Frozen forecasts stay attached to observation; source changes are reported separately.
+- EX-FR-033: Provide configurable recovery check enabled/disabled, boot delay (default 5 minutes, range 1–60) and repeat interval (default 30 minutes, range 5–1440). Observation checks are read-only diagnostics. Future live correction is separately opt-in and limited to states established by a confirmed planner action that are still currently expected and owned. Never revive expired demand, unknown settings, an external handoff, a disarmed/blocked resource or a subsequent override. Missed events remain subject to the accepted 120-second grace; reconciliation is not permission to replay them.
+- EX-NFR-013: Persist recovery policy and last-check times. Observe mode must issue zero device calls during boot/repeated checks. Future corrections must be rate-limited per physical load across reboot as well as normal operation, enforce adapter cycle spacing, and stop after three unsuccessful correction cycles until review. No overlapping checks or catch-up burst; a restart cannot reset the correction budget. Test disabled mode, bounds, cooldown, repeated instability, later contrary intent, override and handoff. Live correction remains deferred in this increment.
+- EX-NFR-014: Observe collection is bounded: at most 100 mapped loads, 5,000 planned events, 96 hours/run and 20 retained runs. Sample at most once per minute, retain up to 20,000 state-change records/run, flag truncation and gaps. Comparison is sampled evidence, not exact transition history. A missing sample gap greater than 90 seconds is unknown, not inferred agreement; restart intervals are unknown. Completed runs expire after 90 days; active runs are not pruned. Store failure must leave in-memory committed state unchanged and show collection unavailable.
+
+This extends EX-FR-028: optional future periodic correction applies only to a verified planner-established state under continuing ownership and no override; other deviations still block. This checkpoint has no live actuation or corrections. A missing/unresolved external forecast is not a live ownership clearance.

@@ -1,6 +1,6 @@
 # Feature 010 implementation plan
 
-Status: proposed; implementation has not started. No production changes in this checkpoint.
+Status: defaults accepted; observe-only checkpoint implemented below. Live execution remains deferred. No production changes in this checkpoint.
 
 ## Technical context
 
@@ -65,3 +65,15 @@ Keep preview usable while execution is disabled. Install does not arm. Preserve 
 ## Current review result
 
 Constitution satisfied by separation of preview, immutable approval, named ownership, explicit activation, multilingual requirements and household-data exclusion. No third-party designs/packages selected. Main risks: incomplete automation introspection; provider-specific HVAC semantics; nontransactional physical commands; availability during HA outage. Each has an explicit blocking/uncertain outcome, not a fabricated guarantee. Native provider/source APIs and persistence guarantees need an implementation spike; this plan is not a claim those risks are already resolved.
+
+## Observe-only checkpoint implementation (0.12.0)
+
+The accepted defaults remain future live policy. This checkpoint implements a separately named `observe` lifecycle (scheduled/observing/completed/stopped), not approval or arming. `observe.py` owns immutable plan snapshots, server recompilation, idempotent start/overlap rejection, sampled event ledger, restart gaps, settings/power comparisons, report-only recovery checks and export. It contains no device service caller. `ownership.py` implements conservative interval-overlap diagnostics and a bounded read-only forecast; it grants no live clearance.
+
+Storage spike result: the tested HA Store implementations can log and consume write failures. Instead, observation uses a dedicated schema/checksum envelope in `.storage`, written with temp-file fsync, atomic replace and directory fsync via the executor. Errors propagate and prevent in-memory publication; an error disables further collection until reload. This is not a transaction with a device and does not qualify live execution durability. The filename remains separate from household settings. Store corruption never resets an existing file to an empty run list.
+
+Forecast scope: enabled direct light/switch/climate On/Off sequences, bounded literal delays, daily literal clock triggers, weekday-only conditions and sunrise/sunset offsets via HA's existing sun helper/location. The preparation day is included. Config/timezone/sun-source fingerprints accompany forecasts. Unsupported templates, helper times, state/issur conditions and triggers, arbitrary scripts, dynamic area/label targets or other actions stay unresolved. Complete MD-FR-020–022 coverage and live ownership/handoffs remain open. No other integration is installed and no calendar settings are changed.
+
+Observe snapshots may start late with explicit unknown prior coverage. One-minute sample intervals are estimates; restart or >90-second gaps are unknown. The ledger reports a sampled comparison or missed/superseded observation, never a successful device dispatch. HVAC power agreement and settings comparison have separate totals; an unavailable initial preserve-settings baseline stays unknown. Reconciliation knobs control reporting only; future corrections and persistent correction budgets are specified but not implemented.
+
+No HA installation or production observation started at this checkpoint. EN/HE controls, interleaved unmanaged event rows and inherited PDF output are implemented; full interactive/browser and PDF pagination QA remain pending. Live activation/retry/reconciliation implementations, provider qualification, state-condition forecast and full target expansion remain unchecked tasks.

@@ -44,5 +44,7 @@ Preview 0.7.0 reuses the accepted Jewish Calendar daily event feed for optional 
 
 PDF export uses browser-native printing and the existing logo and language catalogs. No PDF library, external service or new runtime dependency is introduced.
 
-## Feature 010 execution proposal (not adopted or implemented)
+## Feature 010 execution direction (accepted; observe-only checkpoint)
 The proposed executor runs inside the existing HA integration using built-in storage, UTC event helpers and allowlisted service adapters. No third-party package or source is proposed. Review `specs/010-controlled-execution/spec.md` and `plan.md` before introducing execution. Native HVAC resume must be qualified per provider and installed unit; the generic HA climate fallback is insufficient. Automation introspection completeness and durable recovery guarantees require a compatibility spike. Preparing this specification authorizes no device or automation changes.
+
+Observe-only 0.12.0 uses the HA automation component raw_config source behind its admin websocket, guarded for unavailable access, and HA’s built-in sun helper for external sun-trigger forecasts. No new package or source design is incorporated. Observation persistence uses Python standard-library atomic file replacement because the checked HA Store implementation can consume write errors. Native resume qualification and live execution remain deferred.

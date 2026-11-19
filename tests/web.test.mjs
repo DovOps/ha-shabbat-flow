@@ -421,3 +421,16 @@ test('independent meal HVAC inherits old combined settings and can be explicitly
  r.setup.phases.constant_main=true;
  assert.ok(roomProblems(r,{}).includes('phase_constant_conflict'));
 });
+
+import {renderUnmanaged} from '../src/shabbat_flow/web/observe.mjs';
+test('unmanaged forecast rows interleave without changing planner events and keep action colors',()=>{
+ const node=(tag,text='',className='')=>({tag,textContent:text,className,children:[],dataset:{},append(...children){for(const child of children){if(child.parent)child.parent.children=child.parent.children.filter(x=>x!==child);child.parent=this;this.children.push(child);}},querySelector(selector){return this.children.find(c=>c.tag===selector);},querySelectorAll(selector){return this.children.filter(c=>selector==='.event'&&c.className==='event');}});
+ const root=node('div'),row=node('div','','event'),time=node('time');time.dateTime='2027-01-08T08:00:00Z';row.append(time,node('div','planned'));root.append(row);
+ const result={events:[{id:'unchanged'}],unmanaged:{overlay:{unresolved:[],events:[{id:'external',entity_id:'light.hall',source:'automation.hall_off',utc:'2027-01-08T07:00:00Z',local:'2027-01-08T09:00:00+02:00',action:{state:'off'}}]},ownership:{conflicts:[]}}};
+ const before=JSON.stringify(result);renderUnmanaged(root,result,{plan:{snapshot:{timezone:'Asia/Jerusalem'}}},{node,t:k=>k,lang:()=> 'en'});
+ const rows=root.querySelectorAll('.event');assert.equal(rows.length,2);assert.equal(rows[0].children[2].className,'state off');assert.match(rows[0].children[1].textContent,/observe_unmanaged/);assert.equal(JSON.stringify(result),before);
+});
+test('observe UI strings have English and Hebrew parity',()=>{
+ const labels=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
+ for(const key of Object.keys(labels.en).filter(k=>k.startsWith('observe_'))){assert.ok(labels.en[key]);assert.ok(labels.he[key]);}
+});

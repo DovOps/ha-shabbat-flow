@@ -57,14 +57,14 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.11.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.12.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
-    assert hass.http.register_view.call_count == 7
+    assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
     assert 'shabbat-flow' not in hass.data[frontend.DATA_PANELS]
     with pytest.raises(web.HTTPServiceUnavailable): await SampleView(hass).get(Request())
     await async_setup_entry(hass, entry)
-    assert hass.http.register_view.call_count == 7  # Routes are not registered twice on reload.
+    assert hass.http.register_view.call_count == 8  # Routes are not registered twice on reload.
     assert hass.http.async_register_static_paths.await_count == 1
 
 
@@ -789,3 +789,161 @@ async def test_candle_night_can_explicitly_switch_main_off_without_evening_on(ho
     result=compile_schedule(b['config'],b['plan']);assert result['complete']
     main_events=[e for e in result['events'] if e['physical_id']==internal_id('load_',main.id)]
     assert len(main_events)==1 and main_events[0]['action']['state']=='off' and main_events[0]['local']==snap['start']
+
+# Observe-only execution foundation: fictional states, no service adapter.
+def observation_bundle(hass):
+    from copy import deepcopy
+    from custom_components.shabbat_flow.household import internal_id
+    bundle=deepcopy(json.loads((ROOT/'examples/period-preview.json').read_text()))
+    registry=er.async_get(hass)
+    physical_map={}
+    for old,load in bundle['config']['loads'].items():
+        domain='climate' if load['kind'] in ('hvac','hvac_power') else 'switch'
+        entity=registry.async_get_or_create(domain,'fixture_observe',old)
+        hass.states.async_set(entity.entity_id,'off',{'temperature':22,'fan_mode':'auto'})
+        physical_map[old]=entity
+        load['physical_id']=internal_id('load_',entity.id)
+    return bundle,physical_map
+
+
+@pytest.mark.asyncio
+async def test_observe_persist_restart_gaps_and_no_actuation(host,monkeypatch):
+    from custom_components.shabbat_flow.observe import Observer,DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host; bundle,entities=observation_bundle(hass)
+    observer=hass.data[DOMAIN]['observer']; start=instant(bundle['plan']['snapshot']['preparation_start'])
+    original=type(hass.services).async_call; monkeypatch.setattr(type(hass.services),'async_call',AsyncMock(side_effect=AssertionError('no services')))
+    try:
+        run=await observer.start(bundle,DEFAULT_POLICY,'request-001','admin',now=start)
+        rid=run['id']; assert run['mode']=='observe'
+        event=next(e for e in run['preview']['events'] if e['intent']=='set_state')
+        at=instant(event['utc']); target=run['mapping'][event['physical_id']]['entity_id']
+        hass.states.async_set(target,'on')
+        await observer.tick(at)
+        await observer.tick(at+timedelta(seconds=60))
+        exported=observer.export(rid)
+        assert exported['device_commands_sent']==0 and exported['run']['changes']
+        assert 'actor' not in exported['run']
+        observer.close(); restored=Observer(hass); await restored.load()
+        assert not restored.error
+        await restored.tick(at+timedelta(seconds=120))
+        assert restored.export(rid)['run']['gaps'][-1]['reason']=='restart_or_collection_gap'
+        assert restored.export(rid)['run']['summary'][event['physical_id']]['unknown_seconds']>=60
+        stopped=await restored.stop(rid,now=at+timedelta(seconds=150)); assert stopped['run']['status']=='stopped'
+        assert stopped['run']['bundle']==bundle
+        hass.services.async_call.assert_not_called(); restored.close()
+    finally: monkeypatch.setattr(type(hass.services),'async_call',original)
+
+
+@pytest.mark.asyncio
+async def test_observe_idempotence_overlap_failure_corrupt_store(host,monkeypatch):
+    from custom_components.shabbat_flow.observe import Observer,DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    hass,_=host; bundle,_=observation_bundle(hass); observer=hass.data[DOMAIN]['observer']
+    start=instant(bundle['plan']['snapshot']['preparation_start'])
+    run=await observer.start(bundle,DEFAULT_POLICY,'request-002','admin',now=start)
+    again=await observer.start(bundle,DEFAULT_POLICY,'request-002','admin',now=start)
+    assert run['id']==again['id']
+    with pytest.raises(ValueError,match='observe_conflict'): await observer.start(bundle,DEFAULT_POLICY,'request-003','admin',now=start)
+    before=json.dumps(observer.data,sort_keys=True)
+    def fail(*args):raise OSError('disk full')
+    monkeypatch.setattr('custom_components.shabbat_flow.observe.atomic_save',fail)
+    with pytest.raises(ValueError,match='observe_store'): await observer.stop(run['id'],now=start)
+    assert json.dumps(observer.data,sort_keys=True)==before
+    observer.close();observer.path.write_text('{broken')
+    restored=Observer(hass);await restored.load();assert restored.error=='observe_store'
+    with pytest.raises(ValueError,match='observe_store'): await restored.start(bundle,DEFAULT_POLICY,'request-004','admin',now=start)
+    restored.close()
+
+
+@pytest.mark.asyncio
+async def test_observe_report_checks_bounds_disabled_and_clock_rollback(host):
+    from custom_components.shabbat_flow.observe import DEFAULT_POLICY,policy
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host;bundle,_=observation_bundle(hass);observer=hass.data[DOMAIN]['observer']
+    start=instant(bundle['plan']['snapshot']['preparation_start']);observer.boot=start
+    for key,value in [('boot_delay_minutes',0),('interval_minutes',1),('enabled','yes')]:
+        with pytest.raises(ValueError):policy({**DEFAULT_POLICY,key:value})
+    run=await observer.start(bundle,DEFAULT_POLICY,'request-005','admin',now=start)
+    await observer.tick(start+timedelta(minutes=4));assert not observer.data['runs'][run['id']]['checks']
+    await observer.tick(start+timedelta(minutes=5));assert len(observer.data['runs'][run['id']]['checks'])==1
+    await observer.tick(start+timedelta(minutes=6));assert len(observer.data['runs'][run['id']]['checks'])==1
+    await observer.tick(start+timedelta(minutes=35));assert len(observer.data['runs'][run['id']]['checks'])==2
+    before=json.dumps(observer.data,sort_keys=True);await observer.tick(start);assert json.dumps(observer.data,sort_keys=True)==before
+
+
+def test_forecast_unmanaged_time_sun_conditions_and_conflicts():
+    from custom_components.shabbat_flow.ownership import forecast,ownership_report
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    sources=[{'id':'automation.outdoor','enabled':True,'config':{'triggers':[{'trigger':'time','at':'23:00:00'}],'actions':[{'action':'switch.turn_off','target':{'entity_id':'switch.outdoor'}}]}},
+             {'id':'automation.sun','enabled':True,'config':{'trigger':[{'platform':'sun','event':'sunrise','offset':'-01:00:00'}],'action':[{'service':'light.turn_off','target':{'entity_id':'light.hall'}}]}},
+             {'id':'automation.conditional','enabled':True,'config':{'trigger':[{'platform':'time','at':'08:00'}],'condition':[{'condition':'state','entity_id':'binary_sensor.unresolved','state':'on'}],'action':[]}},
+             {'id':'automation.disabled','enabled':False,'config':None}]
+    overlay=forecast(snapshot,sources)
+    assert len([e for e in overlay['events'] if e['source']=='automation.outdoor'])==3
+    assert len([e for e in overlay['events'] if e['source']=='automation.sun'])==3
+    assert any(v['source']=='automation.conditional' for v in overlay['unresolved'])
+    assert not any(v['source']=='automation.disabled' for v in overlay['unresolved'])
+    assert all(e['unmanaged'] for e in overlay['events'])
+    first=overlay['events'][0]
+    report=ownership_report([{'physical_id':'load','utc':snapshot['preparation_start'],'action':{'type':'state','state':'on'},'intent':'set_state'}],{'load':{'entity_id':first['entity_id']}},overlay)
+    assert report['conflicts'][0]['kind']=='contradictory_state' and not report['live_clearance']
+    assert forecast(snapshot,[],False)['unresolved']
+
+
+@pytest.mark.asyncio
+async def test_observe_api_auth_and_invalid_requests(host):
+    from custom_components.shabbat_flow.api import ObserveView
+    hass,_=host;view=ObserveView(hass)
+    with pytest.raises(web.HTTPForbidden): await view.get(Request(admin=False))
+    for payload in ({'op':'activate'},{'op':'export','id':[]},{'op':'forecast','bundle':{}},{'op':'stop','id':'missing'}):
+        assert (await view.post(Request(json.dumps(payload).encode()))).status==400
+    bundle,_=observation_bundle(hass)
+    response=await view.post(Request(json.dumps({'op':'forecast','bundle':bundle}).encode()))
+    assert response.status==200 and not decoded(response)['ownership']['live_clearance']
+    assert decoded(await view.get(Request()))['runs']==[]
+
+@pytest.mark.asyncio
+async def test_observe_disable_checks_and_mapping_invalidation(host):
+    from custom_components.shabbat_flow.observe import DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host;bundle,entities=observation_bundle(hass);observer=hass.data[DOMAIN]['observer']
+    start=instant(bundle['plan']['snapshot']['preparation_start']);observer.boot=start
+    run=await observer.start(bundle,{**DEFAULT_POLICY,'enabled':False},'request-006','admin',now=start)
+    await observer.tick(start+timedelta(minutes=10));assert not observer.data['runs'][run['id']]['checks']
+    await observer.configure(run['id'],DEFAULT_POLICY)
+    await observer.tick(start+timedelta(minutes=11));assert len(observer.data['runs'][run['id']]['checks'])==1
+    physical=next(iter(run['mapping']));entity=run['mapping'][physical]['entity_id']
+    er.async_get(hass).async_remove(entity)
+    await observer.tick(start+timedelta(minutes=12))
+    assert observer.data['runs'][run['id']]['last_states'][physical]['reason']=='mapping_changed'
+    await observer.tick(instant(bundle['plan']['snapshot']['end'])+timedelta(minutes=1))
+    result=observer.export(run['id']);assert result['run']['status']=='completed'
+    assert len(result['run']['event_checks'])==len(result['run']['preview']['events'])
+    assert all(not r['actuated'] for r in result['run']['event_checks'].values())
+    for row in result['run']['summary'].values():
+        assert sum(row[k+'_seconds'] for k in ('matched','mismatched','unknown','unplanned'))==73*3600
+
+
+def test_observe_settings_baseline_and_profile_are_separate():
+    from custom_components.shabbat_flow.observe import classify,settings_classify
+    action={'type':'hvac_power','state':'on'}
+    base={'state':'on','mode':'heat','settings':{'temperature':22,'fan_mode':'auto'},'unit':'°C'}
+    wrong={**base,'mode':'cool'}
+    assert classify(action,wrong)=='matched'
+    assert settings_classify(action,wrong,base)=='mismatched'
+    assert settings_classify(action,base,None)=='unknown'
+    assert settings_classify(action,base,base)=='matched'
+    assert settings_classify({'type':'hvac','mode':'heat','temperature':22,'fan_mode':'auto','unit':'C'},base,None)=='matched'
+
+
+def test_forecast_dst_and_dynamic_targets_are_unresolved():
+    from custom_components.shabbat_flow.ownership import forecast
+    snapshot={'preparation_start':'2026-10-31T18:00:00-04:00','end':'2026-11-01T18:00:00-05:00','timezone':'America/New_York','segments':[]}
+    source={'id':'automation.clock','enabled':True,'config':{'trigger':{'platform':'time','at':'01:30:00'},'action':{'service':'switch.turn_on','target':{'entity_id':'switch.sample'}}}}
+    result=forecast(snapshot,[source]);assert not result['events'] and result['unresolved']
+    source['config']['trigger']['at']='09:00:00';source['config']['action']['target']={'area_id':'sample'}
+    result=forecast(snapshot,[source]);assert not result['events'] and result['unresolved']
