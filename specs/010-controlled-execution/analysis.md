@@ -12,3 +12,5 @@ Validation performed for this checkpoint: 76 existing Python tests and 39 existi
 
 ## Observe-only implementation checkpoint
 The specification-only statement above describes the preceding checkpoint. Version 0.12.0 implements the bounded observe milestone documented in plan.md and docs/checkpoint-012.md. Live arming, actuation and corrections remain absent. Acceptance scenarios for live dispatch remain untested; observe-specific fault/coverage tests passed. Full automation-condition/target expansion remains explicitly incomplete.
+
+Compatibility patch review: empty editor metadata is not an action; resolving literal registry targets does not transfer ownership. Membership must invalidate source fingerprints. Unresolved conditions still reject the whole source, avoiding falsely certain partial schedules.

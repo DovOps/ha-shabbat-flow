@@ -42,7 +42,7 @@ def seconds(value):
     return result
 
 
-def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=None):
+def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=None, resolve_target=None):
     start, end = instant(snapshot['preparation_start']), instant(snapshot['end'])
     zone = ZoneInfo(source_timezone or snapshot['timezone'])
     events, unresolved, fingerprints = [], [], {}
@@ -107,16 +107,27 @@ def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=Non
                     delay += delta
                     if delay > 86400: raise ValueError('unresolved_delay')
                     continue
-                if set(action) - {'action','service','target','data','alias'}: raise ValueError('unresolved_action')
+                if set(action) - {'action','service','target','data','alias','metadata'} or not isinstance(action.get('metadata', {}), dict):
+                    raise ValueError('unresolved_action')
                 service = action.get('action', action.get('service', ''))
                 if service not in {f'{d}.turn_{s}' for d in ('light','switch','climate') for s in ('on','off')}:
                     raise ValueError('unresolved_action')
                 target = action.get('target', {}); data = action.get('data', {})
-                if set(target) - {'entity_id'} or set(data) - {'entity_id'}: raise ValueError('unresolved_target')
-                ids = target.get('entity_id', data.get('entity_id', [])); ids = ids if isinstance(ids, list) else [ids]
+                if set(target) - {'entity_id','label_id','area_id','device_id'} or set(data) - {'entity_id'}: raise ValueError('unresolved_target')
+                selection = {**data, **target}
+                for value in selection.values():
+                    values = value if isinstance(value, list) else [value]
+                    if not values or any(not isinstance(v, str) or not v or any(c in v for c in '{}%') or v in ('all','none') for v in values):
+                        raise ValueError('unresolved_target')
+                if set(selection) - {'entity_id'}:
+                    if resolve_target is None: raise ValueError('unresolved_target')
+                    ids = resolve_target(selection, service.split('.')[0])
+                else:
+                    ids = selection.get('entity_id', []); ids = ids if isinstance(ids, list) else [ids]
                 if not ids or any(not isinstance(e, str) or '{{' in e or e.split('.')[0] != service.split('.')[0] for e in ids):
                     raise ValueError('unresolved_target')
                 parsed += [(delay, e, service.rsplit('_', 1)[1]) for e in ids]
+            fingerprints[sid] = digest({'source': fingerprints[sid], 'resolved_actions': parsed})
             pending = []
             for when in sorted(set(times)):
                 if when.astimezone(zone).weekday() not in weekdays: continue
@@ -165,7 +176,15 @@ def forecast_ha(hass, snapshot):
             except (ValueError, ImportError): value = None
             solar[anchor].append(value.isoformat() if value else None)
         day += timedelta(days=1)
-    result = forecast(snapshot, sources, accessible, solar, hass.config.time_zone)
+    from homeassistant.helpers.target import TargetSelection, async_extract_referenced_entity_ids
+
+    def resolve_target(selection, domain):
+        selected = async_extract_referenced_entity_ids(hass, TargetSelection(selection))
+        if any(getattr(selected, key, set()) for key in ('missing_devices','missing_areas','missing_labels')):
+            raise ValueError('unresolved_target')
+        return sorted(e for e in selected.referenced | selected.indirectly_referenced if e.startswith(domain + '.'))
+
+    result = forecast(snapshot, sources, accessible, solar, hass.config.time_zone, resolve_target)
     result['source_timezone'] = hass.config.time_zone
     result['sun_source'] = 'home_assistant_sun_helper'
     result['fingerprints']['sun_configuration'] = digest([hass.config.time_zone,hass.config.latitude,hass.config.longitude,hass.config.elevation])
