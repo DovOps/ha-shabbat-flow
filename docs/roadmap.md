@@ -39,3 +39,6 @@ Feature 009 US12 adds optional daytime naps and independent late wake-up/HVAC-of
 
 ### Existing automation schedule overlay (approved specification)
 Read-only forecasts for time/sun-based HA automations and conditions/triggers on the known mapped issur-melacha state. Show source badges and possible planner conflicts without changing automation ownership. Unsupported or unresolved schedules stay explicit. See MD-FR-020–022 and MD-NFR-009; implementation is deferred from the bedroom-rest/afternoon-hosting release.
+
+## Immediate validation path
+See [prediction-only weekend and go-live gates](dry-run-to-live.md). This is a staged review plan: freeze exports, compare normal observed behavior and feedback, specify an executor, run authorized weekday/recovery tests, then explicitly arm a limited validated scope. The current preview remains non-executing.
