@@ -1,0 +1,114 @@
+# Feature 010: controlled Home Assistant execution
+
+Status: **draft for owner review; specification only**. No execution code, activation, installation, device calls or automation changes are authorized by this document. Preview 0.11.0 remains unchanged.
+
+## Outcome and scope
+
+Turn a reviewed dated plan into an explicitly armed, local, auditable schedule for a limited set of validated lights, switches and HVAC devices. Preserve the distinction between intended commands, dispatch results, observed device states and household experience. Apply to preparation before candle lighting and the whole continuous 1–3-day observance, with candle lighting as the relative anchor and separately configured lighting/HVAC timing.
+
+First live increment: native HA integration, admin-only approval/arming/disarming, explicit entity targets, supported binary lighting and provider-verified preserve-settings HVAC. Existing automations remain independently owned. Unsupported loads can remain visible in preview but must be explicitly excluded from an executable subset. No arbitrary service runner, toggles, dynamic area/label targets, boiler management, appliances, elevators, automatic automation suspension, AI/MCP activation, or automatic weekly rearming in this increment. Explicit-profile HVAC execution follows separately after adapter review; existing profile previews remain supported.
+
+## User stories
+
+- US1: An administrator reviews dates, devices, exclusions and consequences, approves an immutable revision, then separately arms it before its first action. A saved draft never starts devices.
+- US2: A household retains an existing outdoor or morning timer while the planner owns other actions; overlapping ownership blocks activation until explicitly resolved.
+- US3: A bedroom unit turns off/on without changing heat/cool mode, target or other supported settings. Unverified resume behavior prevents that unit from being armed.
+- US4: After an HA restart, the system knows which actions are confirmed, uncertain or missed, and resumes only according to the approved recovery policy.
+- US5: An administrator disarms future planner actions without an unexpected all-Off operation, and later reviews outcomes against the original plan.
+
+## Functional requirements
+
+### Activation and plan lifecycle
+
+| ID | Requirement |
+|---|---|
+| EX-FR-001 | Persist server-side immutable approved snapshots: normalized plan, compiler/event digest and version, calendar provenance and dated anchors, timezone, home availability, exact physical-load mappings and entity-registry IDs, ownership decisions, adapter versions, recovery policy, included/excluded loads and approving principal/time. Recompile and validate on the server; do not trust browser-supplied commands or digest. |
+| EX-FR-002 | Distinguish Draft, Approved, Armed, Running, Completed, Disarmed and Blocked. Approval alone sends no commands. Arming is a distinct authenticated admin action showing first/last event, exclusions, conflicts, recovery behavior and post-period policy. Require expected revision/digest and an idempotency key. Simultaneous requests must not create duplicate runs. |
+| EX-FR-003 | Default arming deadline is five minutes before the earliest included preparation/action timestamp, not candle lighting. Reject late arming in the first release. Editing approved/armed content creates a new draft; no silent mutation or replacement. Replacing an armed plan requires explicit disarm, fresh approval and arming before the deadline. |
+| EX-FR-004 | Arm only after revalidating calendar coverage, current mapping identity, adapter capability/verification, ownership report freshness and device availability. Block unresolved mandatory inputs and unverified initial-state assumptions. Display per-load initial state, first command and any interval whose state is deliberately unmanaged. A resource marked essential cannot be silently excluded. |
+| EX-FR-005 | Only one active plan may own a physical load/time window, including aliases and preparation. Reject overlapping plans and conflicting profile demands. Nonoverlapping resources may run independently. A durable reservation and serialized activation must cover races between requests. |
+| EX-FR-006 | No automatic arming on install, upgrade, browser refresh, calendar rollover or a chat instruction. An armed snapshot may continue through calendar sensor rollover/unavailability using its validated absolute timestamps; never recalculate it from “next” sensor values. The issur-melacha signal is informational in this increment, not an ad hoc trigger or stop switch. Flag discrepancies without shifting a frozen schedule. |
+| EX-FR-007 | Respect approved final-boundary behavior: no default all-Off, no intermediate shutdown between consecutive days and no new command after expiry. Already-approved final-boundary commands may run only under their declared grace policy. Completion releases ownership without inventing state changes. |
+| EX-FR-008 | Disarm persists cancellation, invalidates pending callbacks/retries and prevents new dispatch before reporting success. It leaves current device states unchanged. An in-flight call cannot be recalled: report it and its eventual result. A separate explicitly reviewed corrective action is not implicit in Disarm. Unload cancels callbacks; restart reloads only still-armed compatible records. |
+
+### Existing automations and ownership
+
+| ID | Requirement |
+|---|---|
+| EX-FR-009 | Produce a read-only conflict report from available automation definitions, enabled state and source revision/hash, following MD-FR-020–022. Resolve supported fixed time, sun and provider-established observance transitions/conditions; do not assume candle lighting equals an issur-melacha transition. Preserve unresolved templates, scripts, conditions and dynamic targets. Missing access is an incomplete report, not “no conflicts.” |
+| EX-FR-010 | Compare actions against whole owned intervals, not just simultaneous timestamps: an external Off during a planner On demand is a conflict. Canonicalize physical aliases and expand resolvable group/area/label targets in the frozen report. Report benign same-state overlaps as shared ownership needing review; noncommutative or unresolved side effects remain blockers for affected loads. |
+| EX-FR-011 | Require each included load/action interval to have Planner ownership or a reviewed External handoff. An external morning cutoff records automation identity, exact supported event/interval and source fingerprint. Planner relinquishes ownership at the handoff and cannot retry/reconcile across it. Do not create planner Off events for an external release. Display external forecasts separately from commands. |
+| EX-FR-012 | Before arming, reread relevant definitions/enabled states and revalidate the report. If detection is incomplete, require review of unresolved sources and explicit scope exclusion; a generic “ignore all conflicts” cannot clear affected executable loads. An owner may attest that an unresolved source has no access to particular targets, with rationale and an explicit unverified-coverage warning; this cannot override a known conflict. |
+| EX-FR-013 | Revalidate detectable ownership/mapping changes during an armed run and before dispatch. Block affected resources on invalidation, cancel their pending actions/retries and notify locally; unrelated validated resources continue. Do not silently transfer control or reenable a blocked resource. Remapping and source refresh never change approved targets. |
+| EX-FR-014 | First increment never disables/enables/edits existing automations, including boiler or outdoor catch-all rules. Resolve conflicts by excluding a load, choosing a supported handoff or separately authorized configuration work followed by a new review. Future suspension/restoration needs its own specification for in-flight sequences, partial failures and intervening owner edits. |
+
+### HVAC preserving settings
+
+| ID | Requirement |
+|---|---|
+| EX-FR-015 | Distinguish Do not schedule, Preserve settings On/Off, and Explicit profile. Do not translate preserve-settings into an arbitrary heat/cool selection. Capability flags alone do not prove resume behavior. Keep unsupported or unverified adapters preview-only and name the reason. |
+| EX-FR-016 | Require an adapter verification record for the actual integration/device class and applicable version, supported fields and On/Off semantics, plus an authorized weekday test on each installed unit before first live inclusion. Record mode, target (single or range), fan/preset/swing when supported and observable; exclude ambient temperature and compressor activity from preserved settings. Missing required fields or unverifiable state blocks eligibility. Invalidate verification after material provider/capability changes. |
+| EX-FR-017 | Define preserve-settings as retaining the device's last valid settings before the planner's Off and resuming them at its later On. Record that baseline durably before Off. For a unit already off, require authoritative retained settings or a previously verified persisted baseline; never guess from history or choose a default mode. A deliberate later external setting change supersedes the old baseline only if the adapter can verify it; otherwise block that unit. |
+| EX-FR-018 | First increment allows only verified native power/resume semantics, with no temperature, fan, preset, swing or set-mode calls. If a provider needs setting commands to restore a snapshot, classify it as unsupported in this increment; propose a separately reviewed restore-settings adapter rather than silently violating power-only intent. |
+| EX-FR-019 | Compare fresh post-action observations with intended power and preserved settings. A successful service return is only dispatch acknowledgement. Settings drift or an unreadable required baseline blocks further automated commands for that resource and raises a diagnostic; do not “repair” it by guessing settings. Distinguish thermostat enabled state from active heating/cooling or compressor operation. |
+| EX-FR-020 | Union compatible night, late-wake, nap and meal demands before execution; preserve independent preconditioning. Enforce adapter-declared minimum cycle spacing across events, retries and recovery. Reject plans violating it before arming rather than quietly delaying approved events. On/off intentions do not authorize supply-power switching of HVAC through an unrelated outlet. |
+
+### Dispatch, recovery and observation
+
+| ID | Requirement |
+|---|---|
+| EX-FR-021 | Assign deterministic event IDs from run revision, physical load, scheduled UTC instant and canonical command. Persist intent/attempt state before dispatch, acknowledgement and observed outcome separately. Use explicit idempotent state-setting commands only; never toggle. Serialize per-load actions and bound global concurrency. |
+| EX-FR-022 | Validate the approved target, ownership epoch, run status and adapter immediately before every call. Never resolve a stored label/area into new execution targets. New entities and renamed/replaced registry IDs require review. A stale callback cannot dispatch after disarm, replacement, expiry or ownership invalidation. |
+| EX-FR-023 | On startup, load and validate the run/ledger before scheduling callbacks. Corrupt, unavailable or unsupported-version storage blocks execution; no empty-ledger fallback. Wait for valid wall clock and required entity/provider readiness within a bounded startup window. Never automatically arm a merely Approved record. |
+| EX-FR-024 | Recovery uses current intended state, not a replay of past transitions. Proposed first-release policy: within 120 seconds of an event and before its next contrary event/expiry/handoff, dispatch the still-valid idempotent target if not already observed. Beyond that grace, mark missed and block that affected resource for review; future callbacks for it do not continue under an unknown baseline. Other resources continue. A late final Off is never invented when none was planned. |
+| EX-FR-025 | Crash between send and durable completion creates an uncertain attempt, not a known failure. Query fresh state: if the desired state/settings match, record observed satisfaction with attribution unknown. Otherwise repeat only when EX-FR-024 allows and the adapter declares the command repeat-safe. Physical exactly-once delivery is not promised. |
+| EX-FR-026 | Retry only transient, repeat-safe failures within the grace window, at most three total attempts at proposed delays 0/10/30 seconds and with a fresh validation before each. Authentication, invalid service, mapping, settings or ownership failures are terminal for the affected resource. Unknown/unavailable is not Off. Cancel retries on newer contrary intent or disarm. |
+| EX-FR-027 | Handle clock jumps: reevaluate eligibility on forward jumps under the same grace rules; on backward jumps never repeat completed event IDs. Persist UTC instants with local timezone/offset display; do not recompute daily events from wall-clock strings. Existing deterministic DST and continuous-period semantics apply. |
+| EX-FR-028 | Record observed deviations from known planned state separately from command outcomes. Do not fight external/manual changes with a continuous control loop. Unexpected contrary changes during an owned interval block that resource and inform the administrator; expected handoffs are not deviations. Context may identify some automation actions, but absence of user/context data never proves manual switching. |
+| EX-FR-029 | Provide local status: run state, per-resource blocked/healthy state, due/sent/confirmed/missed/uncertain/failed events, planned versus actual times, exclusions and actionable reasons. Use HA-local notification/status for material failure; no external messaging dependency. Feedback exports reference exact run/digest and separate observation, execution and reported comfort. |
+
+## Nonfunctional requirements
+
+Proposed numerical limits below are reviewable defaults, not claims of achieved performance.
+
+| ID | Requirement / measurable acceptance |
+|---|---|
+| EX-NFR-001 | Preview and shadow modes must produce **zero** actuator/automation-mutation calls in service-spy tests, including import, upgrade, validation failures, restart and calendar rollover. Runtime execution defaults disabled. |
+| EX-NFR-002 | Require authenticated HA administrator authorization for approval, arming, disarm and execution settings. Non-admin/unauthenticated/replayed or stale-revision requests fail without state change. No endpoint accepts arbitrary service names or arbitrary target payloads. |
+| EX-NFR-003 | Deterministic compilation and event identity for identical snapshots. Cover DST gaps/folds, preparation, 1–3-day periods, aliasing and overlapping demands with fixtures. Language selection never changes digest or behavior. |
+| EX-NFR-004 | Durable state transition before actuation; single-writer ordering and schema-version validation. Fault injection at each persistence/dispatch boundary must demonstrate no unapproved dispatch, no stale replay and visible uncertain outcomes. Do not claim a database transaction spans a device call. |
+| EX-NFR-005 | Under a documented healthy reference HA environment, dispatch 95% of due events within 2 seconds and all within 5 seconds for 100 loads/5,000 events over 96 hours; otherwise report lateness. These are test targets, not guarantees during HA/device outages. Service acknowledgement deadline 10 seconds, state-confirmation deadline 30 seconds; neither establishes occupant comfort. |
+| EX-NFR-006 | Bound first release to 100 physical loads, 5,000 events/run, 96-hour period and four concurrent calls, one per load. Reject excess before approval. No busy polling, unbounded retries or blocking file/network I/O in the HA event loop. |
+| EX-NFR-007 | Deadline/ownership checks immediately precede each call. Tests show disarm prevents every not-yet-dispatched attempt; explicitly report calls already in flight. Test unavailable startup beyond proposed 120-second readiness limit and overdue events independently; readiness wait does not extend event grace. |
+| EX-NFR-008 | No required new external scheduler, AI, cloud messaging or runtime package. Frozen runs must not require Internet calendar access. Device integrations may themselves require networking; expose that dependency and test failures rather than promising all devices work offline. |
+| EX-NFR-009 | Test supported HA 2026.8.2 and 2026.11.2 initially; document exact adapters/versions tested. Code upgrades/unloads must preserve auditable state and block incompatible armed plans; package installation does not imply resume compatibility. |
+| EX-NFR-010 | EN/HE parity and RTL, keyboard-accessible review/activation/cancel dialogs, visible text/icons in addition to color, local dates with UTC offset, clear distinction between plan and device confirmation. Automated catalog parity plus manual keyboard/RTL pilot checks. |
+| EX-NFR-011 | Persist household/run records locally outside repository fixtures. Default completed-run evidence retention 90 days; never prune active runs or retry/ownership keys needed for correctness. Confirm retention/export details before implementation. Exports omit credentials; sharing is deliberate. Logs use bounded diagnostics, not raw full household configuration. |
+| EX-NFR-012 | Tests and release checklist trace to every FR/NFR. Live eligibility requires authorized weekday actuation, settings-preservation and restart/disarm tests on the included installed units; simulated tests alone do not qualify a household deployment. No pre-Shabbat deadline overrides these gates. |
+
+## Acceptance scenarios
+
+| Case | Given / when / then | Requirements |
+|---|---|---|
+| A1 | A draft is saved, approved or reopened after restart: no command. Admin arms the approved digest before the deadline: exactly one run reservation is created. A stale/non-admin request changes nothing. | 001–006; NFR001–004 |
+| A2 | Preparation starts before candles: arming after the preparation deadline fails even though candle lighting is still in the future. An edit never changes an armed snapshot. | 002–004 |
+| A3 | External timer turns a load Off midway through a planner On interval: show conflict and block inclusion. A reviewed external morning handoff ends ownership and is never “repaired” by recovery. | 009–014,022,024 |
+| A4 | An automation script/template cannot be resolved: show incomplete coverage and require a bounded decision; do not claim no conflict. An enabled-state change invalidates affected ownership. | 009–013 |
+| A5 | Bedroom A uses heat at 22 degrees with a known fan mode: verified native Off/On resumes those settings. Generic fallback selects cool: the adapter/unit fails qualification, not a silent correction. Already-off unknown baseline blocks arming. | 015–020 |
+| A6 | Unit off overnight is turned on for a nap: mode/target are preserved; overlapping overnight/nap demand does not cycle it. Profile execution remains visibly unsupported in the first increment. | 015–020 |
+| A7 | Restart occurs after sending but before acknowledgement is saved: observe and mark uncertain/satisfied; only repeat a repeat-safe command inside grace. Never claim exactly-once physical delivery. | 021–027; NFR004 |
+| A8 | Restart after both an On and Off have passed: do not replay either. Beyond grace block the affected resource and flag missed events; unrelated resources continue. No ownership persists through an external handoff. | 023–027 |
+| A9 | Disarm races a callback/retry: no new call after durable cancellation; in-flight calls remain visible. Expiry leaves lights unchanged when final shutoff was disabled. | 007–008,022,026 |
+| A10 | Three-day period crosses DST or a sensor rolls to next week: frozen instants remain unchanged, no intermediate shutdown or duplicated event. Clock rollback cannot replay completed IDs. | 006–007,027; NFR003 |
+| A11 | State is unavailable, or temperature changes unexpectedly: mark unknown/drift and block only affected resource. Service success alone is not observed success. | 019,026,028–029 |
+| A12 | Store corrupt/write fails or upgrade changes adapter contract: no dispatch and clear local blocker. Stress, EN/HE/RTL, authorization and service-spy suites meet stated criteria. | 023; NFR001–012 |
+
+## Decisions for review
+
+Recommended: native HA executor, explicit approve then arm, five-minute preparation deadline, no late activation, 120-second grace then block affected loads, no automatic automation suspension, native-resume HVAC only initially, 90-day completed-run retention. These policies are proposed, not accepted by preparing this specification. The first pilot's allowlist and adapter/provider qualification remain to be chosen from actual read-only discovery and authorized weekday tests. Temperature-profile execution, managed suspension, late activation and long-outage desired-state recovery require later reviewed increments.
+
+## References
+
+- Existing contracts: features 002/003 (deterministic schedule, external overlay), 004 (feedback), 005 (chat exclusions), 006–009 (preview, mappings, calendar, HVAC intent).
+- [HA climate entity contract](https://contributors.home-assistant.io/core/entities/climate/): generic turn-on fallback may select a supported mode; capability flags do not certify retained settings.
+- [HA event helpers](https://contributors.home-assistant.io/core/integrations/events/): UTC point scheduling is available; persistent ledger/recovery remains application responsibility.
