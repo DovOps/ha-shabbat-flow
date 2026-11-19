@@ -1,0 +1,67 @@
+# Feature 010 implementation plan
+
+Status: proposed; implementation has not started. No production changes in this checkpoint.
+
+## Technical context
+
+Target: existing custom HA integration on the two tested HA versions (2026.8.2 / 2026.11.2), Python supplied by HA; pure compiler retains its Python 3.11+ baseline. Frontend: existing JavaScript modules and EN/HE catalogs. Tests: unittest, Node test runner and isolated HA pytest harness. Proposed storage: HA Store with serialized awaited persistence, subject to E002 validation. Scale/performance and limits are EX-NFR-005–007. No new package or borrowed design.
+
+## Architecture proposal
+
+Keep the pure compiler unchanged as the authority for normalized intentions. Add a separate HA-native execution boundary; preview routes and the standalone development server cannot access actuator services. No third-party scheduler or new runtime dependency proposed. Reuse authenticated HA integration infrastructure and standard HA storage/event/service facilities after compatibility validation. Review the proposal before introducing an executor under docs/dependencies.md.
+
+Proposed modules (names are design, not existing files):
+- `execution/models.py`: immutable approved snapshot, run/resource lifecycle, typed commands and versioned ledger records.
+- `execution/repository.py`: awaited persistence, serialized compare-and-set transitions, revision/idempotency checks, bounded retention and migration.
+- `execution/ownership.py`: canonical physical-load reservations, read-only automation source report and action-interval handoffs.
+- `execution/adapters.py`: exact target allowlist, binary-lighting adapter and explicitly registered/verified HVAC native-resume adapters. No generic arbitrary-service escape hatch.
+- `execution/runner.py`: UTC scheduler, per-load serialization, dispatch ledger, bounded concurrency/retries and startup reconciliation.
+- `execution/observations.py`: fresh state confirmation, context-aware diagnostics and settings drift detection; no continuous state-enforcement loop.
+- Existing authenticated backend and multilingual panel: approval review, separate arm/disarm, run status and observed-versus-planned export. No browser-token forwarding into the inner application.
+
+## Persisted contract
+
+Keep household mapping storage separate from execution storage. Use one versioned execution envelope with serialized awaited saves for cross-record reservations/run transitions; validate HA Store guarantees and power-loss behavior in a spike. If those guarantees do not meet fault-injection tests, stop and propose an alternative rather than claiming transactional durability. Suggested records:
+
+- ApprovedPlan: revision/digest, schema/compiler version, exact normalized input/events, calendar snapshot, target mappings, adapter fingerprints, policy, exclusions, approver/time.
+- Run: run ID, approved digest, lifecycle, activation actor/time, first action, final expiry, ownership epoch, per-resource status, idempotency key.
+- EventAttempt: stable event ID, due UTC, attempt number, pre-call state, dispatch-intent/ack/observation timestamps, result, uncertainty, error code.
+- Ownership: physical resource, owner and [start,end) interval, source hashes, handoff event/time; exact final boundary commands explicitly represented.
+- HVACBaseline: resource/adapter identity, retained settings with provenance and observation freshness, recorded-before-Off timestamp and qualification record.
+
+Do not store credentials. Include export/schema version and correction records; never rewrite the approved evidence. Terminal-run evidence pruning must not delete active recovery keys. Corrupt or failed persistence stops dispatch.
+
+## Lifecycle and race handling
+
+Draft -> Approved -> Armed -> Running -> Completed. Approved/Armed/Running can be Disarmed; failed integrity blocks the run. Per-resource Blocked can coexist with Running/degraded status for independent resources. Blocked does not auto-resume. Review UI explains that a failure is not an all-Off command. Approval and arming persist atomically with revision checks; arming has no immediate device effect.
+
+A callback checks run revision/ownership, persists attempt intent, then rechecks cancellation immediately before dispatch. Disarm serializes against dispatch-start and cancels timers/retries. Acknowledgement is distinct from matching fresh state. Crash ambiguity cannot be eliminated across a physical call: reconcile by observation and adapter repeat-safety under the grace policy. Persistent event IDs prevent ordinary duplicate replay; no physical exactly-once claim.
+
+On restart: load -> validate schemas/digests/adapter contracts -> rebuild reservations -> wait bounded readiness -> inspect uncertain/past-due events -> satisfy/skip/block under approved policy -> register future callbacks. Never queue all missed historical actions. External-release handoffs and expiry terminate planner recovery ownership.
+
+## Delivery slices and dependencies
+
+| Slice | Deliverable | Gate / verification |
+|---|---|---|
+| E0 | Review policy, exact API/source capabilities and provider qualification approach | Owner review of Feature 010 and native executor proposal; no device calls |
+| E1 | Pure models, durable repository, approval/arming state machine with fake clock/adapters | Authorization, race, persistence-failure and no-actuation tests |
+| E2 | Read-only automation forecast/conflict report and physical-load ownership | MD-FR-020–022 plus unresolved/changed-source/handoff tests; blocks must be honest about incomplete discovery |
+| E3 | Shadow runner and restart ledger, zero-action adapter | Simulate all lifecycle/fault paths; restart during every attempt boundary; snapshot/digest unchanged |
+| E4 | Allowlisted lighting adapter and local execution status | Explicit weekday pilot authorization; binary pair/access-light tests; cancellation and outage tests |
+| E5 | Qualified HVAC native-resume adapter and per-unit tests | No generic fallback; settings preservation, off-baseline, drift and cycle constraints verified |
+| E6 | EN/HE approval/arm/disarm and review UX, exports, retention | Accessibility/RTL/mobile checks, no hidden unsupported/excluded loads; all criteria traceable |
+| E7 | Packaging, migration/rollback and limited live pilot | Compatibility suites, approved exact plan and allowlist, explicit arming, reviewed fallback |
+
+E1–E3 can progress without production actuation. E4/E5 remain disabled until their adapter and weekday test gates pass. E6 status/preview UX can develop alongside E1–E3; activation controls stay unavailable until validation is complete. A successful shadow weekend informs schedule defaults but cannot qualify actuator/recovery reliability.
+
+## Test strategy
+
+Pure fixture tests cover rules, limits and deterministic IDs; fake-clock tests cover grace, deadlines, DST, expiry, multiday, handoffs and clock jumps. HA harness tests on both supported versions spy on all service calls, permissions and exact payloads. Fault injection covers save failure, crash before/after send, uncertain acknowledgement, duplicate callback/request, competing plans, disarm races, source changes and unavailable entities. Stress reference hardware and workload are recorded alongside lateness percentiles. End-to-end EN/HE review tests verify included/excluded devices, readable reasons and keyboard/RTL use. Live weekday tests require separate authorization and publish only generic findings, never household data.
+
+## Rollout and rollback
+
+Keep preview usable while execution is disabled. Install does not arm. Preserve previous package and execution/household stores; schema compatibility must be checked before resume after upgrade or downgrade. Disarm before planned rollback and verify no pending callbacks; if a run is armed, UI must describe disruption. Restoring storage cannot recall a dispatched physical command. No automatic restoration of prior device states, boiler rules or whole-house settings. Initial scope excludes automation mutations, reducing rollback to stopped future actions and explicit manual review.
+
+## Current review result
+
+Constitution satisfied by separation of preview, immutable approval, named ownership, explicit activation, multilingual requirements and household-data exclusion. No third-party designs/packages selected. Main risks: incomplete automation introspection; provider-specific HVAC semantics; nontransactional physical commands; availability during HA outage. Each has an explicit blocking/uncertain outcome, not a fabricated guarantee. Native provider/source APIs and persistence guarantees need an implementation spike; this plan is not a claim those risks are already resolved.

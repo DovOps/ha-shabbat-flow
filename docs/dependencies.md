@@ -43,3 +43,6 @@ Feature 009 label filtering reads HA's built-in label registry and direct area/d
 Preview 0.7.0 reuses the accepted Jewish Calendar daily event feed for optional Shkia/sunset timestamps. Actual provider event generation is tested on both supported HA versions. No astronomical calculator, new external library, actuator or third-party design is added.
 
 PDF export uses browser-native printing and the existing logo and language catalogs. No PDF library, external service or new runtime dependency is introduced.
+
+## Feature 010 execution proposal (not adopted or implemented)
+The proposed executor runs inside the existing HA integration using built-in storage, UTC event helpers and allowlisted service adapters. No third-party package or source is proposed. Review `specs/010-controlled-execution/spec.md` and `plan.md` before introducing execution. Native HVAC resume must be qualified per provider and installed unit; the generic HA climate fallback is insufficient. Automation introspection completeness and durable recovery guarantees require a compatibility spike. Preparing this specification authorizes no device or automation changes.
