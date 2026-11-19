@@ -1,20 +1,30 @@
 # From a prediction-only weekend to live scheduling
 
-Status: review plan, not an implemented executor. Version 0.11.0 previews intentions only. Installing it does not activate a schedule. This guide applies the roadmap's R3 execution gates and feature 004 feedback requirements without adding a dependency or authorizing device control.
+Status: observe mode is available in 0.12.1; device execution is not implemented. Installing it does not activate a schedule. This guide applies the roadmap's R3 execution gates and feature 004 feedback requirements without adding a dependency or authorizing device control.
 
 ## 1. Freeze the prediction before the weekend
 
-Finish the room mappings, then open a **new** dated workspace so it captures those mappings. Verify provider dates/zmanim, home/away intervals, meals and hosting, bedroom sleep/wake and naps, independent HVAC preparation, and optional afternoon activity. Check each actual load, including access circuits, bathroom lights, main-to-background transitions and morning releases. Declare which existing automation owns each externally controlled cutoff; the current preview does not forecast those events.
+Finish the room mappings, then open a **new** dated workspace so it captures those mappings. Verify provider dates/zmanim, home/away intervals, meals and hosting, bedroom sleep/wake and naps, independent HVAC preparation, and optional afternoon activity. Check each actual load, including access circuits, bathroom lights, main-to-background transitions and morning releases. Declare which existing automation owns each externally controlled cutoff; supported time/sun events now appear as unmanaged rows; unresolved sources require separate review.
 
 Export both JSON and PDF before the earliest planned preparation action. Retain the exact files privately with the release version and export time. This is an operational baseline, not the future application's approval/freeze feature. Do not overwrite it after seeing history; create a separate revised copy. Capture starting device states and read-only history coverage where available. Verify relevant lights/HVAC have detailed history; do not change Recorder settings without separate authorization.
 
 Ask about recurring needs before the assisted-operation period ends: which switches serve access, which short episodes are cleaning/task work, which lights deliberately remain on, HVAC preparation and wake-up preferences, and known exceptions. Record functions and reasons, not identities, in reusable material.
 
+### Room configuration checklist
+
+- Classify sleeping spaces as Bedroom, shared living/dining/kitchen spaces as Common area, and circulation spaces as Hallway. A meal profile does not require a sleeping purpose or bathroom link.
+- Enable dinner and lunch/afternoon lighting and HVAC bindings separately in every intended common area. Selecting a meal in the dated plan only uses those bindings.
+- Map main and background circuits separately; choose night start/end and morning-main timing. Use different offsets for kitchen task-light restoration and background lights that end before sunrise.
+- Give essential access lights an always-on-while-home policy. Select only the intended circuits; a selected group controls every member.
+- Choose bathroom always-on versus daylight-break behavior explicitly. Select actual night circuits before enabling bathroom night switching.
+- Set bedroom sleep/wake, late-wake and nap windows in each dated plan. Keep HVAC preparation independent of lighting; preserve-settings mode schedules power without a temperature profile.
+- Review existing morning/night timers as unmanaged owners before any future activation. Keep final-boundary shutoff disabled unless intentionally wanted.
+
 ## 2. Observe normal operation
 
 Keep existing automations and ordinary household routines unchanged. Do not ask anyone to follow the prediction: that would make agreement less informative. No interaction during observance is required. Review recollections after observance. Preserve any voluntarily recorded approximate timing as reported evidence, not a precise sensor timestamp.
 
-The observation window should include the preparation lead-in, the full candle-to-final-end period and a short post-period tail. Collect history promptly after the weekend, within actual retention, including unknown/unavailable intervals and context where available. No background capture job is installed by this guide.
+The observation window should include the preparation lead-in, the full candle-to-final-end period and a short post-period tail. Collect history promptly after the weekend, within actual retention, including unknown/unavailable intervals and context where available. After Preview, explicitly select Start observing before preparation begins. The installed integration samples in the background even with the browser closed; it does not control devices. Its frozen run covers preparation through final end, without the optional post-period tail. Download plan + observation summary afterward; supplement with Recorder for precise transitions and the tail.
 
 ## 3. Compare prediction, observation and desired behavior
 
@@ -30,16 +40,16 @@ Deliver a private comparison report, a list of unresolved loads, and a proposed 
 
 ## 4. Build the minimum execution path
 
-Before implementing R3, review a specification and adapter decision covering:
+Feature 010 now specifies the following remaining execution gates:
 
 - A server-persisted immutable approved plan, explicit arming before its first preparation event, expiry, ownership and an audit trail. Browser storage alone is insufficient.
-- Per-load allowlists and one owner for each action. Inventory fixed-time, sun and known observance-state automations; resolve clashes explicitly. The existing-automation overlay is still deferred.
+- Per-load allowlists and one owner for each action. Inventory fixed-time, sun and known observance-state automations; resolve clashes explicitly. A bounded overlay exists; full condition support and ownership/handoffs remain incomplete.
 - Provider-specific HVAC resume semantics. Verify On/Off preserves the intended heat/cool mode and target; generic turn-on support alone is insufficient. Unsupported units stay excluded.
 - Persistent event results, idempotency, bounded retries, unknown/unavailable handling, and a documented restart/power/network recovery policy. Never blindly replay stale events.
 - A disarm/rollback procedure that stops future planner actions, describes what happens to current device states and restores only explicitly managed automation state. Disarm is not automatically an all-Off command.
 - Local-time/DST, 1–3-day observance and end-policy tests; no default post-observance all-Off. No unreviewed cloud dependency or new messaging service.
 
-A native HA executor is the preferred proposal for review, because planning already runs inside HA. This document does not select a third-party scheduler or introduce execution code.
+A native HA executor is the accepted direction, because planning already runs inside HA. This document does not select a third-party scheduler or introduce execution code.
 
 ## 5. Weekday pilot, then limited live use
 
@@ -51,4 +61,4 @@ Go/no-go: every included device mapped and ownership reviewed; essential access/
 
 ## סדר העבודה בקצרה
 
-גרסה 0.11.0 היא תצוגה מקדימה בלבד ואינה מפעילה מכשירים. לפני תחילת התוכנית יש להשלים מיפוי, לפתוח סביבת תכנון חדשה ולשמור JSON ו־PDF ללא שינוי בדיעבד. במהלך השבת ממשיכים בשגרה הקיימת. לאחריה משווים תכנון, היסטוריה ומשוב; משאירים חוסרים כלא־ידועים ומפרידים פעילות קצרה לצורכי עבודה מהתנהגות רצויה. לפני הפעלה חיה נדרשים תוכנית מאושרת ושמורה בשרת, בעלות ברורה על כל מכשיר, בדיקת שמירת הגדרות מיזוג, התאוששות מתקלות, אפשרות ביטול וניסוי מורשה ביום חול. מתחילים בקבוצה מצומצמת שנבדקה ומרחיבים לאחר ביקורת.
+גרסה 0.12.1 כוללת תצוגה מקדימה ומעקב בלבד ואינה מפעילה מכשירים. יש להתחיל מעקב במפורש לפני תחילת ההכנות ולהוריד את הסיכום לאחר השבת. לפני תחילת התוכנית יש להשלים מיפוי, לפתוח סביבת תכנון חדשה ולשמור JSON ו־PDF ללא שינוי בדיעבד. במהלך השבת ממשיכים בשגרה הקיימת. לאחריה משווים תכנון, היסטוריה ומשוב; משאירים חוסרים כלא־ידועים ומפרידים פעילות קצרה לצורכי עבודה מהתנהגות רצויה. לפני הפעלה חיה נדרשים תוכנית מאושרת ושמורה בשרת, בעלות ברורה על כל מכשיר, בדיקת שמירת הגדרות מיזוג, התאוששות מתקלות, אפשרות ביטול וניסוי מורשה ביום חול. מתחילים בקבוצה מצומצמת שנבדקה ומרחיבים לאחר ביקורת.

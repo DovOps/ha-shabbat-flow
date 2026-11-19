@@ -26,3 +26,7 @@ Observe-only milestone is implemented below. The broader live-execution tasks re
 - [ ] O007 Finish full live ownership/handoff support and state/issur-conditioned forecasts (E004 remains partial).
 - [ ] O008 Implement and qualify live adapters, arming and opt-in state correction with persistent cooldown/budget. No production action authorized here.
 - [ ] O009 Authorized HA deployment and real observe-run verification, including interactive UI/PDF review.
+
+- [x] O010 Verify metadata and literal registry-target forecast expansion, membership fingerprints and no-service-call regression (EX-FR-034, EX-NFR-015); deploy patch and verify unmanaged events.
+
+O009 deployment and live preview verification completed in 0.12.1; real observe-run/export and PDF review remain outstanding. No observe run was started during deployment.

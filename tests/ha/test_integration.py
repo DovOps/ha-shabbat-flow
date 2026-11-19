@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.12.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.12.1/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
@@ -947,3 +947,40 @@ def test_forecast_dst_and_dynamic_targets_are_unresolved():
     result=forecast(snapshot,[source]);assert not result['events'] and result['unresolved']
     source['config']['trigger']['at']='09:00:00';source['config']['action']['target']={'area_id':'sample'}
     result=forecast(snapshot,[source]);assert not result['events'] and result['unresolved']
+
+
+@pytest.mark.asyncio
+async def test_forecast_editor_metadata_and_registry_targets_without_calls(host, monkeypatch):
+    from custom_components.shabbat_flow.ownership import forecast_ha
+    hass,_=host
+    label=lr.async_get(hass).async_create('Exterior')
+    registry=er.async_get(hass)
+    first=registry.async_get_or_create('switch','test','exterior-one',suggested_object_id='exterior_one')
+    registry.async_update_entity(first.entity_id, labels={label.label_id})
+    sensor=registry.async_get_or_create('sensor','test','exterior-temperature')
+    registry.async_update_entity(sensor.entity_id, labels={label.label_id})
+    raw={'triggers':[{'trigger':'time','at':'23:00:00'}], 'actions':[{'action':'switch.turn_off','metadata':{},'data':{},'target':{'label_id':label.label_id}}]}
+    entity=SimpleNamespace(raw_config=raw)
+    hass.data['automation']=SimpleNamespace(get_entity=lambda _:entity)
+    hass.states.async_set('automation.exterior','on')
+    spy=AsyncMock()
+    monkeypatch.setattr(type(hass.services), "async_call", spy)
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    result=forecast_ha(hass,snapshot)
+    assert not result['unresolved']
+    assert {e['entity_id'] for e in result['events']}=={first.entity_id}
+    assert len(result['events'])==3
+    second=registry.async_get_or_create('switch','test','exterior-two')
+    registry.async_update_entity(second.entity_id, labels={label.label_id})
+    changed=forecast_ha(hass,snapshot)
+    assert {e['entity_id'] for e in changed['events']}=={first.entity_id,second.entity_id}
+    assert result['fingerprints']!=changed['fingerprints']
+    raw['actions'][0]['target']={'label_id':'missing-label'}
+    missing=forecast_ha(hass,snapshot)
+    assert not missing['events'] and missing['unresolved']
+    raw['actions'][0]['target']={'entity_id':first.entity_id}
+    assert forecast_ha(hass,snapshot)['events']
+    raw['actions'].append({'action':'script.unknown'})
+    unsupported=forecast_ha(hass,snapshot)
+    assert not unsupported['events'] and unsupported['unresolved']
+    spy.assert_not_called()
