@@ -224,3 +224,44 @@ class UpcomingView(BaseView):
         except PlanError as exc:
             code = exc.code if exc.code.startswith("calendar_") else "calendar_incomplete"
             return self.response({"status": "unavailable", "error": code})
+
+
+class ObserveView(BaseView):
+    url = '/api/shabbat_flow/observe'
+    name = 'api:shabbat_flow:observe'
+
+    async def get(self, request):
+        self.check(request)
+        return self.response(self.hass.data[DOMAIN]['observer'].listing())
+
+    async def post(self, request):
+        self.check(request)
+        from .ownership import forecast_ha, ownership_report
+        from .observe import resolve_mapping
+        try:
+            payload = await read_body(request)
+            observer = self.hass.data[DOMAIN]['observer']
+            op = payload.get('op')
+            if op in ('start','forecast'):
+                allowed = {'op','bundle','policy','request_id'} if op == 'start' else {'op','bundle'}
+                if set(payload) != allowed: raise ValueError('invalid_request')
+                bundle = payload['bundle']
+                if not isinstance(bundle,dict) or set(bundle) != {'config','plan'}: raise ValueError('invalid_request')
+                if op == 'start':
+                    run = await observer.start(bundle,payload['policy'],payload['request_id'],getattr(request['hass_user'],'id',None))
+                    return self.response({'id':run['id'],'status':run['status'],'mode':'observe'})
+                preview = await self.hass.async_add_executor_job(compile_schedule,bundle['config'],bundle['plan'])
+                overlay = forecast_ha(self.hass,bundle['plan']['snapshot'])
+                mapping, unresolved = resolve_mapping(self.hass,bundle)
+                return self.response({'overlay':overlay,'ownership':ownership_report(preview['events'],mapping,overlay),'unmapped':unresolved})
+            if op == 'configure' and set(payload)=={'op','id','policy'} and isinstance(payload['id'],str):
+                return self.response(await observer.configure(payload['id'],payload['policy']))
+            if op in ('stop','export') and set(payload)=={'op','id'} and isinstance(payload['id'],str):
+                result = await observer.stop(payload['id']) if op=='stop' else observer.export(payload['id'])
+                return self.response(result)
+            raise ValueError('invalid_request')
+        except PlanError as exc:
+            return self.response({'error':exc.code},400)
+        except (ValueError,TypeError,KeyError,UnicodeDecodeError,RecursionError) as exc:
+            code=str(exc) if str(exc).startswith('observe_') else 'invalid_request'
+            return self.response({'error':code},409 if code=='observe_conflict' else 400)

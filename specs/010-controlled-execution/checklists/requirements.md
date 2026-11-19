@@ -9,6 +9,6 @@
 - [x] Crash ambiguity, storage failure, clock changes, retries, disarm races and expiry covered.
 - [x] Local execution, multilingual/RTL, accessibility and household-data separation covered.
 - [x] Numerical defaults and remaining decisions marked proposed; no claimed implementation.
-- [ ] Owner has reviewed execution architecture and proposed operating policies.
+- [x] Owner has accepted execution architecture/defaults and authorized observe-only implementation.
 - [ ] Provider discovery/persistence spikes have resolved implementation feasibility.
 - [ ] All implementation and live-pilot acceptance gates have passed.

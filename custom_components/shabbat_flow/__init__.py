@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView
 
 ROOT = Path(__file__).parent
 
@@ -25,10 +25,14 @@ async def async_setup_entry(hass, entry):
         data["household_store"] = Store(hass, 1, DOMAIN + ".household")
         data["household"] = migrate_settings(await data["household_store"].async_load() or empty_settings())
         data["household_lock"] = Lock()
+    from .observe import Observer
+    if "observer" not in data or data["observer"].closed:
+        data["observer"] = Observer(hass)
+        await data["observer"].load()
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry
@@ -51,6 +55,8 @@ async def async_options_updated(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
+    observer = hass.data.get(DOMAIN, {}).get("observer")
+    if observer: observer.close()
     frontend.async_remove_panel(hass, PANEL)
     hass.data.get(DOMAIN, {}).pop("entry", None)
     return True

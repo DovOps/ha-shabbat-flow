@@ -1,3 +1,4 @@
+import {setupObservation,renderUnmanaged} from './observe.mjs';
 import {renderHvacMap} from './hvac-map.mjs';
 import {renderLightingMap} from './lighting-map.mjs';
 import {renderPrintReport} from './period-report.mjs';
@@ -253,11 +254,12 @@ function renderTimeline(){
     if(event.intent==='track_only')description.append(node('small',t('track_only')));
     row.append(time,description,node('bdi',value,badge.className));root.append(row);
   }
+  renderUnmanaged(root,result,bundle,{node,t,lang});
 }
 function printReport(){renderPrintReport({report:$('print-report'),bundle,result,t,lang,dayLabel,node,timeline:$('timeline'),logo:document.querySelector('.brand-logo')});}
 async function validate(candidate){
   const response=await fetch('/api/v2/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(candidate)});
-  const value=await response.json();if(!response.ok)throw new Error(value.error);return value;
+  const value=await response.json();if(!response.ok)throw new Error(value.error);if(householdMode){try{const r=await fetch('/api/v2/observe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op:'forecast',bundle:candidate})});const extra=await r.json();if(r.ok)value.unmanaged=extra;else value.unmanaged={error:extra.error};}catch{value.unmanaged={error:'network'};}}return value;
 }
 async function preview(){const token=revision;try{const next=await validate(structuredClone(bundle));if(token!==revision)return;result=next;$('export').disabled=!next.complete;$('export-pdf').disabled=!next.complete;renderTimeline();message(next.complete?'preview_ready':'period_incomplete',!next.complete);}catch(e){if(token===revision)error(e);}}
 async function boot(){
@@ -265,7 +267,7 @@ async function boot(){
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
-    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();});
+    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete});});
     $('preview').addEventListener('click',preview);
     window.addEventListener('beforeprint',printReport);
     $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;printReport();window.print();});
@@ -275,6 +277,7 @@ async function boot(){
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     render();
+    if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete});
   }catch(e){$('status').textContent='Unable to load preview. / לא ניתן לטעון תצוגה מקדימה.';}
 }
 boot();
