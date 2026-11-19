@@ -163,7 +163,8 @@
     "meal_afternoon": "Shabbat afternoon hosting / Seudah Shlishit",
     "add_afternoon": "Add afternoon hosting / Seudah Shlishit",
     "afternoon_help": "Default: starts 2½ hours before Shabbat ends. Review the window and meal rooms. Lighting daylight breaks still apply; HVAC follows its own lead time. No automatic background-light changeover.",
-    "afternoon_manual": "Shabbat continues into a holiday. The calendar boundary may be candle lighting, not Shabbat end. Enter and review the activity start/end explicitly."
+    "afternoon_manual": "Shabbat continues into a holiday. The calendar boundary may be candle lighting, not Shabbat end. Enter and review the activity start/end explicitly.",
+    "external_night_release": "Existing automation means no planner Off command. Its cutoff is not verified or shown in the chart; the chart retains the last planned On. Review the existing automation separately."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -329,6 +330,7 @@
     "meal_afternoon": "אירוח בשבת אחר הצהריים / סעודה שלישית",
     "add_afternoon": "הוספת אירוח אחר הצהריים / סעודה שלישית",
     "afternoon_help": "ברירת מחדל: התחלה שעתיים וחצי לפני סיום השבת. בדקו את הזמנים וחדרי הארוחה. הפסקות תאורה באור יום עדיין חלות; למיזוג זמן הכנה נפרד. אין מעבר אוטומטי לתאורת רקע.",
-    "afternoon_manual": "השבת נמשכת לחג. גבול המקטע עשוי להיות הדלקת נרות ולא סיום השבת. הזינו ובדקו במפורש את זמני הפעילות."
+    "afternoon_manual": "השבת נמשכת לחג. גבול המקטע עשוי להיות הדלקת נרות ולא סיום השבת. הזינו ובדקו במפורש את זמני הפעילות.",
+    "external_night_release": "אוטומציה קיימת: המתכנן אינו שולח כיבוי. זמן הכיבוי החיצוני אינו מאומת או מוצג בתרשים, שנשאר במצב ההדלקה האחרון. יש לבדוק את האוטומציה בנפרד."
   }
 }

@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.10.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.11.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 7
     await async_unload_entry(hass, entry)
@@ -711,3 +711,81 @@ async def test_rest_defaults_persist_without_enabling_naps(host):
     assert (await Store(hass,1,DOMAIN+'.household').async_load())['rooms'][bed.id]['setup']['rest_defaults']==defaults
     r['setup']['rest_defaults']['nap_duration']=0
     with pytest.raises(ValueError):validate_settings(rooms,inv)
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('days',[1,2,3])
+@pytest.mark.parametrize('release',['planner','existing'])
+async def test_circulation_entertaining_morning_and_external_owner(host,days,release):
+    from custom_components.shabbat_flow.household import room_phases
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;area,bath,main,night=fixtures(hass);inv=inventory(hass)
+    r=wizard_room(room(lights=[main.id]),service=True);r['setup']['area_type']='hallway';r['roles']['night_lights']=[night.id]
+    r['setup']['phases']={**room_phases(r),'night':'entertaining','night_release':release,'evening_main':True,'morning':True,'morning_start':120,'morning_end':240}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['segments']=snap['segments'][:days];snap['end']=snap['segments'][-1]['end']
+    saved={**empty_settings(),'rooms':{area.id:r},'bindings':validate_settings({area.id:r},inv)}
+    b=workspace(saved,inv,snap);p=b['plan'];p['availability'][0]['state']='home'
+    for m in p['meals']:m['choice']='family' if m['kind']=='evening' else 'none'
+    result=compile_schedule(b['config'],p);assert result['complete']
+    for seg in snap['segments']:
+        dinner=next(m for m in p['meals'] if m['segment']==seg['id'] and m['kind']=='evening')
+        assert any(e['physical_id']==internal_id('load_',night.id) and e['local']==dinner['end'] and e['action']['state']=='on' for e in result['events'])
+        date=seg['sunrise'][:10]
+        for clock,state in [('08:00:00','on'),('10:00:00','off')]:
+            assert any(e['physical_id']==internal_id('load_',main.id) and e['local']==date+'T'+clock+'+02:00' and e['action']['state']==state for e in result['events'])
+    if release=='existing':
+        assert any(w['code']=='external_night_release' for w in result['warnings'])
+        assert not any(e['physical_id']==internal_id('load_',night.id) and e['action']['state']=='off' for e in result['events'])
+    else:assert not result['warnings']
+    p['availability'][0]['state']='away'
+    for m in p['meals']:m['choice']='none'
+    assert compile_schedule(b['config'],p)['events']==[]
+
+@pytest.mark.asyncio
+async def test_constant_main_ignores_daylight_and_preserves_end_policy(host):
+    from custom_components.shabbat_flow.household import room_phases,bathroom_policy
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;area,_,main,_=fixtures(hass);inv=inventory(hass)
+    r=wizard_room(room(lights=[main.id]),service=True);r['setup']['area_type']='common'
+    r['setup']['phases']={**room_phases(r),'constant_main':True};r['setup']['lighting']={**bathroom_policy(r),'mode':'daylight'}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['segments']=snap['segments'][:1];snap['end']=snap['segments'][-1]['end'];snap['segments'][0]['sunset']='2027-01-08T16:30:00+02:00'
+    saved={**empty_settings(),'rooms':{area.id:r},'bindings':validate_settings({area.id:r},inv)}
+    for shutoff in (False,True):
+        saved['post_shutoff']=shutoff;b=workspace(saved,inv,snap);b['plan']['availability'][0]['state']='home'
+        for m in b['plan']['meals']:m['choice']='none'
+        events=compile_schedule(b['config'],b['plan'])['events'];assert [e['action']['state'] for e in events]==(['on','off'] if shutoff else ['on'])
+        assert events[0]['local']==snap['start']
+    r['setup']['phases']['morning']=True
+    with pytest.raises(ValueError):validate_settings({area.id:r},inv)
+
+@pytest.mark.asyncio
+async def test_daytime_hvac_binding_without_meal_lighting_or_recreation(host):
+    from custom_components.shabbat_flow.household import room_phases
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;area,_,main,_=fixtures(hass)
+    ac=er.async_get(hass).async_get_or_create('climate','test','daytime-example');hass.states.async_set(ac.entity_id,'cool',{})
+    inv=inventory(hass);r=wizard_room(room(lights=[main.id]),service=True);r['setup']['area_type']='common';r['roles']['hvac']=[ac.id];r['hvac']['mode']='preserve'
+    r['setup']['phases']={**room_phases(r),'daytime_hvac':True,'evening_hvac':False,'evening_meal':True,'recreation_hvac':False}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['segments']=snap['segments'][:1];snap['end']=snap['segments'][-1]['end']
+    saved={**empty_settings(),'rooms':{area.id:r},'bindings':validate_settings({area.id:r},inv)}
+    b=workspace(saved,inv,snap);b['plan']['availability'][0]['state']='home'
+    for m in b['plan']['meals']:m['choice']='family'
+    result=compile_schedule(b['config'],b['plan']);assert result['complete']
+    events=result['events'];ac_events=[e for e in events if e['physical_id']==internal_id('load_',ac.id)]
+    assert [e['action'] for e in ac_events]==[{'type':'hvac_power','state':'on'},{'type':'hvac_power','state':'off'}]
+    assert all(e['local'].startswith('2027-01-08') for e in ac_events)
+    assert all(e['local'].startswith('2027-01-07') for e in events if e['physical_id']==internal_id('load_',main.id))
+
+@pytest.mark.asyncio
+async def test_candle_night_can_explicitly_switch_main_off_without_evening_on(host):
+    from custom_components.shabbat_flow.household import room_phases
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    hass,_=host;area,_,main,night=fixtures(hass);inv=inventory(hass)
+    r=wizard_room(room(lights=[main.id]),service=True);r['setup']['area_type']='hallway';r['roles']['night_lights']=[night.id]
+    r['setup']['phases']={**room_phases(r),'night':'home','night_start':0,'night_main_off':True}
+    snap=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snap['start']=snap['segments'][0]['start']=snap['segments'][0]['candle_lighting'];snap['segments']=snap['segments'][:1];snap['end']=snap['segments'][-1]['end']
+    b=workspace({**empty_settings(),'rooms':{area.id:r},'bindings':validate_settings({area.id:r},inv)},inv,snap)
+    b['plan']['availability'][0]['state']='home'
+    for m in b['plan']['meals']:m['choice']='none'
+    result=compile_schedule(b['config'],b['plan']);assert result['complete']
+    main_events=[e for e in result['events'] if e['physical_id']==internal_id('load_',main.id)]
+    assert len(main_events)==1 and main_events[0]['action']['state']=='off' and main_events[0]['local']==snap['start']

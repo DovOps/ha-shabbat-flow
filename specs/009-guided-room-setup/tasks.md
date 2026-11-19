@@ -43,3 +43,9 @@
 - [x] W031 Implement multilingual day controls, reusable defaults and dated copy review.
 - [x] W032 Add nap/wake reasons to summaries, event lists, HVAC chart and PDF; verify regression and compatibility cases.
 - [x] W033 Package and verify an authorized deployment; do not describe the spec-only checkpoint as installed functionality.
+
+## US13 circulation and independent meal HVAC
+- [x] W034 Specify independent bindings, always-on access circuits, derived entertaining end and release ownership.
+- [x] W035 Implement additive validation, generation, compiler anchors and home clipping.
+- [x] W036 Add multilingual setup controls and explanations; document category selection.
+- [x] W037 Verify migration, schedule semantics, ownership and package a reviewable update.

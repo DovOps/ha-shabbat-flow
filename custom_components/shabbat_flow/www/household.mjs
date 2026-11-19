@@ -1,4 +1,4 @@
-import {suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
+import {mealHvac,suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
 import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
 let postShutoff=false,saveError=null,staleSettings=false;
@@ -108,16 +108,21 @@ function drawPhases(card,aid){
  section.append(el('summary',t('phase_title')),el('p',t('phase_help'),'hint'));
  const set=(key,value)=>{mutate(aid,()=>s.phases={...p,[key]:value});renderRooms();};
  if(areaType(r)==='hallway')section.append(el('p',t('hallway_help'),'hint'));
- section.append(select(t('phase_preset'),'custom',['custom','none','background','kitchen','hallway'].map(k=>[k,t('phase_'+k)]),v=>{
-  const presets={none:{night:'none',morning:false,evening_main:false},background:{night:'after_use',night_end:-60,morning:false,evening_main:false},kitchen:{night:'home',night_start:360,night_end:120,morning:true,morning_start:120,evening_main:true},hallway:{night:'home',night_start:0,night_end:-60,morning:false,evening_main:false}};
-  if(presets[v]){mutate(aid,()=>s.phases={...p,...presets[v]});renderRooms();}
+ section.append(select(t('phase_preset'),'custom',['custom','none','background','kitchen','hallway','access','circulation'].map(k=>[k,t('phase_'+k)]),v=>{
+  const presets={none:{night:'none',morning:false,evening_main:false},background:{night:'after_use',night_end:-60,morning:false,evening_main:false},kitchen:{night:'home',night_start:360,night_end:120,morning:true,morning_start:120,evening_main:true},hallway:{night_main_off:true,night:'home',night_start:0,night_end:-60,morning:false,evening_main:false,constant_main:false,night_release:'planner'},access:{night:'none',constant_main:true,morning:false,evening_main:false,night_release:'planner'},circulation:{night_main_off:true,night:'entertaining',constant_main:false,evening_main:true,morning:true,morning_start:120,morning_end:240,night_end:-60,night_release:'planner'}};
+  if(presets[v]){mutate(aid,()=>s.phases={...p,night_main_off:false,constant_main:false,morning_end:null,night_release:'planner',...presets[v]});renderRooms();}
  }));
- section.append(select(t('phase_night'),p.night,['none','after_use','home'].map(k=>[k,t('phase_night_'+k)]),v=>set('night',v)));
+ section.append(select(t('phase_night'),p.night,['none','after_use','home','entertaining'].map(k=>[k,t('phase_night_'+k)]),v=>{mutate(aid,()=>s.phases={...p,night:v,night_release:'planner'});renderRooms();}));
  const number=(key,min,max)=>{const field=input(t('phase_'+key),p[key],'number',v=>mutate(aid,()=>s.phases={...(s.phases??p),[key]:Number(v)}));Object.assign(field.querySelector('input'),{min,max,step:1});section.append(field);};
- if(p.night==='home'){number('night_start',0,720);section.append(checkbox(t('phase_evening_main'),p.evening_main,v=>set('evening_main',v)));}
- if(p.night!=='none')number('night_end',-180,360);
- section.append(checkbox(t('phase_morning'),p.morning,v=>set('morning',v)));if(p.morning)number('morning_start',0,360);
- for(const key of ['evening_meal','daytime_meal'])section.append(checkbox(t('phase_'+key),p[key],v=>set(key,v)));
+ section.append(checkbox(t('phase_constant_main'),p.constant_main,v=>set('constant_main',v)));
+ if(p.night==='entertaining')section.append(el('p',t('phase_entertaining_help'),'hint'),checkbox(t('phase_evening_main'),p.evening_main,v=>set('evening_main',v)));
+ if(['home','entertaining'].includes(p.night))section.append(select(t('phase_night_release'),p.night_release,['planner','existing'].map(k=>[k,t('phase_release_'+k)]),v=>set('night_release',v)),el('p',t('phase_external_help'),'hint'));
+ if(p.night==='home'){number('night_start',0,720);section.append(checkbox(t('phase_night_main_off'),p.night_main_off,v=>set('night_main_off',v)));section.append(checkbox(t('phase_evening_main'),p.evening_main,v=>set('evening_main',v)));}
+ if(p.night!=='none'&&p.night_release==='planner')number('night_end',-180,360);
+ section.append(checkbox(t('phase_morning'),p.morning,v=>set('morning',v)));if(p.morning){number('morning_start',0,360);section.append(checkbox(t('phase_morning_bounded'),p.morning_end!==null,v=>set('morning_end',v?Math.min(720,p.morning_start+120):null)));if(p.morning_end!==null)number('morning_end',0,720);}
+ for(const kind of ['evening','daytime']){section.append(checkbox(t('phase_'+kind+'_meal'),p[kind+'_meal'],v=>{mutate(aid,()=>s.phases={...p,[kind+'_meal']:v,[kind+'_hvac']:mealHvac(r,kind)});renderRooms();}),checkbox(t('phase_'+kind+'_hvac'),mealHvac(r,kind),v=>set(kind+'_hvac',v)));}
+ if(r.purposes.includes('recreation'))section.append(checkbox(t('phase_recreation_hvac'),p.recreation_hvac,v=>set('recreation_hvac',v)));
+ section.append(el('p',t('phase_hvac_help'),'hint'));
  card.append(section);
 }
 function drawBathroomLighting(card,aid){
@@ -184,7 +189,7 @@ function renderRooms(){
   for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),feedbackBox(id),el('p',[...r.purposes.map(t),t('area_type_'+areaType(r))].join(' · ')));
    for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length)card.append(el('p',`${t(role)}: ${r.roles[role].map(rid=>data.inventory.entities.find(e=>e.id===rid)?.name??rid).join(', ')}`));
    card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':r.hvac.mode==='preserve'?` · ${r.hvac.lead_minutes} ${t('minutes_early')}`:` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
-   const phase=phases(r);card.append(el('p',`${t('phase_title')}: ${t('phase_night_'+phase.night)}${phase.morning?' · '+t('phase_morning'):''}${phase.evening_meal?' · '+t('phase_evening_meal'):''}${phase.daytime_meal?' · '+t('phase_daytime_meal'):''}`));
+   const phase=phases(r);if(phase.constant_main)card.append(el('p',t('phase_constant_main')));for(const k of ['evening','daytime'])if(mealHvac(r,k))card.append(el('p',t('phase_'+k+'_hvac')));if(phase.night_release==='existing')card.append(el('p',t('phase_external_help'),'hint'));card.append(el('p',`${t('phase_title')}: ${t('phase_night_'+phase.night)}${phase.morning?' · '+t('phase_morning'):''}${phase.evening_meal?' · '+t('phase_evening_meal'):''}${phase.daytime_meal?' · '+t('phase_daytime_meal'):''}`));
    {const p=s.lighting;card.append(el('p',`${t(isBathroom(r)?'bathroom_lighting':'area_lighting')}: ${t('bathroom_'+(p?.mode??'always'))}${p?.night_enabled?' · '+t('bathroom_night_enabled'):''}`));}
    if(r.hvac.mode==='preserve')card.append(el('p',t('preserve_help'),'hint'));
    for(const a of r.shared_areas)card.append(el('p',`${roomName(a)} · ${t(s.bathroom_timing[a]??'use_window')}`));if(s.home)card.append(el('p',t('when_home')));
@@ -274,7 +279,7 @@ function planProblems(){
   else if(new Date(end)-new Date(candles)>36*3600000)problems.push('multi_day');
  }
  }
- const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&(r.setup?.status??'ready')==='ready'&&(r.purposes.length||r.setup?.home||phases(r).night==='home'||phases(r).morning||phases(r).evening_meal||phases(r).daytime_meal));
+ const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&(r.setup?.status??'ready')==='ready'&&(r.purposes.length||r.setup?.home||phases(r).night==='home'||phases(r).morning||phases(r).evening_meal||phases(r).daytime_meal||mealHvac(r,'evening')||mealHvac(r,'daytime')||phases(r).constant_main||phases(r).night==='entertaining'));
  if(!dirty&&!rooms.some(r=>r.roles.main_lights.length||r.roles.night_lights.length||(r.roles.hvac.length&&r.hvac.mode!=='none')||r.shared_areas.some(a=>{const shared=data.settings.rooms[a];return shared?.enabled&&(shared.roles.main_lights.length||shared.roles.night_lights.length);})))problems.push('needs_roles');
  if(data.issues.length)problems.push('invalid_mapping');
  return problems;

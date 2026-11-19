@@ -58,7 +58,7 @@ def validate_time(value):
         keys(value, {'anchor', 'offset_minutes'} | ({'not_before'} if 'not_before' in value else set()))
         if 'not_before' in value:
             require(value['not_before'] == 'preparation_start' and value['anchor'] == 'use_start')
-        choice(value['anchor'], ('candle_lighting', 'sunrise', 'use_start', 'use_end'))
+        choice(value['anchor'], ('candle_lighting', 'sunrise', 'use_start', 'use_end', 'entertaining_end'))
         require(type(value['offset_minutes']) is int and abs(value['offset_minutes']) <= 1440)
 
 
@@ -118,7 +118,8 @@ def validate_configuration(config):
         bounded_list(group['rules'], 50)
         seen = set()
         for rule in group['rules']:
-            keys(rule, {'id', 'targets', 'start', 'end', 'action', 'release'} | ({'active_windows'} if 'active_windows' in rule else set()) | ({'warnings'} if 'warnings' in rule else set()) | ({'skip_empty'} if 'skip_empty' in rule else set()))
+            keys(rule, {'id', 'targets', 'start', 'end', 'action', 'release'} | ({'active_windows'} if 'active_windows' in rule else set()) | ({'warnings'} if 'warnings' in rule else set()) | ({'skip_empty'} if 'skip_empty' in rule else set()) | ({'external_release'} if 'external_release' in rule else set()))
+            if 'external_release' in rule: require(type(rule['external_release']) is bool and rule['end'] is None and rule['release'] is None)
             if 'skip_empty' in rule: require(type(rule['skip_empty']) is bool)
             if 'active_windows' in rule:
                 require(rule['end'] is not None)
@@ -128,7 +129,7 @@ def validate_configuration(config):
                     require(all(type(window[k]) is str and len(window[k]) <= 40 for k in ('start', 'end')))
             if 'warnings' in rule:
                 bounded_list(rule['warnings'], 2)
-                for warning in rule['warnings']: choice(warning, ('bathroom_daylight_fallback', 'bathroom_night_fallback', 'phase_empty'))
+                for warning in rule['warnings']: choice(warning, ('bathroom_daylight_fallback', 'bathroom_night_fallback', 'phase_empty', 'external_night_release'))
             identifier(rule['id'])
             require(rule['id'] not in seen, 'invalid_mapping'); seen.add(rule['id'])
             references(rule['targets'], config['loads'])
@@ -328,11 +329,16 @@ def compile_schedule(config, plan):
     for meal in clean_plan['meals']:
         meal['groups'].sort()
     result = {'preview_only': True, 'complete': not issues, 'issues': issues,
-              'digest': digest({'compiler': 'generic-v2.5', 'config': clean_config, 'plan': clean_plan}),
+              'digest': digest({'compiler': 'generic-v2.6', 'config': clean_config, 'plan': clean_plan}),
               'events': [], 'warnings': []}
     if issues:
         result['issues'] = sorted(issues, key=canonical)
         return result
+    entertaining = {}
+    for sid, seg in calendar['segments'].items():
+        windows = [u for u in plan['room_uses'] if u['segment']==sid and u['purpose']=='recreation'] + [m for m in plan['meals'] if m['segment']==sid and m['kind']=='evening' and m['choice'] in ('family','hosting')]
+        ends = [parse_instant(v['end'],calendar['zone']) for v in windows if parse_instant(v['start'],calendar['zone']) < seg['sunrise']]
+        entertaining[sid] = max(ends) if ends else seg['candle_lighting']+timedelta(minutes=360)
     demands, tracked = defaultdict(list), []
     count = 0
 
@@ -340,7 +346,7 @@ def compile_schedule(config, plan):
         if 'at' in time:
             instant = parse_instant(time['at'], calendar['zone'])
         else:
-            anchors = {**calendar['segments'][selection['segment']], **selection}
+            anchors = {**calendar['segments'][selection['segment']], **selection, 'entertaining_end':entertaining[selection['segment']]}
             try:
                 instant = anchors[time['anchor']] + timedelta(minutes=time['offset_minutes'])
             except OverflowError:
@@ -367,6 +373,10 @@ def compile_schedule(config, plan):
             end = resolve(rule['end'], effective, rule.get('skip_empty', False)) if rule['end'] is not None else None
             if hvac_rule and 'hvac_end' in selected and end is not None and rule['action'].get('state', rule['action'].get('mode')) != 'off':
                 end = selected['hvac_end']
+            if group.get('activation')=='home':
+                if end is None and not selected['use_start'] <= start < selected['use_end']: continue
+                if end is not None:
+                    start, end = max(start,selected['use_start']), min(end,selected['use_end'])
             if rule.get('skip_empty') and end is not None and start >= end:
                 entry = {'code': 'phase_empty', 'group': selected['group']}
                 if entry not in result['warnings']: result['warnings'].append(entry)
@@ -392,7 +402,7 @@ def compile_schedule(config, plan):
                     require(count <= MAX_EXPANDED)
                     physical = config['loads'][target]['physical_id']
                     demand = {'start': left, 'end': right, 'action': rule['action'],
-                              'release': rule['release'], 'reason': reason}
+                              'release': rule['release'], 'reason': reason, 'repeat':rule.get('external_release',False)}
                     if group['track_only']:
                         tracked.append((physical, demand))
                     else:
@@ -420,7 +430,7 @@ def compile_schedule(config, plan):
             actions = {canonical(action) for action, _ in wanted}
             require(len(actions) == 1, 'event_conflict')
             action = wanted[0][0]
-            if action != last:
+            if action != last or any(v.get('repeat') for v in points):
                 result['events'].append(event(physical, when, action, [r for _, r in wanted], 'set_state'))
                 last = action
             elif result['events']:
