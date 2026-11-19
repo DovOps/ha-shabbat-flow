@@ -166,10 +166,16 @@ def validate_settings(rooms, inv):
             require(setup.get('area_type', 'legacy') in ('legacy', 'room', 'common', 'bathroom', 'hallway'))
             require('area_type' not in setup or setup['area_type'] == 'legacy' or setup['service'] == (setup['area_type'] != 'room'))
             phase = room_phases(room)
-            require(type(phase) is dict and set(phase) == {'night', 'night_start', 'night_end', 'morning', 'morning_start', 'evening_main', 'evening_meal', 'daytime_meal'})
-            require(phase['night'] in ('none', 'after_use', 'home'))
-            for key in ('morning', 'evening_main', 'evening_meal', 'daytime_meal'): require(type(phase[key]) is bool)
+            require(type(phase) is dict and set(phase) == {'night', 'night_start', 'night_end', 'morning', 'morning_start', 'evening_main', 'evening_meal', 'daytime_meal', 'constant_main', 'night_main_off', 'morning_end', 'night_release', 'evening_hvac', 'daytime_hvac', 'recreation_hvac'})
+            require(phase['night'] in ('none', 'after_use', 'home', 'entertaining'))
+            for key in ('morning', 'evening_main', 'evening_meal', 'daytime_meal', 'constant_main', 'night_main_off', 'recreation_hvac'): require(type(phase[key]) is bool)
             for key, low, high in [('night_start', 0, 720), ('night_end', -180, 360), ('morning_start', 0, 360)]: require(type(phase[key]) is int and low <= phase[key] <= high)
+            require(phase['night_release'] in ('planner', 'existing'))
+            require(phase['night_release']!='existing' or phase['night'] in ('home','entertaining'), 'phase_external_mode')
+            for key in ('evening_hvac','daytime_hvac'): require(phase[key] is None or type(phase[key]) is bool)
+            require(phase['morning_end'] is None or type(phase['morning_end']) is int and 0 <= phase['morning_end'] <= 720)
+            require(not phase['morning'] or phase['morning_end'] is None or phase['morning_end'] > phase['morning_start'], 'phase_morning_bounds')
+            require(not phase['constant_main'] or not (phase['morning'] or phase['evening_main'] or 'sleeping' in room['purposes'] or bathroom_policy(room)['night_enabled']), 'phase_constant_conflict')
             policy = bathroom_policy(room)
             require(type(policy) is dict and set(policy) == {'mode', 'off_after_sunrise', 'on_before_sunset', 'night_enabled', 'night_after_candles', 'morning_after_sunrise'})
             require(policy['mode'] in ('always', 'daylight') and type(policy['night_enabled']) is bool)
@@ -196,13 +202,13 @@ def validate_settings(rooms, inv):
             if ready(room):
                 phase = room_phases(room)
                 require(phase['night'] == 'none' or bool(room['roles']['night_lights']), 'phase_needs_lights')
-                require(not (phase['morning'] or phase['evening_main']) or bool(room['roles']['main_lights']), 'phase_needs_lights')
+                require(not (phase['morning'] or phase['evening_main'] or phase['constant_main']) or bool(room['roles']['main_lights']), 'phase_needs_lights')
                 require(phase['night'] != 'after_use' or 'recreation' in room['purposes'] or phase['evening_meal'], 'phase_needs_recreation')
                 require(not ((phase['night'] != 'none' or phase['morning']) and bathroom_policy(room)['night_enabled']), 'phase_bathroom_conflict')
                 require(not bathroom_policy(room)['night_enabled'] or bool(room['roles']['main_lights'] and room['roles']['night_lights']), 'bathroom_night_needs_lights')
                 require(hvac['mode'] != 'profile', 'hvac_profile_required')
                 require(hvac['mode'] == 'none' or bool(room['roles']['hvac']), 'needs_hvac_device')
-                require(hvac['mode'] == 'none' or bool(room['purposes']) or room_phases(room)['evening_meal'] or room_phases(room)['daytime_meal'], 'needs_hvac_use')
+                require(hvac['mode'] == 'none' or bool(room['purposes']) or meal_binding(room,'evening',True) or meal_binding(room,'daytime',True), 'needs_hvac_use')
                 require(all(a != aid and a in areas and ready(rooms.get(a, {})) for a in room['shared_areas']), 'missing_shared')
                 if setup:
                     require(bool(room['purposes']) or setup['service'], 'needs_purpose')
@@ -234,9 +240,14 @@ def validate_settings(rooms, inv):
 
 
 def room_phases(room):
-    return room.get('setup', {}).get('phases', {'night': 'after_use' if 'recreation' in room.get('purposes', []) and room.get('roles', {}).get('night_lights') else 'none',
-        'night_start': 360, 'night_end': -60, 'morning': False, 'morning_start': 120,
-        'evening_main': False, 'evening_meal': False, 'daytime_meal': False})
+    return {'night_main_off':False, 'constant_main':False, 'morning_end':None, 'night_release':'planner', 'evening_hvac':None, 'daytime_hvac':None, 'recreation_hvac':True,
+        **room.get('setup', {}).get('phases', {'night': 'after_use' if 'recreation' in room.get('purposes', []) and room.get('roles', {}).get('night_lights') else 'none',
+        'night_start':360, 'night_end':-60, 'morning':False, 'morning_start':120, 'evening_main':False, 'evening_meal':False, 'daytime_meal':False})}
+
+
+def meal_binding(room, kind, hvac=False):
+    p=room_phases(room)
+    return p[kind+'_meal'] if not hvac or p[kind+'_hvac'] is None else p[kind+'_hvac']
 
 
 def is_bathroom(room):
@@ -339,9 +350,9 @@ def workspace(settings, inv, snapshot):
             if purpose == 'recreation' and phase['night'] == 'after_use':
                 rule(night, end, {'anchor': 'sunrise', 'offset_minutes': phase['night_end']}, on, off)
                 if night: rules[-1]['skip_empty'] = True
-            elif phase['night'] != 'home':
+            elif phase['night'] not in ('home','entertaining'):
                 rule(night, start, end, on, off)
-            for lid in targets(aid, 'hvac'):
+            for lid in (targets(aid, 'hvac') if purpose != 'recreation' or phase['recreation_hvac'] else []):
                 h = room['hvac']; c = config['loads'][lid]['capabilities']
                 power_only = h['mode'] == 'preserve'
                 rule([lid], {'anchor': 'use_start', 'offset_minutes': -h['lead_minutes'], 'not_before': 'preparation_start'}, end,
@@ -357,7 +368,7 @@ def workspace(settings, inv, snapshot):
                     'purpose': purpose, 'groups': [gid], 'window': window}
                 if purpose == 'sleeping':
                     config['profiles'][internal_id('profile_', aid + purpose + name)]['rest_defaults'] = deepcopy(room.get('setup', {}).get('rest_defaults', {'nap_after_sunrise':480,'nap_duration':120,'lead_minutes':room['hvac']['lead_minutes'],'late_wake_after_sunrise':240}))
-        if room.get('setup', {}).get('home') and phase['night'] == 'none' and not phase['morning']:
+        if room.get('setup', {}).get('home') and phase['night'] == 'none' and not phase['morning'] and not phase['constant_main']:
             allowed, warnings = bathroom_windows(room, calendar)
             home_rules = []
             for role in ('main_lights', 'night_lights'):
@@ -371,12 +382,32 @@ def workspace(settings, inv, snapshot):
             require(bool(home_rules), 'needs_roles')
             config['groups'][internal_id('home_', aid)] = {
                 'label': label(areas[aid]['name']), 'track_only': False, 'activation': 'home', 'rules': home_rules}
+        if phase['constant_main']:
+            ids=targets(aid,'main_lights')
+            if ids: config['groups'][internal_id('constant_',aid)]={'label':label(areas[aid]['name']),'track_only':False,'activation':'home','rules':[
+                {'id':'always_main','targets':ids,'start':{'anchor':'use_start','offset_minutes':0},'end':{'anchor':'use_end','offset_minutes':0},'action':{'type':'state','state':'on'},'release':{'type':'state','state':'off'}}]}
+        if phase['night']=='entertaining' or (phase['night']=='home' and (phase['night_release']=='existing' or phase['night_main_off'])):
+            start={'anchor':'entertaining_end','offset_minutes':0} if phase['night']=='entertaining' else {'anchor':'candle_lighting','offset_minutes':phase['night_start']}
+            end={'anchor':'sunrise','offset_minutes':phase['night_end']}
+            dynamic=[]
+            ids=targets(aid,'night_lights')
+            if ids: dynamic.append({'id':'night','targets':ids,'start':start,'end':end if phase['night_release']=='planner' else None,
+                'action':{'type':'state','state':'on'},'release':{'type':'state','state':'off'} if phase['night_release']=='planner' else None,
+                'skip_empty':True,'warnings':['external_night_release'] if phase['night_release']=='existing' else [],
+                **({'external_release':True} if phase['night_release']=='existing' else {})})
+            ids=targets(aid,'main_lights')
+            if ids and (phase['night']=='entertaining' or phase['night_main_off']) and not phase['constant_main']:
+                dynamic.append({'id':'evening_main','targets':ids,'start':{'anchor':'use_start','offset_minutes':0} if phase['evening_main'] else start,
+                    'end':start if phase['evening_main'] else None,'action':{'type':'state','state':'on' if phase['evening_main'] else 'off'},
+                    'release':{'type':'state','state':'off'} if phase['evening_main'] else None,'skip_empty':True})
+            if dynamic: config['groups'][internal_id('circulation_',aid)]={'label':label(areas[aid]['name']),'track_only':False,'activation':'home','rules':dynamic}
         # Home-driven phases are clipped to explicit availability before union.
         if phase['night'] == 'home' or phase['morning']:
             phase_rules = []
             for role in ('main_lights', 'night_lights'):
                 ids = targets(aid, role)
                 if not ids: continue
+                if role=='night_lights' and phase['night_release']=='existing': continue
                 intervals, notices = [], []
                 for seg in calendar['segments'].values():
                     lo = calendar['preparation_start'] if seg['start'] == calendar['start'] else seg['start']
@@ -389,12 +420,13 @@ def workspace(settings, inv, snapshot):
                     if role == 'main_lights':
                         if phase['night'] == 'home' and phase['evening_main'] and lo < night_start: intervals.append((lo, night_start))
                         morning = min(hi, max(lo, seg['sunrise'] + timedelta(minutes=phase['morning_start'])))
-                        if phase['morning'] and morning < hi: intervals.append((morning, hi))
+                        morning_end = hi if phase['morning_end'] is None else min(hi,max(lo,seg['sunrise']+timedelta(minutes=phase['morning_end'])))
+                        if phase['morning'] and morning < morning_end: intervals.append((morning, morning_end))
                 phase_rules.append({'id': role, 'targets': ids, 'start': {'anchor':'use_start','offset_minutes':0},
                     'end': {'anchor':'use_end','offset_minutes':0}, 'action': {'type':'state','state':'on'}, 'release': {'type':'state','state':'off'},
                     'active_windows':[{'start':a.astimezone(calendar['zone']).isoformat(),'end':b.astimezone(calendar['zone']).isoformat()} for a,b in intervals], 'warnings':sorted(set(notices))})
             if phase_rules: config['groups'][internal_id('phases_',aid)]={'label':label(areas[aid]['name']), 'track_only':False, 'activation':'home','include_preparation':True,'rules':phase_rules}
-        if phase['evening_meal'] or phase['daytime_meal']:
+        if any(meal_binding(room,k,h) for k in ('evening','daytime') for h in (False,True)):
             meal_rules=[]
             ids=targets(aid,'main_lights')
             if ids: meal_rules.append({'id':'meal_lights','targets':ids,'start':{'anchor':'use_start','offset_minutes':0},'end':{'anchor':'use_end','offset_minutes':0},'action':{'type':'state','state':'on'},'release':{'type':'state','state':'off'}})
@@ -404,9 +436,9 @@ def workspace(settings, inv, snapshot):
                     'action':{'type':'hvac_power','state':'on'} if power else {'type':'hvac','mode':h['mode'],'temperature':h['temperature'],'unit':c['unit'],'fan_mode':h['fan_mode']},
                     'release':{'type':'hvac_power','state':'off'} if power else {'type':'hvac','mode':'off'}})
             for kind in ('evening', 'daytime'):
-                if not phase[kind+'_meal']: continue
-                rules = deepcopy(meal_rules)
-                if kind == 'evening' and phase['night'] == 'after_use':
+                if not (meal_binding(room,kind) or meal_binding(room,kind,True)): continue
+                rules = [deepcopy(r) for r in meal_rules if meal_binding(room,kind,r['action']['type'] in ('hvac','hvac_power'))]
+                if kind == 'evening' and phase['night'] == 'after_use' and meal_binding(room,kind):
                     ids = targets(aid, 'night_lights')
                     if ids: rules.append({'id':'meal_background','targets':ids,'start':{'anchor':'use_end','offset_minutes':0},
                         'end':{'anchor':'sunrise','offset_minutes':phase['night_end']},'action':{'type':'state','state':'on'},
@@ -418,10 +450,10 @@ def workspace(settings, inv, snapshot):
         daylight_room = deepcopy(room)
         daylight_room['setup']['lighting'] = {**bathroom_policy(room), 'night_enabled': False}
         allowed, notices = bathroom_windows(daylight_room, calendar)
-        light_ids = {internal_id('load_', rid) for role in ('main_lights', 'night_lights') for rid in room['roles'][role]}
+        light_ids = {internal_id('load_', rid) for role in ('main_lights', 'night_lights') if not (role=='main_lights' and room_phases(room)['constant_main']) for rid in room['roles'][role]}
         for group in config['groups'].values():
             for rule in group['rules']:
-                if rule['action'] != {'type': 'state', 'state': 'on'} or not light_ids.intersection(rule['targets']): continue
+                if rule.get('external_release') or rule['action'] != {'type': 'state', 'state': 'on'} or not light_ids.intersection(rule['targets']): continue
                 require(set(rule['targets']) <= light_ids, 'invalid_mapping')
                 windows = allowed['main_lights']
                 if 'active_windows' in rule:
@@ -446,5 +478,5 @@ def workspace(settings, inv, snapshot):
             end = min(start + timedelta(minutes=duration), seg['end'])
             plan['meals'].append({'id': sid + '_' + kind, 'segment': sid, 'kind': kind, 'choice': 'unset',
                                  'start': start.astimezone(calendar['zone']).isoformat(),
-                                 'end': end.astimezone(calendar['zone']).isoformat(), 'groups': [internal_id('meal_',aid+kind) for aid,r in rooms.items() if room_phases(r)[kind+'_meal'] and internal_id('meal_',aid+kind) in config['groups']]})
+                                 'end': end.astimezone(calendar['zone']).isoformat(), 'groups': [internal_id('meal_',aid+kind) for aid,r in rooms.items() if (meal_binding(r,kind) or meal_binding(r,kind,True)) and internal_id('meal_',aid+kind) in config['groups']]})
     return {'config': config, 'plan': plan}

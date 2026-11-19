@@ -108,6 +108,22 @@ class ScheduleTests(unittest.TestCase):
         physical=self.config['loads'][self.config['groups']['meal']['rules'][0]['targets'][0]]['physical_id']
         self.assertFalse(any(e['physical_id']==physical and e['local']=='2027-01-10T14:00:00+02:00' for e in result['events']))
 
+    def test_entertaining_anchor_tracks_latest_evening_and_falls_back(self):
+        self.plan['room_uses']=[]
+        group=self.config['groups']['room_a_sleep_standard']
+        group['activation']='home'
+        group['rules']=[{'id':'night','targets':['room_a_spots'],'start':{'anchor':'entertaining_end','offset_minutes':0},
+            'end':{'anchor':'sunrise','offset_minutes':-60},'action':{'type':'state','state':'on'},'release':{'type':'state','state':'off'},'skip_empty':True}]
+        physical=self.config['loads']['room_a_spots']['physical_id']
+        events=[e for e in self.compile()['events'] if e['physical_id']==physical]
+        self.assertEqual(events[0]['local'],'2027-01-07T22:00:00+02:00')
+        self.plan['meals'][0]['end']='2027-01-07T23:15:00+02:00'
+        events=[e for e in self.compile()['events'] if e['physical_id']==physical]
+        self.assertEqual(events[0]['local'],'2027-01-07T23:15:00+02:00')
+        self.plan['meals'][0]['choice']='away'
+        events=[e for e in self.compile()['events'] if e['physical_id']==physical]
+        self.assertEqual(events[0]['local'],'2027-01-07T22:40:00+02:00')
+
     def test_display_metadata_does_not_change_schedule(self):
         before = self.compile()
         self.plan['snapshot']['segments'][0]['calendar_details'] = ['Example Hebrew date', 'Example weekly portion']

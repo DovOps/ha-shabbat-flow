@@ -408,3 +408,16 @@ test('afternoon hosting is disabled initially, only Shabbat, end-relative only a
  const manual=afternoonActivity(intermediate,'day_1').plan.meals.at(-1);
  assert.equal(manual.start,'');assert.equal(manual.end,'');
 });
+
+test('independent meal HVAC inherits old combined settings and can be explicitly disabled',async()=>{
+ const {mealHvac}=await import('../src/shabbat_flow/web/household-model.mjs');
+ const r={purposes:[],roles:{main_lights:['main'],night_lights:[],hvac:['ac']},shared_areas:[],hvac:{mode:'preserve'},setup:{service:true,area_type:'common'}};
+ r.setup.phases={...phases(r),daytime_meal:true};assert.equal(mealHvac(r,'daytime'),true);
+ r.setup.phases.daytime_hvac=false;assert.equal(mealHvac(r,'daytime'),false);
+ r.setup.phases.daytime_meal=false;r.setup.phases.daytime_hvac=true;
+ assert.ok(!roomProblems(r,{}).includes('needs_hvac_use'));
+ r.setup.phases.morning=true;r.setup.phases.morning_end=60;
+ assert.ok(roomProblems(r,{}).includes('phase_morning_bounds'));
+ r.setup.phases.constant_main=true;
+ assert.ok(roomProblems(r,{}).includes('phase_constant_conflict'));
+});

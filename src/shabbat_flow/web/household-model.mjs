@@ -20,16 +20,20 @@ export function filteredAreas(areas,rooms,filters,kind){
  return areas.filter(a=>rooms[a.id]?.enabled||(filters[kind]&&(a.labels??[]).includes(filters[kind])));
 }
 
-export function phases(r){return r.setup?.phases??{night:r.purposes.includes('recreation')&&r.roles.night_lights.length?'after_use':'none',night_start:360,night_end:-60,morning:false,morning_start:120,evening_main:false,evening_meal:false,daytime_meal:false};}
+export function phases(r){return {night_main_off:false,constant_main:false,morning_end:null,night_release:'planner',evening_hvac:null,daytime_hvac:null,recreation_hvac:true,...(r.setup?.phases??{night:r.purposes.includes('recreation')&&r.roles.night_lights.length?'after_use':'none',night_start:360,night_end:-60,morning:false,morning_start:120,evening_main:false,evening_meal:false,daytime_meal:false})};}
+export const mealHvac=(r,kind)=>phases(r)[kind+'_hvac']??phases(r)[kind+'_meal'];
 export function roomProblems(r,rooms){
  const s=r.setup??{service:!r.purposes.length};const draft=rooms,errors=[];
   const phase=phases(r);
-  if((phase.night!=='none'&&!r.roles.night_lights.length)||((phase.morning||phase.evening_main)&&!r.roles.main_lights.length))errors.push('phase_needs_lights');
+  if((phase.night!=='none'&&!r.roles.night_lights.length)||((phase.morning||phase.evening_main||phase.constant_main)&&!r.roles.main_lights.length))errors.push('phase_needs_lights');
+  if(phase.night_release==='existing'&&!['home','entertaining'].includes(phase.night))errors.push('phase_external_mode');
+  if(phase.constant_main&&(phase.morning||phase.evening_main||r.purposes.includes('sleeping')||s.lighting?.night_enabled))errors.push('phase_constant_conflict');
+  if(phase.morning&&phase.morning_end!==null&&phase.morning_end<=phase.morning_start)errors.push('phase_morning_bounds');
   if(phase.night==='after_use'&&!r.purposes.includes('recreation')&&!phase.evening_meal)errors.push('phase_needs_recreation');
   if((phase.night!=='none'||phase.morning)&&s.lighting?.night_enabled)errors.push('phase_bathroom_conflict');
   if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)errors.push('needs_roles');
   if(r.hvac.mode!=='none'&&!r.roles.hvac.length)errors.push('needs_hvac_device');
-  if(r.hvac.mode!=='none'&&!r.purposes.length&&!phases(r).evening_meal&&!phases(r).daytime_meal)errors.push('needs_hvac_use');
+  if(r.hvac.mode!=='none'&&!r.purposes.length&&!mealHvac(r,'evening')&&!mealHvac(r,'daytime'))errors.push('needs_hvac_use');
   if(s.lighting?.night_enabled&&(!r.roles.main_lights.length||!r.roles.night_lights.length))errors.push('bathroom_night_needs_lights');
   if(r.hvac.mode==='profile')errors.push('hvac_profile_required');
   if(!r.purposes.length&&!s.service)errors.push('needs_purpose');
