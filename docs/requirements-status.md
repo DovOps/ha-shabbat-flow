@@ -54,3 +54,5 @@ CS-FR-012/CS-NFR-008 and UI-FR-007 implemented: built-in A/C room-temperature de
 
 ## 0.16.4 — presence defaults, setup shortcuts and activity overview
 Implemented and tested: MD-FR-023–024/MD-NFR-010 (explicit room/nap/home-meal choices set simple day Home; preserve custom windows), UI-FR-008–010/UI-NFR-004 (shared green planner actions, room-status links, browser-draft versus persisted plan/climate-run status). English/Hebrew, no device commands or implicit activation. Verification: 77 core, 58 JS and 112 HA tests on each supported version; local EN/HE visual and shortcut checks. Package 0.16.4; HA remains 0.16.3 pending separately authorized installation. See checkpoint 022.
+
+0.16.4 deployment verified: backed-up replacement, 52-file parity, three retained stores, one HA restart, live saved-plan reopening and concurrent plan/climate status display with 20 native room icons. Supersedes the packaged-only state above. No device controls enabled; see checkpoint 022.

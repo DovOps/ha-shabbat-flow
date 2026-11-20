@@ -14,3 +14,10 @@
 
 ## Rollout
 Packaged, not installed. HA remains 0.16.3. Real saved-plan reopening and real concurrent-run presentation remain installation validation items. No production restart or device-control activation.
+
+## Authorized HA deployment verified
+Installed 0.16.4 after an on-host backup of the previous integration and all three Shabbat Flow storage files. Verified archive SHA-256, Python syntax and all 52 installed files; storage bytes stayed identical during replacement. One HA restart loaded the versioned 0.16.4 frontend.
+
+Live verification: the home page displayed a saved browser draft, a scheduled plan observation and a concurrently running climate study independently. All 20 configured rooms remained Ready, and all 20 overview icons contained native SVG graphics. Open saved plan successfully loaded the existing dated household plan without saving or starting anything. Returned to the overview. No device-control activation, study start/stop or notification changes. Active observation records survived restart; this spot check does not prove uninterrupted sampling through the restart gap. Private proof remains outside reusable source.
+
+Archive SHA-256: a1b7f98076e7d406569abca866f4d462f30e46e8c9718e293f9f483ab003e411.
