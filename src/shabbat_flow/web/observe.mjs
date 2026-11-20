@@ -42,5 +42,6 @@ export function setupObservation({root,fetch,node,t,getBundle,isReady,onPrint,la
   action('observe_print',async()=>{if(!select.value)return;const data=await api({op:'export',id:select.value});onPrint(data);});
   action('observe_stop',async()=>{if(!select.value)return;await api({op:'stop',id:select.value});key=null;keyBundle=null;await refresh();});
   action(study?'study_export':'observe_export',async()=>{if(!select.value)return;const data=await api({op:'export',id:select.value});const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=node('a');a.href=url;a.download='shabbat-flow-observation-'+select.value.slice(0,8)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+  const settingsLink=node('a',t('settings_title'));settingsLink.href='./settings.html';root.append(settingsLink);
   root.append(status,summary);refresh().catch(e=>{status.textContent=errorText(e);});
 }

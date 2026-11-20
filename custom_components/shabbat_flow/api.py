@@ -242,6 +242,13 @@ class ObserveView(BaseView):
             payload = await read_body(request)
             observer = self.hass.data[DOMAIN]['observer']
             op = payload.get('op')
+            if op=='dependencies' and set(payload)=={'op'}:
+                from .dependencies import discover
+                return self.response(discover(self.hass))
+            if op=='sms_get' and set(payload)=={'op'}:
+                return self.response(self.hass.data[DOMAIN]['notifications'].listing())
+            if op=='sms_save' and set(payload)=={'op','settings'}:
+                return self.response(await self.hass.data[DOMAIN]['notifications'].configure(payload['settings']))
             if op=='study_start' and set(payload)=={'op','selection','request_id'}:
                 run=await observer.start_study(payload['selection'],payload['request_id'],getattr(request['hass_user'],'id',None))
                 return self.response({'id':run['id'],'status':run['status'],'mode':'observe'})

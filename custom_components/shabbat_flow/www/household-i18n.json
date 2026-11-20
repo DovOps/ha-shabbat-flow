@@ -248,7 +248,8 @@
     "phase_morning_bounds": "Morning Off must be later than morning On.",
     "phase_external_mode": "Existing morning release requires candle-offset or end-of-entertaining night lighting.",
     "phase_night_main_off": "Explicitly turn selected main lights off at night changeover",
-    "study_open": "Climate Study — no Shabbat plan required"
+    "study_open": "Climate Study — no Shabbat plan required",
+    "settings_title": "Settings"
   },
   "he": {
     "language": "שפה",
@@ -499,6 +500,7 @@
     "phase_morning_bounds": "כיבוי הבוקר חייב להיות מאוחר מהדלקת הבוקר.",
     "phase_external_mode": "כיבוי בוקר חיצוני דורש תאורת לילה לפי הדלקת נרות או סיום אירוח.",
     "phase_night_main_off": "כיבוי מפורש של התאורה הראשית במעבר ללילה",
-    "study_open": "מחקר אקלים — ללא צורך בתוכנית שבת"
+    "study_open": "מחקר אקלים — ללא צורך בתוכנית שבת",
+    "settings_title": "הגדרות"
   }
 }

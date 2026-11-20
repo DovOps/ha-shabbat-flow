@@ -25,6 +25,10 @@ async def async_setup_entry(hass, entry):
         data["household_store"] = Store(hass, 1, DOMAIN + ".household")
         data["household"] = migrate_settings(await data["household_store"].async_load() or empty_settings())
         data["household_lock"] = Lock()
+    from .notifications import Notifications
+    if 'notifications' not in data or data['notifications'].closed:
+        data['notifications']=Notifications(hass)
+        await data['notifications'].load()
     from .observe import Observer
     if "observer" not in data or data["observer"].closed:
         data["observer"] = Observer(hass)
@@ -57,6 +61,8 @@ async def async_options_updated(hass, entry):
 async def async_unload_entry(hass, entry):
     observer = hass.data.get(DOMAIN, {}).get("observer")
     if observer: observer.close()
+    notifications=hass.data.get(DOMAIN,{}).get('notifications')
+    if notifications:notifications.close()
     frontend.async_remove_panel(hass, PANEL)
     hass.data.get(DOMAIN, {}).pop("entry", None)
     return True

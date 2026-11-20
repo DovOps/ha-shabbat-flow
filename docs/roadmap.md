@@ -55,3 +55,6 @@ Feature 011 adds manual 1–48-hour studies without a Shabbat plan, selected zon
 The same 0.14.0 package includes explicit room light/switch activity signals and distinct observed switch timelines. Both On and Off changes are evidence, never confirmed occupancy or manual operation.
 
 0.14.1 adds room-scoped Select all / Clear all for climate-study activity signals. Implemented/tested, not yet deployed; HA remains 0.14.0.
+
+## Settings and optional notifications (0.15.0)
+Feature 012 implements dependency discovery, explicit SMS/Companion App lifecycle notifications and configurable pre-candle push reminders. Tests pass; deployment pending. User-configured delivery and mobile report export are next validation steps. This does not implement scheduled climate studies, public report hosting, message replies or device execution. Existing execution qualification/activation/recovery roadmap remains unchanged.

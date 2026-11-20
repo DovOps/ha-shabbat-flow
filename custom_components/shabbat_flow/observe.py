@@ -167,7 +167,12 @@ class Observer:
         try: await self.hass.async_add_executor_job(atomic_save,self.path,candidate)
         except Exception:
             self.error = 'observe_store'; raise ValueError('observe_store') from None
+        previous=self.data
         self.data = candidate
+        notifications=self.hass.data.get('shabbat_flow',{}).get('notifications')
+        if notifications:
+            try: await notifications.record(previous,candidate)
+            except Exception: notifications.error='store'
 
     async def start(self, bundle, options, request_id, actor, now=None, weather_entity_id=None):
         now = now or datetime.now(timezone.utc)
