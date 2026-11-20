@@ -1,0 +1,20 @@
+{
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "פתיחה או סגירה של תפריט הניווט"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "סגירת תפריט הניווט"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "הרחבת התפריט"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "צמצום התפריט"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "שפות"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "חזרה לתפריט הראשי"
+  }
+}

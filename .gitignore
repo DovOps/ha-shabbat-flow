@@ -24,3 +24,10 @@ test-results/
 
 # Reproducible local release artifacts.
 dist/
+
+# Generated Docusaurus website assets.
+website/.docusaurus/
+website/build/
+website/generated/
+website/i18n/he/docusaurus-plugin-content-docs/
+website/static/img/logo.png
