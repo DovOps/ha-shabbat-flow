@@ -63,6 +63,6 @@
 - [ ] W045 Verify native HA icons and new controls in an authorized production installation.
 
 - [x] Correct label alignment and iframe icon rendering; add timeline icons and owner-document/cache regression.
-- [ ] Verify copied native icon graphics in installed HA.
+- [x] Verify copied native icon graphics in installed HA — 0.16.3, checkpoint 021.
 
 - [x] Apply adjacent logical-start checkbox/icon/name layout in EN/HE.

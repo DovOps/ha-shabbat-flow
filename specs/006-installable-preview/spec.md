@@ -17,3 +17,6 @@ HA built-ins only: frontend, http and panel_custom; libraries already supplied b
 
 ## Preferred calendar provider decision
 The user identified the built-in Jewish Calendar integration (`jewish_calendar`) as the default. Entity-registry discovery targets its candle-lighting, Havdalah, sunrise and active-observance signals, verified against HA 2026.11.2 source. The live installation/version has not been inspected in this session. Optional startup ordering permits manual fallback when the provider is absent. This initial adapter reads current selected values only; full future-date coverage remains deferred.
+
+## Release asset identity
+- INSTALL-NFR-001: Package validation must reject a mismatch between manifest version, frontend VERSION and versioned static path. HA lifecycle tests must compare the registered module URL to the manifest, not a separately hardcoded version. An installed release is verified through its live versioned assets and actual rendering.

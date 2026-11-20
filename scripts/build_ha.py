@@ -33,6 +33,11 @@ def generated():
 
 
 def build(check=False):
+    import ast
+    version = json.loads((TARGET/'manifest.json').read_text())['version']
+    constants = {n.targets[0].id: ast.literal_eval(n.value) for n in ast.parse((TARGET/'const.py').read_text()).body if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)}
+    if constants.get('VERSION') != version or constants.get('STATIC') != '/shabbat_flow_static/'+version:
+        raise SystemExit('Manifest/frontend version mismatch: update const.py before packaging')
     expected = generated()
     for name, data in expected.items():
         path = TARGET/name

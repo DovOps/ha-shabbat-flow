@@ -57,7 +57,8 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.16.1/panel.js')
+    version=json.loads((Path(__file__).resolve().parents[2]/'custom_components/shabbat_flow/manifest.json').read_text())['version']
+    assert panel.config['_panel_custom']['module_url']==f'/shabbat_flow_static/{version}/panel.js?v={version}'
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
