@@ -3,7 +3,7 @@
 - [x] N002 Implement private settings, capability adapter, persisted dispatch and observer hooks.
 - [x] N003 Implement bilingual controls and authenticated report deep links.
 - [x] N004 Test enabled/disabled/error/restart paths and package.
-- [ ] N005 Deploy and verify capability/UI without sending.
+- [x] N005 Deploy and verify capability/UI without sending.
 - [ ] N006 User-configured real lifecycle delivery and PDF validation.
 
 - [x] N007 Dedicated EN/HE Settings capability page and guidance.
