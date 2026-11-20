@@ -81,3 +81,8 @@ input[type=datetime-local]{font:inherit;width:100%;min-width:0;max-width:100%;pa
 .hvac-cell.hvac-unknown{background:repeating-linear-gradient(135deg,#fff,#fff 2px,#9aabb3 2px,#9aabb3 3px)!important}
 .hvac-cells:focus-visible{outline:3px solid #008fbf;outline-offset:2px}
 @media print{#print-report .hvac-cells{gap:.4mm;height:3mm}#print-report .hvac-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+.thermal-card{margin:1rem 0;padding:1rem;border:1px solid #cbd8df;border-radius:12px;break-inside:avoid;background:#fff}
+.thermal-card svg{width:100%;height:auto;display:block;direction:ltr;color:#122b42}
+.thermal-legend{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;font-size:.85rem;font-weight:600}
+.thermal-data{overflow:auto}.thermal-data table{width:100%;font-size:.85rem;border-collapse:collapse}.thermal-data th,.thermal-data td{padding:.4rem;text-align:start;border-bottom:1px solid #dce5e9}
+@media print{#print-report .thermal-card{padding:3mm;margin:4mm 0;break-inside:avoid}#print-report .thermal-card svg{print-color-adjust:exact;-webkit-print-color-adjust:exact}#print-report .thermal-data{display:none}#print-report .thermal-legend{font-size:8pt}}

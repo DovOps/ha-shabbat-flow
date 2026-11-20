@@ -434,3 +434,24 @@ test('observe UI strings have English and Hebrew parity',()=>{
  const labels=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
  for(const key of Object.keys(labels.en).filter(k=>k.startsWith('observe_'))){assert.ok(labels.en[key]);assert.ok(labels.he[key]);}
 });
+
+import {thermalModel,lineSegments,renderObservationPrint} from '../src/shabbat_flow/web/thermal-report.mjs';
+test('thermal reports retain missing gaps, target ranges and source without mutating evidence',()=>{
+ const reading=(v)=>({celsius:v});
+ const data={run:{start:'2027-01-08T14:00:00Z',end:'2027-01-09T15:00:00Z',bundle:{plan:{snapshot:{timezone:'Asia/Jerusalem'}}},thermal:{outdoor:{entity_id:'weather.sample'},climates:[{entity_id:'climate.study',area_name:'Study'}],samples:[
+  {due:'2027-01-08T14:00:00Z',status:'sampled',climates:{'climate.study':{mode:'heat',hvac_action:'idle',current_temperature:reading(20),target_low:reading(21),target_high:reading(23)}},outdoor:{current_temperature:reading(12)}},
+  {due:'2027-01-08T15:00:00Z',status:'missing'},
+  {due:'2027-01-08T16:00:00Z',status:'sampled',climates:{'climate.study':{mode:'off',current_temperature:reading(22),target_temperature:reading(23)}},outdoor:{current_temperature:reading(13)}}
+ ]}}};const before=JSON.stringify(data),model=thermalModel(data),points=model.lanes[0].points;
+ assert.equal(model.source,'weather.sample');assert.equal(points[0].low,21);assert.equal(points[0].target,null);assert.equal(points[1].current,null);assert.equal(points[2].mode,'off');
+ assert.equal(lineSegments(points,'current').length,2);assert.equal(lineSegments(points,'outdoor').length,2);assert.equal(model.low,11);assert.equal(model.high,24);
+ assert.equal(JSON.stringify(data),before);assert.equal(thermalModel({run:{}}),null);
+});
+test('observation print renders frozen provenance and handles legacy runs without a chart',()=>{
+ const node=(tag,text='',className='')=>({tag,textContent:text,className,children:[],append(...items){this.children.push(...items);},replaceChildren(){this.children=[];}});
+ const data={run:{id:'frozen-observation',snapshot_hash:'frozen-digest',start:'2027-01-08T14:00:00Z',end:'2027-01-09T15:00:00Z'}};
+ const report=node('section');renderObservationPrint({report,data,node,t:k=>k,lang:()=> 'en',logo:null});
+ const flatten=n=>[n.textContent,...n.children.flatMap(flatten)].join(' ');
+ assert.match(flatten(report),/frozen-observation.*frozen-digest/);assert.match(flatten(report),/observe_thermal_legacy/);
+ assert.match(flatten(report),/2027-01-08T14:00:00Z/);
+});

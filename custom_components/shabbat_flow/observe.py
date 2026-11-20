@@ -12,6 +12,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
 from .engine.schedule import compile_schedule, digest
 from .household import internal_id
+from .thermal import initialize as thermal_initialize, collect as thermal_collect, weather_sources
 from .ownership import instant, forecast_ha, ownership_report
 
 SCHEMA = 1
@@ -164,7 +165,7 @@ class Observer:
             self.error = 'observe_store'; raise ValueError('observe_store') from None
         self.data = candidate
 
-    async def start(self, bundle, options, request_id, actor, now=None):
+    async def start(self, bundle, options, request_id, actor, now=None, weather_entity_id=None):
         now = now or datetime.now(timezone.utc)
         if set(bundle) != {'config','plan'}: raise ValueError('invalid_request')
         options = policy(options)
@@ -176,12 +177,13 @@ class Observer:
         mapping, unresolved = resolve_mapping(self.hass,bundle)
         if not mapping or len(mapping)>100: raise ValueError('observe_mapping')
         overlay = forecast_ha(self.hass,bundle['plan']['snapshot'])
+        thermal = thermal_initialize(self.hass,now,weather_entity_id)
         snapshot_hash = digest(bundle)
         async with self.lock:
             if self.error or self.closed: raise ValueError('observe_store')
             for run in self.data['runs'].values():
                 if run['request_id'] == request_id:
-                    if run['snapshot_hash'] != snapshot_hash or run['policy'] != options: raise ValueError('observe_conflict')
+                    if run['snapshot_hash'] != snapshot_hash or run['policy'] != options or run.get('weather_selection') != weather_entity_id: raise ValueError('observe_conflict')
                     return deepcopy(run)
                 if run['status'] in ACTIVE and start < instant(run['end']) and end > instant(run['start']) and set(mapping)&set(run['mapping']):
                     raise ValueError('observe_conflict')
@@ -191,6 +193,7 @@ class Observer:
             rid = uuid4().hex
             run = {'id':rid,'mode':'observe','status':'scheduled' if now<start else 'observing','bundle':deepcopy(bundle),
                    'snapshot_hash':snapshot_hash,'preview':preview,'mapping':mapping,'unmapped':unresolved,'policy':options,
+                   'thermal':thermal,'weather_selection':weather_entity_id,
                    'request_id':request_id,'actor':actor,'created_at':now.isoformat(),'start':start.isoformat(),'end':end.isoformat(),
                    'last_sample':start.isoformat(),'last_states':{},'baselines':{},'changes':[],'truncated':False,'gaps':[],
                    'overlay':overlay,'ownership':ownership_report(preview['events'],mapping,overlay),
@@ -213,6 +216,7 @@ class Observer:
                 left, right = instant(run['last_sample']), min(now,instant(run['end']))
                 if right <= left and run['last_states']: continue
                 changed = True
+                thermal_collect(self.hass,run,now)
                 gap = rid in self.resumed or not run['last_states'] or (now-left).total_seconds()>90
                 accumulate(run,left,right,gap)
                 if gap and right>left and len(run['gaps'])<1000: run['gaps'].append({'start':left.isoformat(),'end':right.isoformat(),'reason':'restart_or_collection_gap'})
@@ -278,11 +282,11 @@ class Observer:
         return self.export(rid)
 
     def listing(self):
-        return {'mode':'observe','error':self.error,'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
+        return {'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
 
     def export(self,rid):
         if rid not in self.data['runs']: raise ValueError('observe_missing')
         run=deepcopy(self.data['runs'][rid]); run.pop('actor',None); run.pop('request_id',None)
         return {'schema_version':1,'collection_error':self.error,'sample_seconds':60,'mode':'observe','device_commands_sent':0,
-                'limitations':['sampled_not_exact_history','no_occupancy_inference','preserve_settings_baseline_may_be_unknown','unmanaged_forecast_not_guaranteed'],
+                'limitations':['sampled_not_exact_history','no_occupancy_inference','preserve_settings_baseline_may_be_unknown','unmanaged_forecast_not_guaranteed','thermal_reports_not_verified_room_temperatures','weather_report_not_local_outdoor_sensor','state_update_time_not_measurement_time','no_automatic_thermostat_calibration'],
                 'run':run}

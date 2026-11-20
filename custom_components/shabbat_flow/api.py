@@ -244,11 +244,11 @@ class ObserveView(BaseView):
             op = payload.get('op')
             if op in ('start','forecast'):
                 allowed = {'op','bundle','policy','request_id'} if op == 'start' else {'op','bundle'}
-                if set(payload) != allowed: raise ValueError('invalid_request')
+                if set(payload) != allowed and not (op == 'start' and set(payload) == allowed | {'weather_entity_id'}): raise ValueError('invalid_request')
                 bundle = payload['bundle']
                 if not isinstance(bundle,dict) or set(bundle) != {'config','plan'}: raise ValueError('invalid_request')
                 if op == 'start':
-                    run = await observer.start(bundle,payload['policy'],payload['request_id'],getattr(request['hass_user'],'id',None))
+                    run = await observer.start(bundle,payload['policy'],payload['request_id'],getattr(request['hass_user'],'id',None),weather_entity_id=payload.get('weather_entity_id'))
                     return self.response({'id':run['id'],'status':run['status'],'mode':'observe'})
                 preview = await self.hass.async_add_executor_job(compile_schedule,bundle['config'],bundle['plan'])
                 overlay = forecast_ha(self.hass,bundle['plan']['snapshot'])

@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.12.1/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.13.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
@@ -984,3 +984,74 @@ async def test_forecast_editor_metadata_and_registry_targets_without_calls(host,
     unsupported=forecast_ha(hass,snapshot)
     assert not unsupported['events'] and unsupported['unresolved']
     spy.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_hourly_thermal_all_climates_weather_units_modes_and_restart(host,monkeypatch):
+    from custom_components.shabbat_flow.observe import Observer,DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host;bundle,_=observation_bundle(hass);registry=er.async_get(hass)
+    extra=registry.async_get_or_create('climate','fixture','unscheduled_room')
+    outside=registry.async_get_or_create('weather','fixture','outdoor')
+    area=ar.async_get(hass).async_create('Study')
+    registry.async_update_entity(extra.entity_id,area_id=area.id)
+    hass.states.async_set(extra.entity_id,'cool',{'current_temperature':77,'temperature':73.4,'temperature_unit':'°F','hvac_action':'idle'})
+    hass.states.async_set(outside.entity_id,'sunny',{'temperature':86,'temperature_unit':'°F'})
+    spy=AsyncMock(side_effect=AssertionError('No services allowed'))
+    monkeypatch.setattr(type(hass.services),'async_call',spy)
+    observer=hass.data[DOMAIN]['observer'];start=instant(bundle['plan']['snapshot']['preparation_start'])
+    run=await observer.start(bundle,DEFAULT_POLICY,'thermal-test-001','admin',now=start)
+    thermal=run['thermal'];assert thermal['outdoor']['entity_id']==outside.entity_id
+    assert next(t for t in thermal['climates'] if t['entity_id']==extra.entity_id)['area_name']=='Study'
+    row=thermal['samples'][0];assert row['status']=='sampled'
+    sample=row['climates'][extra.entity_id]
+    assert sample['mode']=='cool' and sample['power']=='on' and sample['hvac_action']=='idle'
+    assert sample['current_temperature']['celsius']==25 and sample['target_temperature']['celsius']==23
+    assert row['outdoor']['current_temperature']['celsius']==30
+    assert 'state_updated_at' in sample and 'state_age_seconds' in sample
+    hass.states.async_set(extra.entity_id,'heat',{'current_temperature':20,'temperature':22,'temperature_unit':'°C','hvac_action':'heating'})
+    await observer.tick(start+timedelta(hours=1,seconds=30))
+    row=observer.export(run['id'])['run']['thermal']['samples'][-1]
+    assert row['climates'][extra.entity_id]['mode']=='heat' and row['climates'][extra.entity_id]['hvac_action']=='heating'
+    observer.close();restored=Observer(hass);await restored.load();assert not restored.error
+    await restored.tick(start+timedelta(hours=3,seconds=30))
+    rows=restored.export(run['id'])['run']['thermal']['samples']
+    assert [r['status'] for r in rows]==['sampled','sampled','missing','sampled']
+    await restored.tick(start+timedelta(hours=2));assert restored.export(run['id'])['run']['thermal']['samples']==rows
+    hass.states.async_set(extra.entity_id,'off',{'current_temperature':21,'temperature':22,'temperature_unit':'°C','hvac_action':'off'})
+    hass.states.async_set(outside.entity_id,'unavailable')
+    await restored.tick(start+timedelta(hours=4))
+    row=restored.export(run['id'])['run']['thermal']['samples'][-1]
+    assert row['climates'][extra.entity_id]['power']=='off' and row['climates'][extra.entity_id]['current_temperature']['value']==21
+    assert row['outdoor']['status']=='unavailable'
+    spy.assert_not_called();restored.close()
+
+
+@pytest.mark.asyncio
+async def test_thermal_source_selection_missing_values_and_upgrade(host):
+    from custom_components.shabbat_flow.thermal import initialize,collect,sample_entity,temperature
+    from custom_components.shabbat_flow.observe import DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host;bundle,_=observation_bundle(hass);registry=er.async_get(hass)
+    start=instant(bundle['plan']['snapshot']['preparation_start'])
+    assert initialize(hass,start)['outdoor_status']=='no_weather_source'
+    one=registry.async_get_or_create('weather','fixture','one')
+    registry.async_get_or_create('weather','fixture','two')
+    assert initialize(hass,start)['outdoor_status']=='multiple_sources_choose_one'
+    assert initialize(hass,start,one.entity_id)['outdoor']['entity_id']==one.entity_id
+    with pytest.raises(ValueError,match='observe_weather'):initialize(hass,start,'climate.fake')
+    with pytest.raises(ValueError,match='observe_weather'):initialize(hass,start,[])
+    for value in (float('nan'),float('inf'),True,'23',None):assert temperature(value,'°C')['value'] is None
+    assert temperature(23,None)['celsius'] is None
+    observer=hass.data[DOMAIN]['observer'];run=await observer.start(bundle,DEFAULT_POLICY,'thermal-legacy-001','admin',now=start)
+    del run['thermal']
+    collect(hass,run,start+timedelta(hours=2,minutes=10))
+    assert all(r['status']=='missing' for r in run['thermal']['samples'])
+    collect(hass,run,start+timedelta(hours=3))
+    assert run['thermal']['samples'][-1]['status']=='sampled'
+    assert all(v['current_temperature']['value'] is None for v in run['thermal']['samples'][-1]['climates'].values())
+    identity=run['thermal']['climates'][0]
+    registry.async_remove(identity['entity_id'])
+    assert sample_entity(hass,identity,start,True)['status']=='mapping_changed'

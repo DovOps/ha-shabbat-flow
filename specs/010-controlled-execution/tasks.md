@@ -30,3 +30,5 @@ Observe-only milestone is implemented below. The broader live-execution tasks re
 - [x] O010 Verify metadata and literal registry-target forecast expansion, membership fingerprints and no-service-call regression (EX-FR-034, EX-NFR-015); deploy patch and verify unmanaged events.
 
 O009 deployment and live preview verification completed in 0.12.1; real observe-run/export and PDF review remain outstanding. No observe run was started during deployment.
+- [x] O011 Implement/test hourly thermostat and weather evidence, source selector, legacy-run enrichment, multilingual summary and export (EX-FR-035–037, EX-NFR-016).
+- [x] O012 Implement/test hourly thermal charts, accessible tables and isolated observation PDF in EN/HE (EX-FR-038, EX-NFR-017).

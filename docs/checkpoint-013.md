@@ -1,0 +1,11 @@
+# Observe 0.13.0 — hourly thermal evidence
+
+Added EX-FR-035–037 and EX-NFR-016, implementation plan, tasks and evidence limitations. Observation freezes all enabled registered climate identities (up to 100), including unscheduled rooms, and a selected installed weather entity. A single weather candidate is selected automatically; multiple candidates remain unselected until the administrator chooses. No new dependency, provider calls or device-control path.
+
+Preparation-anchored hourly snapshots include current and target/range temperature, raw units and normalized Celsius, heat/cool/off mode, derived power and optional HVAC action. Weather is the provider’s current reported temperature, not a forecast. State update age is preserved without pretending it is a physical sensor measurement timestamp. Temperature evidence is separate from settings-preservation scoring. No automatic calibration or setpoint adjustment.
+
+Hourly slot IDs persist through restart and clock rollback; delayed slots stay missing. Existing active runs begin thermal collection after upgrade with explicit collection-added time and missing earlier slots. Completed old runs remain unchanged. EN/HE source controls and summary counts accompany the full series in the combined JSON export.
+
+Validation: 76 Python compiler tests, 43 Node tests, and 93 HA tests on each of 2026.8.2 and 2026.11.2 passed. Coverage includes unscheduled climates, area attribution, cool/heat/off/activity, Celsius/Fahrenheit, absent and multiple weather sources, missing/nonfinite values, mapping changes, upgrade gaps, restart continuity and zero services. Generated package, repository hygiene and diff checks passed. English and Hebrew/RTL thermal charts and accessible data tables were visually checked with fictional samples in a background browser. PDF rendering uses an isolated selected-run report with logo; native print-dialog/PDF pagination QA and production deployment remain pending. Installed HA remains 0.12.1. No observation was started.
+
+Charts show current, target/range and outdoor temperatures on shared Celsius axes, with gaps for missing samples and separate hourly mode dots. Native SVG and dash/text legends add no dependency. The selected observation has its own Export observation PDF / Print action, independent of the editable planner preview.
