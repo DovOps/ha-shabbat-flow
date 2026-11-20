@@ -78,3 +78,6 @@ CS-FR-011/CS-NFR-007: targeted zone updates, preserved selections and lazy 50-it
 CS-FR-012/CS-NFR-008 and UI-FR-007 implemented: built-in A/C room-temperature default, optional additional comparison sensor, adjacent logical-start checkbox/icon/name layout, and retained locale selections. Verified with fictional large inventory and native sampling test. See checkpoint 021. Packaged, not installed; HA remains 0.16.1.
 
 0.16.3 deployment completed: corrected versioned frontend URL, native SVG graphics, responsive tested zone/language interaction and EN/HE alignment verified live. Supersedes packaged-only notes above. Release marker consistency is now enforced during packaging and HA lifecycle tests. See checkpoint 021; real study/report validation and future device execution remain separate.
+
+## 0.16.4 — easier setup and visible study status
+Implemented/tested: automatic simple-day Home from explicit room/nap/home-meal choices, top/bottom green planner actions, compact room-status links and main-page plan/observation/climate-study overview. Custom partial-day availability remains deliberate review; saved drafts are identified as browser-local and are not activation. Package ready; no HA upgrade performed. HA remains 0.16.3. Next: authorized installation and validation against real saved plans/concurrent observation runs; execution roadmap remains separate.

@@ -1,8 +1,10 @@
+import {activitySummary} from './activity-model.mjs';
 import {offsetControl} from './time-input.mjs';
 import {haIcon} from './ha-icons.mjs';
 import {mealHvac,suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
 import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
+let activityData=null,activityError=false,activityLoading=false;
 let postShutoff=false,saveError=null,staleSettings=false;
 let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
@@ -33,7 +35,7 @@ let stage='select',activeRoom=null,showAll=false,allRoom=false,allBathrooms=fals
 const setup=r=>r.setup??={status:r.enabled?'ready':'draft',service:!r.purposes.length,home:false,bathroom_timing:Object.fromEntries(r.shared_areas.map(a=>[a,'use_window']))};
 const selectedRooms=()=>Object.keys(draft).filter(a=>draft[a].enabled);
 function button(key,action,primary=false){const b=el('button',t(key),primary?'primary':'');b.type='button';b.disabled=saving;b.onclick=action;return b;}
-function go(next,id=null){stage=next;activeRoom=id;showAll=false;allRoom=false;allBathrooms=false;hvacOpen=false;renderRooms();const heading=$('wizard-heading');heading?.focus();heading?.scrollIntoView({block:'start'});}
+function go(next,id=null){if(saving)return;stage=next;activeRoom=id;showAll=false;allRoom=false;allBathrooms=false;hvacOpen=false;renderRooms();const heading=$('wizard-heading');heading?.focus();heading?.scrollIntoView({block:'start'});}
 function roomName(id){return data.inventory.areas.find(a=>a.id===id)?.name??id;}
 function markDraft(id){setup(draft[id]).status='draft';for(const [other,r] of Object.entries(draft))if(r.shared_areas.includes(id)&&r.enabled)setup(r).status='draft';}
 function mutate(id,fn){fn();markDraft(id);changed();}
@@ -52,13 +54,63 @@ async function finishRoom(skip=false){
 function wizardError(key){saveError=key;updateRoomFeedback();const box=$('wizard-error');box.textContent='⚠ '+t(key);box.hidden=false;box.focus();box.scrollIntoView({block:'nearest'});}
 function saveProblems(){return [...new Set([...(needsReview?['changed']:[]),...(staleSettings?['stale_household']:[]),...(offline?['offline_save']:[]),...(saveError?[saveError]:[])])];}
 function feedbackBox(aid){const box=el('div');box.dataset.roomFeedback=aid;box.setAttribute('aria-live','polite');return box;}
+function roomReview(aid){
+ const r=draft[aid],problems=[...new Set([...saveProblems(),...roomProblems(r,draft),...(!data.inventory.areas.some(a=>a.id===aid)?['missing_area']:[])])];
+ return {problems,state:problems.length?'blocked':setup(r).status==='ready'?'ready':'draft'};
+}
+function renderRoomOverview(){
+ const root=$('room-overview');
+ const signature=JSON.stringify([language,selectedRooms().map(id=>[id,roomName(id),data.inventory.areas.find(a=>a.id===id)?.icon,roomReview(id).state])]);
+ if(root.dataset.signature===signature)return;root.dataset.signature=signature;root.replaceChildren();
+ if(!selectedRooms().length)return;
+ root.append(el('h2',t('room_overview')),el('p',t('room_overview_help'),'hint'));
+ const list=el('div',undefined,'room-status-list');
+ for(const id of selectedRooms()){
+  const {state}=roomReview(id),b=button('edit_room',()=>go('room',id));b.className='room-status '+state;
+  b.replaceChildren(haIcon(data.inventory.areas.find(a=>a.id===id)?.icon,'mdi:home-outline'),el('bdi',roomName(id)),el('span',(state==='ready'?'✓ ':state==='blocked'?'⚠ ':'○ ')+t('room_short_'+state)));
+  list.append(b);
+ }root.append(list);
+}
+function renderActivity(){
+ const root=$('activity-overview');
+ let raw=null,storageError=false;try{raw=localStorage.getItem('shabbat-flow-household-draft-v2');}catch{storageError=true;}
+ const summary=activitySummary(activityError?null:activityData,raw,Date.now());
+ const signature=JSON.stringify([language,summary,activityError,activityData?.error,!!activityData,storageError]);
+ if(root.dataset.signature===signature)return;root.dataset.signature=signature;root.replaceChildren(el('h2',t('activity_title')));
+ const date=(value,zone)=>new Intl.DateTimeFormat(language,{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
+ const card=(title)=>{const box=el('div',undefined,'activity-tile');box.append(el('h3',t(title)));root.append(box);return box;};
+ const plan=card('activity_plan');
+ if(summary.draft){const d=summary.draft;plan.append(el('p',t(d.past?'activity_past_draft':'activity_saved_draft')),el('p',date(d.start,d.timezone)+' — '+date(d.end,d.timezone)));const a=el('a',t('activity_open_draft'));a.href='./period.html?household=1&saved=1';plan.append(a);}
+ else plan.append(el('p',t(storageError||summary.draftError?'activity_draft_unavailable':'activity_no_plan')));
+ plan.append(el('small',t('activity_draft_help'),'hint'));
+ for(const [kind,title] of [['plan','activity_observation'],['climate_study','activity_climate']]){
+  const box=card(title);
+  if(activityError||activityData?.error)box.append(el('p',t('activity_unavailable'),'error'));
+  else if(!activityData)box.append(el('p',t('activity_loading')));
+  else {
+   const runs=summary.active.filter(r=>r.kind===kind);
+   if(!runs.length)box.append(el('p',t('activity_none')));
+   for(const r of runs){box.append(el('p',t('activity_'+r.status)),el('p',date(r.start,r.timezone)+' — '+date(r.end,r.timezone)),el('small',r.id.slice(0,8)));const link=el('a',t('activity_reports'));link.href='./observation.html?run='+encodeURIComponent(r.id);box.append(link);}
+   const recent=summary.latest[kind];if(!runs.length&&recent)box.append(el('small',t('activity_latest')+': '+t('activity_'+recent.status)+' · '+date(recent.end,recent.timezone),'hint'));
+  }
+  const target=!summary.active.some(r=>r.kind===kind)&&summary.latest[kind];
+  if(target){const a=el('a',t('activity_reports'));a.href='./observation.html?run='+encodeURIComponent(target.id);box.append(a);}
+  if(kind==='climate_study'){const a=el('a',t('nav_study'));a.href='./study.html';box.append(el('p'),a);}
+ }
+ root.append(el('p',t('activity_observe_only'),'hint'));
+}
+async function refreshActivity(){
+ if(activityLoading)return;activityLoading=true;
+ try{activityData=await api('observe');activityError=false;}catch{activityError=true;}
+ finally{activityLoading=false;renderActivity();}
+}
 function updateRoomFeedback(){
  if(!data||!draft)return;
+ renderRoomOverview();
  const error=$('wizard-error');if(error){error.hidden=!saveError;error.textContent=saveError?'⚠ '+t(saveError):'';}
  for(const box of document.querySelectorAll('[data-room-feedback]')){
   const aid=box.dataset.roomFeedback,r=draft[aid];if(!r)continue;
-  const problems=[...new Set([...saveProblems(),...roomProblems(r,draft),...(!data.inventory.areas.some(a=>a.id===aid)?['missing_area']:[])])];
-  const state=problems.length?'blocked':setup(r).status==='ready'?'ready':'draft';
+  const {problems,state}=roomReview(aid);
   const signature=JSON.stringify([language,state,problems]);if(box.dataset.signature===signature)continue;
   box.dataset.signature=signature;box.className='room-feedback '+state;box.replaceChildren();
   box.append(el('strong',(state==='blocked'?'⚠ ':state==='ready'?'✓ ':'○ ')+t('room_'+state)));
@@ -266,7 +318,7 @@ function renderDates(){
   else if([...s.options].some(o=>o.value==='israel'))s.onchange=()=>observance=s.value;
  }
 }
-function render(){document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';$('language').value=language;document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));renderRooms();renderDates();renderCalendar();syncLabel();if(dirty)status('dirty');else $('status').textContent='';}
+function render(){document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';$('language').value=language;document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));renderRooms();renderDates();renderCalendar();renderActivity();syncLabel();if(dirty)status('dirty');else $('status').textContent='';}
 async function refresh(manual=false,discard=false){
  if(saving)return;
  try{const next=await api('household'),changedInventory=data&&next.inventory.revision!==data.inventory.revision;
@@ -312,10 +364,11 @@ function planFeedback(keys){
  for(const key of keys)box.append(el('p',t(key)));
  box.focus({preventScroll:true});box.scrollIntoView({block:'nearest'});
 }
+function plannerButtons(busy){for(const b of document.querySelectorAll('[data-open-planner]')){b.disabled=busy;b.textContent=t(busy?'opening_plan':'open_plan');}}
 async function openPlan(){
  if(opening)return;
- const problems=planProblems();if(problems.length)return planFeedback(problems);
- opening=true;$('plan').disabled=true;$('plan').textContent=t('opening_plan');planFeedback(['opening_plan']);
+ const problems=planProblems();if(problems.length){$('weekly-planning').hidden=false;return planFeedback(problems);}
+ opening=true;plannerButtons(true);planFeedback(['opening_plan']);
  try{
   let snapshot;
   if(!manualCalendar)snapshot=structuredClone(automatic.snapshot);
@@ -331,7 +384,7 @@ async function openPlan(){
   try{sessionStorage.setItem('shabbat-flow-household-workspace',JSON.stringify(bundle));}catch{throw new Error('workspace_storage_failed');}
   location.href='./period.html?household=1';
  }catch(e){planFeedback([catalogs[language][e.message]?e.message:'error']);}
- finally{opening=false;$('plan').disabled=false;$('plan').textContent=t('open_plan');}
+ finally{opening=false;plannerButtons(false);}
 }
 async function boot(){try{
  catalogs=await (await fetch('./household-i18n.json')).json();language=navigator.language.startsWith('he')?'he':'en';
@@ -340,8 +393,8 @@ async function boot(){try{
  dateValues.candles=calendar.values?.candle_lighting?.value??'';dateValues.end=calendar.values?.end?.value??'';
  const rise=calendar.values?.sunrise?.value;if(rise&&new Date(rise)>new Date(dateValues.candles)&&new Date(rise)<new Date(dateValues.end))dateValues.sunrise=rise;
  $('calendar-refresh').onclick=refreshCalendar;$('manual-calendar').onchange=e=>setManualCalendar(e.target.checked);
- $('language').onchange=()=>{language=$('language').value;render();};$('refresh').onclick=()=>refresh(true);$('discard').onclick=()=>refresh(true,true);$('save').onclick=save;$('plan').onclick=openPlan;render();
- setInterval(()=>{if(!document.hidden)refresh();},15000);window.addEventListener('focus',()=>refresh());
+ $('language').onchange=()=>{language=$('language').value;render();};$('refresh').onclick=()=>{refresh(true);refreshActivity();};$('discard').onclick=()=>refresh(true,true);$('save').onclick=save;document.querySelectorAll('[data-open-planner]').forEach(b=>b.onclick=openPlan);render();refreshActivity();
+ setInterval(()=>{if(!document.hidden){refresh();refreshActivity();}},15000);window.addEventListener('focus',()=>{refresh();refreshActivity();});
  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
  }catch{$('status').textContent='Unable to load HA household. / לא ניתן לטעון את הבית מ־HA.';}}
 boot();

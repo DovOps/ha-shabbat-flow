@@ -104,3 +104,20 @@ input[type=time]{font:inherit;width:100%;min-height:44px;padding:10px;border:1px
 
 /* Checkbox first at the logical start: LTR left, RTL right, followed by icon/name. */
 .toggle{justify-content:flex-start;gap:.55rem;text-align:start}.toggle>input[type=checkbox]{order:-1;margin:0;flex:0 0 22px}.toggle>span:not(.ha-assigned-icon){flex:0 1 auto;min-width:0;text-align:start}#rooms .toggle span{unicode-bidi:isolate}#study-setup .toggle>span{unicode-bidi:isolate}
+
+/* Setup shortcuts: logical order and text statuses work in both directions. */
+.planner-primary{background:#187443;color:#fff;border:2px solid #187443;font-weight:700;min-height:44px}
+.planner-primary:hover{background:#105732;border-color:#105732}
+.planner-primary:disabled{opacity:.6}
+.room-status-list{display:flex;flex-wrap:wrap;gap:.6rem;margin-block-end:1rem}
+.room-status{display:inline-flex;align-items:center;gap:.45rem;text-align:start;min-height:44px;flex-wrap:wrap}
+.room-status.ready{background:#edf7ec;border-color:#69a878;color:#174c2c}
+.room-status.draft{background:#fff8e7;border-color:#a58439;color:#594000}
+.room-status.blocked{background:#fff0ef;border-color:#c14840;color:#8d251f}
+.activity-tile{border-block-start:1px solid #d3e1e8;padding-block:.65rem}
+.activity-tile h3,.activity-tile p{margin-block:.35rem}
+.activity-tile small{display:block;margin-block:.35rem}
+
+#activity-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
+#activity-overview>h2,#activity-overview>p{grid-column:1/-1;margin-block:.25rem}
+@media(max-width:700px){#activity-overview{grid-template-columns:1fr}}

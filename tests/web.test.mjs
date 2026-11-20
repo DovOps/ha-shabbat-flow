@@ -163,17 +163,17 @@ test('open household planner shows local actionable errors and handles request l
   const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
   const code=source.slice(source.indexOf('function planProblems('),source.indexOf('async function boot('));
   const box={messages:[],replaceChildren(){this.messages=[];},append(p){this.messages.push(p);},focus(){this.focused=true;},scrollIntoView(){this.visible=true;}};
-  const button={},room={enabled:true,purposes:['sleeping'],roles:{main_lights:['fictional_light'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}};
+  const button={},topButton={},room={enabled:true,purposes:['sleeping'],roles:{main_lights:['fictional_light'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}};
   const context={manualZone:null,manualCalendar:true,automatic:null,structuredClone,dirty:false,opening:false,observance:'',dateValues:{candles:'2027-01-08T16:00:00+02:00',sunrise:'',end:'2027-01-09T18:00:00+02:00'},kind:'shabbat',language:'en',catalogs:{en:{invalid_mapping:'Mapping issue',workspace_storage_failed:'Storage issue'}},data:{settings:{rooms:{},revision:1},inventory:{timezone:'Asia/Jerusalem',revision:'a'},issues:[]},
-    $:id=>id==='plan'?button:box,t:key=>key,el:(_,text)=>text,zonedISO:d=>d.toISOString(),api:async()=>{throw new Error('unexpected request');},sessionStorage:{setItem(){}},location:{href:''}};
+    document:{querySelectorAll:()=>[button,topButton]},$:id=>id==='plan'?button:box,t:key=>key,el:(_,text)=>text,zonedISO:d=>d.toISOString(),api:async()=>{throw new Error('unexpected request');},sessionStorage:{setItem(){}},location:{href:''}};
   runInNewContext(code,context);
   await context.openPlan();assert.deepEqual(box.messages,['choose_observance','missing_sunrise','needs_roles']);assert.ok(box.focused&&box.visible);assert.equal(context.location.href,'');
   context.dirty=true;await context.openPlan();assert.ok(box.messages.includes('needs_save'));
   context.dirty=false;context.observance='israel';context.dateValues.sunrise='2027-01-09T06:00:00+02:00';context.data.settings.rooms={room_a:room};
   context.api=async()=>{throw new Error('invalid_mapping');};await context.openPlan();assert.deepEqual(box.messages,['invalid_mapping']);assert.equal(button.disabled,false);
   let calls=0,resolve;context.api=()=>{calls++;return new Promise(r=>resolve=r);};
-  const pending=context.openPlan();assert.equal(button.disabled,true);assert.deepEqual(box.messages,['opening_plan']);await context.openPlan();assert.equal(calls,1);
-  resolve({plan:{}});await pending;assert.equal(context.location.href,'./period.html?household=1');assert.equal(button.disabled,false);
+  const pending=context.openPlan();assert.equal(button.disabled,true);assert.equal(topButton.disabled,true);assert.deepEqual(box.messages,['opening_plan']);await context.openPlan();assert.equal(calls,1);
+  resolve({plan:{}});await pending;assert.equal(context.location.href,'./period.html?household=1');assert.equal(button.disabled,false);assert.equal(topButton.disabled,false);
   context.location.href='';context.api=async()=>({plan:{}});context.sessionStorage.setItem=()=>{throw new Error('blocked');};await context.openPlan();assert.deepEqual(box.messages,['workspace_storage_failed']);assert.equal(context.location.href,'');
   context.dateValues.sunrise='2027-01-08T06:00:00+02:00';await context.openPlan();assert.deepEqual(box.messages,['date_order']);
 });
@@ -186,7 +186,7 @@ test('automatic calendar passes the whole snapshot and refresh preserves manual 
  const box={replaceChildren(){},append(){},focus(){},scrollIntoView(){}},button={};let received;
  const context={manualZone:null,manualCalendar:false,automatic:{status:'ready',snapshot},structuredClone,dirty:false,opening:false,language:'en',catalogs:{en:{}},
  data:{settings:{revision:1,rooms:{a:{enabled:true,purposes:['sleeping'],roles:{main_lights:['load'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}}}},inventory:{revision:'a'},issues:[]},
- $:id=>id==='plan'?button:box,t:v=>v,el:(_,v)=>v,api:async(_,body)=>{received=body;return {plan:{}};},sessionStorage:{setItem(){}},location:{href:''}};
+ document:{querySelectorAll:()=>[button]},$:id=>id==='plan'?button:box,t:v=>v,el:(_,v)=>v,api:async(_,body)=>{received=body;return {plan:{}};},sessionStorage:{setItem(){}},location:{href:''}};
  runInNewContext(code,context);await context.openPlan();assert.deepEqual(received.snapshot,snapshot);assert.notEqual(received.snapshot,snapshot);assert.equal(received.snapshot.segments.length,3);
  context.automatic={status:'unavailable',error:'calendar_missing'};assert.ok(context.planProblems().includes('calendar_missing'));
  context.calendarLoading=false;context.dateValues={candles:'manual',sunrise:'manual',end:'manual'};context.manualCalendar=true;context.renderCalendar=()=>{};context.renderDates=()=>{};context.manualZone='Europe/London';
@@ -296,7 +296,7 @@ test('room feedback retains blocking reasons, offers non-destructive refresh and
  const element=(tag,text)=>({tag,text,children:[],dataset:{},append(...v){this.children.push(...v);},replaceChildren(){this.children=[];},setAttribute(){}});
  const box=element('div');box.dataset.roomFeedback='bath';const error=element('p');
  const room={enabled:true,purposes:[],roles:{main_lights:['lamp'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'},setup:{status:'draft',service:true}};
- const context={data:{inventory:{areas:[{id:'bath'}]}},draft:{bath:room},saveError:null,needsReview:false,staleSettings:false,offline:false,language:'en',roomProblems,setup:r=>r.setup,t:k=>k,$:()=>error,el:element,document:{querySelectorAll:()=>[box]},button:(key,action)=>({key,action}),refresh:manual=>{context.refreshed=manual;}};
+ const context={selectedRooms:()=>[],data:{inventory:{areas:[{id:'bath'}]}},draft:{bath:room},saveError:null,needsReview:false,staleSettings:false,offline:false,language:'en',roomProblems,setup:r=>r.setup,t:k=>k,$:()=>error,el:element,document:{querySelectorAll:()=>[box]},button:(key,action)=>({key,action}),refresh:manual=>{context.refreshed=manual;}};
  runInNewContext(source.slice(source.indexOf('function saveProblems('),source.indexOf('function drawRole(')),context);
  context.updateRoomFeedback();assert.equal(box.className,'room-feedback draft');assert.equal(box.children[1].text,'draft_help');
  context.needsReview=true;context.updateRoomFeedback();assert.equal(box.className,'room-feedback blocked');assert.equal(box.children[1].children[0].text,'changed');box.children[2].action();assert.equal(context.refreshed,true);assert.deepEqual(room.roles.main_lights,['lamp']);
@@ -570,4 +570,57 @@ test('HA icons render once per name in their owner document and copy SVG into th
  runInNewContext(source+'\nthis.a=haIcon("mdi:lamp");this.b=haIcon("mdi:lamp");',context);
  await Promise.resolve();
  assert.equal(created,1);assert.equal(removed,1);assert.equal(imported,2);assert.equal(context.a.rendered.kind,'svg');assert.notEqual(context.a.rendered,context.b.rendered);
+});
+
+const {setMealChoice,markDayHomeFromUse}=await import('../src/shabbat_flow/web/period-model.mjs');
+const {activitySummary}=await import('../src/shabbat_flow/web/activity-model.mjs');
+test('explicit room and meal selections mark only their day home and removal never marks away',()=>{
+ const away=setDayHome(setDayHome(period,'day_1','away'),'day_2','away'),before=structuredClone(away);
+ let next=setRoomChoice(away,'day_1','room_a','sleeping','existing');
+ assert.deepEqual(next.plan.snapshot.segments.map(s=>dayHomeState(next.plan,s)),['home','away','home']);
+ next=setRoomChoice(next,'day_1','room_a','sleeping','off');
+ assert.equal(dayHomeState(next.plan,next.plan.snapshot.segments[0]),'home');
+ const meal=away.plan.meals.find(m=>m.segment==='day_2');
+ next=setMealChoice(away,meal.id,'family');assert.equal(dayHomeState(next.plan,next.plan.snapshot.segments[1]),'home');
+ next=setMealChoice(next,meal.id,'none');assert.equal(dayHomeState(next.plan,next.plan.snapshot.segments[1]),'home');
+ assert.equal(dayHomeState(setMealChoice(away,meal.id,'away').plan,away.plan.snapshot.segments[1]),'away');
+ assert.deepEqual(away,before);
+});
+test('explicit-use defaults preserve advanced partial availability and unavailable day choices',()=>{
+ const custom=structuredClone(period);custom.plan.availability[0].end=custom.plan.snapshot.segments[0].sunrise;
+ assert.equal(dayHomeState(custom.plan,custom.plan.snapshot.segments[0]),'custom');
+ const next=setRoomChoice(custom,'day_1','room_a','sleeping','room_a_early');
+ assert.deepEqual(next.plan.availability,custom.plan.availability);
+ const unset=setDayHome(period,'day_1','unset');
+ assert.equal(dayHomeState(markDayHomeFromUse(unset,'day_1').plan,unset.plan.snapshot.segments[0]),'home');
+ const nap=addNap(setDayHome(period,'day_1','away'),'day_1','room_a');
+ assert.equal(dayHomeState(nap.plan,nap.plan.snapshot.segments[0]),'home');
+});
+test('home activity separates concurrent persisted runs, terminal runs and browser drafts',()=>{
+ const run=(id,kind,status)=>({id,kind,status,start:period.plan.snapshot.start,end:period.plan.snapshot.end,timezone:'Asia/Jerusalem'});
+ const listing={runs:[run('a','plan','observing'),run('b','climate_study','observing'),run('c','plan','scheduled'),run('d','plan','completed'),run('e','climate_study','stopped')]};
+ const summary=activitySummary(listing,JSON.stringify(period),0);
+ assert.deepEqual(summary.active.map(r=>r.id),['a','b','c']);
+ assert.equal(summary.latest.plan.status,'completed');assert.equal(summary.latest.climate_study.status,'stopped');
+ assert.equal(summary.draft.past,false);assert.equal(activitySummary(listing,JSON.stringify(period),Infinity).draft.past,true);
+ assert.equal(activitySummary(null,'broken').draftError,true);
+ assert.deepEqual(activitySummary({runs:[]},null).active,[]);
+ assert.equal(activitySummary({runs:[]},null).draft,null);
+ assert.equal(listing.runs[2].status,'scheduled');
+});
+
+test('home overview renders concurrent run links and distinguishes API failure from no runs',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
+ const el=(tag,text)=>({tag,text,dataset:{},children:[],append(...items){this.children.push(...items);},replaceChildren(...items){this.children=[...items];}}),root=el('section');
+ const run=(id,kind,status)=>({id,kind,status,start:'2027-01-08T16:00:00+02:00',end:'2027-01-09T18:00:00+02:00',timezone:'Asia/Jerusalem'});
+ const context={el,$:()=>root,t:k=>k,language:'en',activitySummary,activityError:false,activityData:{runs:[run('a'.repeat(32),'plan','scheduled'),run('b'.repeat(32),'climate_study','observing')]},localStorage:{getItem:()=>null}};
+ runInNewContext(source.slice(source.indexOf('function renderActivity('),source.indexOf('async function refreshActivity(')),context);
+ const all=()=>{const walk=n=>[n,...n.children.flatMap(walk)];return walk(root);};
+ context.renderActivity();assert.ok(all().some(n=>n.text==='activity_scheduled'));assert.ok(all().some(n=>n.text==='activity_observing'));
+ assert.equal(all().filter(n=>n.href?.includes('observation.html?run=')).length,2);
+ const preserved=root.children[1];context.renderActivity();assert.equal(root.children[1],preserved);
+ context.activityError=true;context.renderActivity();assert.equal(all().filter(n=>n.text==='activity_unavailable').length,2);assert.ok(!all().some(n=>n.href?.includes('observation.html?run=')));
+ context.activityError=false;context.activityData={runs:[]};context.renderActivity();assert.equal(all().filter(n=>n.text==='activity_none').length,2);
+ context.localStorage.getItem=()=>{throw Error('unavailable');};context.renderActivity();assert.ok(all().some(n=>n.text==='activity_draft_unavailable'));
 });

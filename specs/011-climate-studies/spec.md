@@ -42,3 +42,5 @@ Feature 012 adds optional explicitly enabled lifecycle SMS/app-push and secure r
 
 - CS-FR-012: Each selected climate zone automatically includes its own reported room temperature (`current_temperature`), target and mode, including Off periods when available. Show “Use A/C room-temperature reading only (default)” when no additional sensor is selected. Label the reference chooser as an optional additional comparison sensor; never compare a thermostat to itself or substitute target for measured temperature. Missing readings remain unknown.
 - CS-NFR-008: EN/HE zone and language changes retain selections, note, duration, comparison sensors, weather and saved-run choice. Language redraw must not eagerly materialize collapsed cross-room lists. Verify the 100-zone/2,000-signal fixture in both directions.
+
+Main-page discovery: feature 009 UI-FR-010/UI-NFR-004 displays active standalone climate studies alongside (not instead of) plan observations, with persisted status, dates and report links. Completion/stopping removes the active indication while retaining the latest-run summary. Discovery starts no study and changes no selection.
