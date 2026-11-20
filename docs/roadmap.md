@@ -70,3 +70,6 @@ Documentation follow-up adds a prominent coding-agent/spec-driven developer guid
 
 ## Current HA deployment — 0.16.1
 The owner-authorized upgrade is installed and the live panel verified after one restart (checkpoint 019). This supersedes earlier packaged/not-installed notes for 0.14.1–0.16.1. Saved household setup and notification choices were retained. Native HA icon elements, new navigation and dependency status presentation were verified live. Real-plan forecast accuracy, real-study reports and future device execution remain separate validation/implementation work. Public EN/HE documentation is live at https://dovops.io/ha-shabbat-flow/.
+
+## 0.16.2 — study responsiveness and presentation
+CS-FR-011/CS-NFR-007: targeted zone updates, preserved selections and lazy 50-item other-area batches implemented and locally tested with 100 zones/2,000 signals. UI-FR-006/UI-NFR-003: start-aligned icon/name groups, cached HA-owned SVG graphics and timeline labels. WEB-FR-012: fictional EN/HE Settings gallery and prominent current observe/future control scope. See checkpoint 020. Packaged; HA remains 0.16.1 pending installation and live freeze/icon validation.

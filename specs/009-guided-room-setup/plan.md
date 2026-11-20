@@ -43,3 +43,5 @@ US13 implementation: extend optional phase settings with constant_main, morning_
 0.15.1 presentation: update display labels while preserving technical IDs and custom entry titles; shared CSS navigation and dependency-state classes reuse existing discovery codes and catalogs. Verify packaging, lifecycle title tests, frontend checks and EN/HE visual presentation before a separately authorized HA update.
 
 Add localized inline selection descriptions and a linked guide. Keep icon metadata separate from schedule configuration; render via the same-origin HA frontend with safe fallback. Extend rest defaults additively, resolving local clock choices against the segment sunrise date with existing DST validation. Format offset input as HH:MM while preserving minute contracts. Validate old fixtures and both HA versions before packaging.
+
+0.16.2: Group icons with text instead of a third flex child. Cache HA-owned native SVG rendering and copy the graphical result into the iframe; extend timeline labels. Test cache ownership, cleanup and standalone fallback; live HA rendering verification remains required.

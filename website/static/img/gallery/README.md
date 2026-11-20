@@ -1,8 +1,8 @@
 # Screenshot provenance
 
-All current EN/HE pairs show the actual 0.16.0 local renderer with fictional fixtures, visually inspected before publication. No live household capture is used.
+Original EN/HE pairs show the actual 0.16.0 local renderer with fictional fixtures, visually inspected before publication. No live household capture is used.
 
-Run `python3 scripts/build_observation_example.py` and again with `--study`, then `PYTHONPATH=src python3 scripts/gallery_preview.py`. The loopback server at port 8771 serves production web sources, fictional room registry/settings and the repository sample plan. It never connects to HA.
+Run `python3 scripts/build_observation_example.py` and again with `--study`, then `PYTHONPATH=src python3 scripts/gallery_preview.py`. The loopback server at port 8773 serves production web sources, fictional room registry/settings and the repository sample plan. It never connects to HA.
 
 - room-setup: `/household.html`, edit Room A; change language in the UI. Names are intentionally bilingual.
 - planner, schedule, events: `/v2`, repository `examples/period-preview.json`, preview then capture each section in EN/HE. Dates are illustrative and are not genuine holiday predictions.
@@ -10,3 +10,5 @@ Run `python3 scripts/build_observation_example.py` and again with `--study`, the
 - plan-observation: `/sample-plan.html?lang=en#sample-zone-first` (or he), generated plan-observation report.
 
 Screens use decorative standalone icon fallbacks. HA-assigned icons render only with the HA frontend. Refresh both locale images and review all names, IDs and URLs for private data before publication. No browser chrome is included.
+
+Settings EN/HE captures use the 0.16.2 production Settings renderer at `/settings.html` with fictional detected dependency statuses and disabled notification channels. No household screenshot, phone number, endpoint or device name is used. The fixture also offers 100 fictional climate zones and 2,000 activity signals for selection-performance verification; it refuses observation/settings writes.

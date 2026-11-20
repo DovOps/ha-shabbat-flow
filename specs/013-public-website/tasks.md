@@ -11,3 +11,5 @@
 - [x] W010 Expand gallery to setup, planning, timeline, event list and report screens with EN/HE image pairs.
 - [x] W011 Document room options, preset semantics, bedroom applicability and flexible rest timing.
 - [x] W012 Verify updated multilingual site and package checkpoint.
+
+- [x] Add fictional EN/HE Settings gallery and prominent observe/control availability wording.

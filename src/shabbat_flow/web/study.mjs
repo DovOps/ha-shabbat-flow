@@ -17,14 +17,17 @@ function draw(){
  root.append(node('p',t('study_select_hint'),'hint'));
  for(const zone of sources.climates){
   const card=node('section',undefined,'card');const label=node('label'),box=node('input');box.type='checkbox';box.checked=selection.zones.some(z=>z.entity_id===zone.entity_id);label.prepend(itemIcon(zone.entity_id,'mdi:thermostat'));label.append(box,node('span',`${zone.area_name??''} · ${zone.name} · ${zone.entity_id}`));card.append(label);
-  box.onchange=()=>{selection.zones=selection.zones.filter(z=>z.entity_id!==zone.entity_id);if(box.checked)selection.zones.push({entity_id:zone.entity_id,lights:[],reference:null});draw();};
+  const body=node('div');card.append(body);
+  box.onchange=()=>{selection.zones=selection.zones.filter(z=>z.entity_id!==zone.entity_id);if(box.checked)selection.zones.push({entity_id:zone.entity_id,lights:[],reference:null});drawZone();};
+  function drawZone(){
+  body.replaceChildren();
   const selected=selection.zones.find(z=>z.entity_id===zone.entity_id);
   if(selected){
    const refLabel=node('label',undefined,'study-field'),ref=node('select');refLabel.append(node('span',t('study_reference')),ref);const empty=node('option',t('study_none'));empty.value='';ref.append(empty);
-   for(const source of sources.references){const option=node('option',`${source.area_name??''} · ${source.name} · ${source.entity_id}`);option.value=source.entity_id;ref.append(option);}ref.value=selected.reference??'';ref.onchange=()=>selected.reference=ref.value||null;card.append(refLabel);
+   for(const source of sources.references){const option=node('option',`${source.area_name??''} · ${source.name} · ${source.entity_id}`);option.value=source.entity_id;ref.append(option);}ref.value=selected.reference??'';ref.onchange=()=>selected.reference=ref.value||null;body.append(refLabel);
    const lighting=node('fieldset');lighting.append(node('legend',t('study_lights')));
    const signalInputs=new Map();
-   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};label.prepend(itemIcon(e.entity_id,'mdi:lightbulb-outline'));label.append(input,node('span',`${e.name} · ${e.entity_id}`));return label;};
+   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};const text=node('span',`${e.name} · ${e.entity_id}`);text.prepend(itemIcon(e.entity_id,'mdi:lightbulb-outline'));label.append(text,input);return label;};
    const same=sources.lights.filter(e=>zone.area_id&&e.area_id===zone.area_id);
    const bulk=node('div',undefined,'toolbar');
    for(const [key,include] of [['study_select_all_room',true],['study_clear_all_room',false]]){
@@ -33,8 +36,10 @@ function draw(){
    }
    lighting.append(bulk);
    for(const e of same)lighting.append(addLight(e));
-   const more=node('details');more.append(node('summary',t('study_other_lights')));for(const e of sources.lights.filter(e=>!same.includes(e)))more.append(addLight(e));lighting.append(more);card.append(lighting);
-  }root.append(card);
+   const more=node('details');more.append(node('summary',t('study_other_lights')));
+   let loaded=false;more.ontoggle=()=>{if(!more.open||loaded)return;loaded=true;const sameIds=new Set(same.map(e=>e.entity_id));const other=sources.lights.filter(e=>!sameIds.has(e.entity_id));let index=0;const next=node('button',t('study_more_signals'));next.type='button';const page=()=>{const batch=document.createDocumentFragment();for(const e of other.slice(index,index+50))batch.append(addLight(e));index+=50;more.insertBefore(batch,next);next.hidden=index>=other.length;};next.onclick=page;more.append(next);page();};
+   lighting.append(more);body.append(lighting);
+  }}drawZone();root.append(card);
  }
  if(!sources.climates.length)root.append(node('p',t('observe_thermal_empty')));
  setupObservation({root:$('observe-panel'),fetch,node,t,lang,study:()=>structuredClone(selection),onPrint:data=>{printData=data;print();window.print();}});

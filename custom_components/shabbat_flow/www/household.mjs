@@ -75,7 +75,7 @@ function drawRole(host,aid,role){
  for(const e of candidates){
   const owner=Object.entries(draft).find(([a,r])=>r.enabled&&Object.entries(r.roles).some(([key,ids])=>ids.includes(e.id)&&(a!==aid||key!==role)));
   const box=checkbox(`${e.name} · ${e.entity_id} · ${t(e.disabled?'disabled':e.available?'available':'unavailable')}`,selected.includes(e.id),v=>{mutate(aid,()=>room.roles[role]=v?[...room.roles[role],e.id]:room.roles[role].filter(x=>x!==e.id));renderRooms();});
-  box.prepend(haIcon(e.icon,e.domain==='climate'?'mdi:thermostat':'mdi:lightbulb-outline'));box.dataset.entityId=e.id;box.querySelector('input').id='role-'+role+'-'+e.id;box.querySelector('input').disabled=!selected.includes(e.id)&&(e.disabled||!!owner);
+  box.querySelector('span').prepend(haIcon(e.icon,e.domain==='climate'?'mdi:thermostat':'mdi:lightbulb-outline'));box.dataset.entityId=e.id;box.querySelector('input').id='role-'+role+'-'+e.id;box.querySelector('input').disabled=!selected.includes(e.id)&&(e.disabled||!!owner);
   field.append(box);if(owner)field.append(el('small',`${t('assigned_to')}: ${roomName(owner[0])}`,'hint'));
  }
  for(const id of selected.filter(id=>!data.inventory.entities.some(e=>e.id===id)))field.append(checkbox(`${t('missing_choice')} · ${id}`,true,()=>{mutate(aid,()=>room.roles[role]=room.roles[role].filter(x=>x!==id));renderRooms();}));
@@ -161,7 +161,7 @@ function renderRooms(){
  if(stage==='select'){
   root.append(el('p',t('selection_help')));
   const areaChoice=select(t('area_filter'),areaFilter,['all','bedroom','common_area'].map(k=>[k,t('area_filter_'+k)]),v=>{areaFilter=v;renderRooms();});areaChoice.querySelector('select').onchange=e=>{areaFilter=e.target.value;renderRooms();};root.append(areaChoice);const grid=el('div',undefined,'room-selection');
-  for(const area of filteredAreas(areas,draft,labelFilters,areaFilter)){const r=draft[area.id]??=defaults();const label=`${area.name} · ${data.inventory.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor')}`;const choice=checkbox(label,r.enabled,v=>{mutate(area.id,()=>{r.enabled=v;const kinds=suggestedAreaTypes(area,labelFilters);if(v&&!r.setup?.area_type&&!r.purposes.length&&!Object.values(r.roles).some(ids=>ids.length)&&kinds.length===1)draft[area.id]=classifyRoom(r,kinds[0]);});renderRooms();},'area-'+area.id);choice.prepend(haIcon(area.icon));grid.append(choice);}
+  for(const area of filteredAreas(areas,draft,labelFilters,areaFilter)){const r=draft[area.id]??=defaults();const label=`${area.name} · ${data.inventory.floors.find(f=>f.id===area.floor_id)?.name??t('no_floor')}`;const choice=checkbox(label,r.enabled,v=>{mutate(area.id,()=>{r.enabled=v;const kinds=suggestedAreaTypes(area,labelFilters);if(v&&!r.setup?.area_type&&!r.purposes.length&&!Object.values(r.roles).some(ids=>ids.length)&&kinds.length===1)draft[area.id]=classifyRoom(r,kinds[0]);});renderRooms();},'area-'+area.id);choice.querySelector('span').prepend(haIcon(area.icon));grid.append(choice);}
   root.append(grid,button('start_setup',async()=>{if(!selectedRooms().length)return wizardError('select_one');if(await save()){const ids=selectedRooms();go('room',ids.find(id=>setup(draft[id]).status!=='ready')??ids[0]);}},true),button('review_setup',()=>go('summary')));
  }else if(stage==='room'){
   const aid=activeRoom,r=draft[aid],s=setup(r),ids=selectedRooms(),card=el('section',undefined,'card');

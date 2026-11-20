@@ -35,3 +35,7 @@ A5 EN/HE rendering and print layout are reviewed; live deployment and real 48-ho
 - CS-NFR-006: Bulk controls have English/Hebrew labels, native keyboard activation and disabled states when no room candidates exist. Update checkboxes in place, retaining focus, weather source, references, duration, notes and saved-run selection. Existing 100-unique-signal server validation remains authoritative.
 
 Feature 012 adds optional explicitly enabled lifecycle SMS/app-push and secure report links. Default studies remain silent and read-only with no device/automation actions; notification settings are separate and excluded from exports. Scheduled studies and automatic calibration remain deferred.
+
+## Responsive study selection
+- CS-FR-011: Zone selection updates only that zone, preserving other selections, references, weather, notes, duration and saved-run controls. Load cross-room signal choices only when expanded, in explicit batches of at most 50. Bulk same-room selection remains independent of cross-room pagination.
+- CS-NFR-007: Verify selection with 100 zones and 2,000 candidate signals. A zone toggle must not rebuild sibling zone cards or reinitialize observation controls; collapsed cross-room lists create no signal controls. Icon rendering is cached by icon name, bounded on missing graphics, and cannot require a study to start. Verify focus and values remain stable in EN/HE.

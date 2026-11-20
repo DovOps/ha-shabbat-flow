@@ -405,7 +405,8 @@
     "observe_reason_unresolved_delay": "The action delay could not be resolved.",
     "observe_reason_ambiguous_time": "The local trigger time is ambiguous or nonexistent at a daylight-saving transition.",
     "observe_reason_forecast_limit": "Forecast size limit reached.",
-    "observe_reason_unsupported_or_unresolved": "This scheduled rule needs manual review."
+    "observe_reason_unsupported_or_unresolved": "This scheduled rule needs manual review.",
+    "study_more_signals": "Show 50 more devices"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -813,6 +814,7 @@
     "observe_reason_unresolved_delay": "לא ניתן לחשב את השהיית הפעולה.",
     "observe_reason_ambiguous_time": "זמן הטריגר המקומי דו־משמעי או לא קיים במעבר שעון.",
     "observe_reason_forecast_limit": "התחזית הגיעה למגבלת הגודל.",
-    "observe_reason_unsupported_or_unresolved": "כלל מתוזמן זה דורש בדיקה ידנית."
+    "observe_reason_unsupported_or_unresolved": "כלל מתוזמן זה דורש בדיקה ידנית.",
+    "study_more_signals": "הצגת 50 התקנים נוספים"
   }
 }

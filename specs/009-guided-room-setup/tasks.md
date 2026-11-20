@@ -61,3 +61,6 @@
 - [x] W043 Add local-clock/sunrise rest defaults, end-of-day naps and HH:MM offset controls.
 - [x] W044 Verify locale UI, legacy compatibility, DST, invalid input and package (checkpoint 018); production HA deployment is separate.
 - [ ] W045 Verify native HA icons and new controls in an authorized production installation.
+
+- [x] Correct label alignment and iframe icon rendering; add timeline icons and owner-document/cache regression.
+- [ ] Verify copied native icon graphics in installed HA.

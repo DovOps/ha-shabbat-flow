@@ -4,3 +4,5 @@ Use website/ as an isolated Docusaurus 3.10.2 + React static site with the class
 Follow-up: expand the existing localized contributor page into a prominent developer guide and README entry; add reviewed fictional application captures in an EN/HE gallery with provenance/version captions. Strengthen active website navigation. Coordinate display-name cleanup and app navigation/status presentation with feature 009; package HA changes separately from website publication, without implying an installed HA upgrade.
 
 Refresh the gallery with EN/HE pairs from a loopback fictional fixture server, ordered setup → planning → schedule → reports. Add a user-facing option guide sourced from the same explanatory copy; verify all asset links in both locale builds.
+
+0.16.2: Capture production Settings in both locales with the loopback fictional provider, add provenance and gallery entries, and clarify current observe versus future control status in the hero.
