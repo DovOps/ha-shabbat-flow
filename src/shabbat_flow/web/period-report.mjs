@@ -22,10 +22,10 @@ export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,tim
   for(const window of bundle.plan.availability)report.append(node('p',`${t(window.state+'_state')} · ${date(window.start)} — ${date(window.end)}`));
   report.append(node('h2',t('timeline')));
   // Reuse the visible preview's localized warnings, reasons and action badges.
-  for(const child of timeline.children)if(!child.classList.contains('event'))report.append(child.cloneNode(true));
+  for(const child of timeline.children)if(!child.classList.contains('event')&&!child.classList.contains('forecast-diagnostics'))report.append(child.cloneNode(true));
   const table=node('table'),head=node('thead'),headers=node('tr');
   for(const key of ['report_time','report_device','report_action'])headers.append(node('th',t(key)));
   head.append(headers);table.append(head);const body=node('tbody');
-  for(const event of timeline.querySelectorAll('.event')){const row=node('tr');for(const cell of event.children){const td=node('td');td.append(cell.cloneNode(true));row.append(td);}body.append(row);}
+  for(const event of timeline.querySelectorAll('.event')){const row=node('tr');for(const cell of event.children){const td=node('td');const copy=cell.cloneNode(true);for(const detail of copy.querySelectorAll('.forecast-identifiers'))detail.remove();td.append(copy);row.append(td);}body.append(row);}
   table.append(body);report.append(table,node('p',t('report_preview'),'report-notice'));
 }

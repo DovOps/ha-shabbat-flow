@@ -96,3 +96,5 @@ input[type=datetime-local]{font:inherit;width:100%;min-width:0;max-width:100%;pa
 .ha-assigned-icon{display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;width:1.5em;height:1.5em;margin-inline-end:.4em;flex-shrink:0;color:var(--accent,#168399)}.ha-assigned-icon ha-icon{--mdc-icon-size:22px}.selection-help{display:block;line-height:1.55;margin-block:.4rem .8rem;max-width:75ch}
 
 input[type=time]{font:inherit;width:100%;min-height:44px;padding:10px;border:1px solid #b8cbd2;border-radius:8px;background:#fcfefe;color:#183448}input[aria-invalid=true]{border:2px solid #ad2331}.field .selection-help{font-weight:400}
+
+.existing-device{display:flex;align-items:center;gap:.25rem;margin-block:.25rem}.existing-automation-label{display:block;color:#526774}.forecast-diagnostics{margin-block:1rem;padding:.75rem;border:1px solid #b8cbd2;border-radius:8px}.forecast-identifiers{font-size:.8rem;color:#526774}@media print{.forecast-diagnostics,.forecast-identifiers{display:none!important}}

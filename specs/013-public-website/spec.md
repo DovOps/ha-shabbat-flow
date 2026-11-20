@@ -4,7 +4,7 @@
 - WEB-FR-001: Provide a Docusaurus brochure homepage explaining room-based Shabbat/Yom Tov planning, multi-day calendar anchors, lighting/HVAC schedule previews, observe mode, climate studies, optional notifications and pre-candle reminders. Clearly distinguish implemented capabilities from future device execution.
 - WEB-FR-002: Publish installation/onboarding, capability/status, contribution and specification navigation. Generate the technical reference from canonical repository specs at build time; never maintain a second editable specification copy. Include the current integration version from its manifest.
 - WEB-FR-003: Offer English and Hebrew homepage, navigation and getting-started guides, with RTL. Canonical technical requirements remain English and are explicitly identified as such in Hebrew views.
-- WEB-FR-004: Support a loopback local preview and project-site deployment at `https://dovops.github.io/ha-shabbat-flow/`, including locale routes, assets and deep links under that base path.
+- WEB-FR-004: Support a loopback local preview and project-site deployment at `https://dovops.io/ha-shabbat-flow/`, including locale routes, assets and deep links under that base path.
 - WEB-FR-005: GitHub Actions builds both locales for pull requests and publishes GitHub Pages on pushes/merges to main or manual dispatch once the owner enables Pages. Do not change repository visibility. Preserve a working local preview for owner review.
 - WEB-FR-006: Use the approved original ShabbatFlow logo and accurate custom-integration positioning. Do not claim official HA verification, endorsement, HACS inclusion or production execution before evidence and an explicit status update. Readiness and validation limits are visible.
 

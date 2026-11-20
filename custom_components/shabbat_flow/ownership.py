@@ -23,6 +23,7 @@ def automation_sources(hass):
         raw = getattr(entity, 'raw_config', None)
         result.append({'id': state.entity_id, 'enabled': state.state == 'on',
                        'config': raw if isinstance(raw, dict) else None,
+                       'name': state.attributes.get('friendly_name') or (raw or {}).get('alias') or state.entity_id,
                        'available': state.state in ('on', 'off')})
     return result, component is not None
 
@@ -42,14 +43,30 @@ def seconds(value):
     return result
 
 
-def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=None, resolve_target=None):
+def scheduled_trigger(trigger, calendar_entities):
+    if not isinstance(trigger, dict) or trigger.get('enabled') is False: return False
+    kind = trigger.get('trigger', trigger.get('platform'))
+    if kind in ('time', 'sun', 'time_pattern'): return True
+    ids = trigger.get('entity_id', [])
+    ids = ids if isinstance(ids, list) else [ids]
+    return kind in ('state', 'calendar') and any(e in calendar_entities for e in ids)
+
+
+def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=None, resolve_target=None, calendar_entities=None):
     start, end = instant(snapshot['preparation_start']), instant(snapshot['end'])
     zone = ZoneInfo(source_timezone or snapshot['timezone'])
-    events, unresolved, fingerprints = [], [], {}
+    events, unresolved, fingerprints, excluded = [], [], {}, []
+    calendar_entities = calendar_entities or {}
+    trusted_calendar = snapshot.get('source', {}).get('id') == 'jewish_calendar'
+    def active_at(at): return instant(snapshot['start']) <= at < end
     if not accessible: unresolved.append({'source': 'automation', 'reason': 'source_unavailable'})
     for source in sources:
         sid, raw = source['id'], source['config']
         fingerprints[sid] = digest({'enabled': source['enabled'], 'config': raw, 'available': source.get('available', True)})
+        triggers = (raw or {}).get('triggers', (raw or {}).get('trigger', []))
+        if isinstance(triggers, dict): triggers = [triggers]
+        if raw and triggers and not any(scheduled_trigger(t, calendar_entities) for t in triggers):
+            excluded.append({'source':sid,'reason':'outside_forecast_scope'}); continue
         if not source.get('available', True):
             unresolved.append({'source': sid, 'reason': 'source_unavailable'}); continue
         if not source['enabled']: continue
@@ -57,8 +74,12 @@ def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=Non
             if not raw: raise ValueError('source_unavailable')
             conditions = raw.get('conditions', raw.get('condition', []))
             if isinstance(conditions, dict): conditions = [conditions]
-            weekdays = set(range(7))
+            weekdays = set(range(7)); calendar_conditions = []
             for c in conditions:
+                if c.get('enabled') is False: continue
+                if c.get('condition') == 'state' and calendar_entities.get(c.get('entity_id')) == 'issur_melacha_in_effect' and trusted_calendar:
+                    if set(c)-{'condition','entity_id','state','alias','enabled'} or c.get('state') not in ('on','off'): raise ValueError('unresolved_condition')
+                    calendar_conditions.append(c['state']); continue
                 if c.get('condition') != 'time' or set(c) - {'condition', 'weekday', 'alias', 'enabled'} or c.get('enabled') is False:
                     raise ValueError('unresolved_condition')
                 days = c.get('weekday', [])
@@ -95,6 +116,11 @@ def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=Non
                     times += [instant(a) + timedelta(seconds=seconds(trigger.get('offset', 0))) for a in anchors]
                     # Snapshot supplies one morning/evening per segment, not every preparation-day sun event.
                     if solar is None: unresolved.append({'source': sid, 'reason': 'partial_sun_coverage'})
+                elif kind == 'state' and trusted_calendar and calendar_entities.get(trigger.get('entity_id') if isinstance(trigger.get('entity_id'),str) else None) == 'issur_melacha_in_effect':
+                    if set(trigger)-{'trigger','platform','entity_id','from','to','id','alias','enabled'} or trigger.get('to') not in ('on','off') or trigger.get('from') not in (None,'on','off'): raise ValueError('unresolved_trigger')
+                    if trigger.get('from') != trigger['to']: times.append(instant(snapshot['start']) if trigger['to']=='on' else end)
+                elif not scheduled_trigger(trigger, calendar_entities):
+                    continue  # Reactive triggers do not predict dated events.
                 else: raise ValueError('unresolved_trigger')
             actions = raw.get('actions', raw.get('action', []))
             if isinstance(actions, dict): actions = [actions]
@@ -131,18 +157,20 @@ def forecast(snapshot, sources, accessible=True, solar=None, source_timezone=Non
             pending = []
             for when in sorted(set(times)):
                 if when.astimezone(zone).weekday() not in weekdays: continue
+                if any(active_at(when) != (state=='on') for state in calendar_conditions): continue
                 for offset, entity, state in parsed:
                     at = when + timedelta(seconds=offset)
                     if start <= at <= end:
-                        event = {'source': sid, 'entity_id': entity, 'utc': at.isoformat(), 'local': at.astimezone(zone).isoformat(),
+                        event = {'source': sid, 'source_name': source.get('name') or raw.get('alias') or sid, 'entity_id': entity, 'utc': at.isoformat(), 'local': at.astimezone(zone).isoformat(),
                                  'action': {'type':'state','state':state}, 'unmanaged': True, 'source_hash': fingerprints[sid]}
-                        event['id'] = digest(event)[:20]; pending.append(event)
+                        event['id'] = digest({k:v for k,v in event.items() if k!='source_name'})[:20]; pending.append(event)
             if len(events) + len(pending) > 5000: raise ValueError('forecast_limit')
             events.extend(pending)
-        except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
-            unresolved.append({'source':sid, 'reason':'unsupported_or_unresolved'})
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError) as exc:
+            reason=str(exc) if str(exc) in {'source_unavailable','unresolved_condition','unresolved_trigger','missing_sun_anchor','unresolved_action','unresolved_target','unresolved_delay','ambiguous_time','forecast_limit'} else 'unsupported_or_unresolved'
+            unresolved.append({'source':sid, 'source_name':source.get('name') or (raw or {}).get('alias') or sid, 'reason':reason})
     return {'events': sorted({e['id']:e for e in events}.values(), key=lambda e:(e['utc'],e['id'])),
-            'unresolved': unresolved, 'fingerprints': fingerprints, 'forecast_only': True}
+            'unresolved': unresolved, 'excluded': excluded, 'fingerprints': fingerprints, 'forecast_only': True}
 
 
 def ownership_report(events, mapping, overlay):
@@ -156,7 +184,7 @@ def ownership_report(events, mapping, overlay):
             action = previous[-1]['action']; state = action.get('state', 'off' if action.get('mode') == 'off' else 'on')
             conflicts.append({'physical_id':physical, 'external_event':external['id'], 'source':external['source'],
                               'kind':'same_state_overlap' if state == external['action']['state'] else 'contradictory_state'})
-    return {'conflicts':conflicts, 'unresolved':overlay['unresolved'], 'live_clearance':False,
+    return {'conflicts':conflicts, 'unresolved':overlay['unresolved'] + overlay.get('excluded', []), 'live_clearance':False,
             'reason':'observe_only_no_ownership_granted'}
 
 
@@ -184,7 +212,18 @@ def forecast_ha(hass, snapshot):
             raise ValueError('unresolved_target')
         return sorted(e for e in selected.referenced | selected.indirectly_referenced if e.startswith(domain + '.'))
 
-    result = forecast(snapshot, sources, accessible, solar, hass.config.time_zone, resolve_target)
+    from homeassistant.helpers import entity_registry as er
+    registry=er.async_get(hass)
+    calendar_entries=hass.config_entries.async_entries('jewish_calendar')
+    calendar_entities={e.entity_id:e.translation_key for e in registry.entities.values() if e.platform=='jewish_calendar' and e.disabled_by is None}
+    # Only one provider can safely match the snapshot's provider provenance.
+    if len(calendar_entries)!=1:
+        calendar_entities={eid:'unresolved_provider' for eid in calendar_entities}
+    result = forecast(snapshot, sources, accessible, solar, hass.config.time_zone, resolve_target, calendar_entities)
+    for event in result['events']:
+        entity=registry.async_get(event['entity_id']);state=hass.states.get(event['entity_id']);attrs=state.attributes if state else {}
+        event['entity_name']=(entity.name if entity else None) or attrs.get('friendly_name') or (entity.original_name if entity else None) or event['entity_id']
+        event['entity_icon']=(entity.icon if entity else None) or attrs.get('icon') or (entity.original_icon if entity else None)
     result['source_timezone'] = hass.config.time_zone
     result['sun_source'] = 'home_assistant_sun_helper'
     result['fingerprints']['sun_configuration'] = digest([hass.config.time_zone,hass.config.latitude,hass.config.longitude,hass.config.elevation])

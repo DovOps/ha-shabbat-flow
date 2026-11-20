@@ -1,21 +1,33 @@
+import {haIcon} from './ha-icons.mjs';
 import {renderThermalReport} from './thermal-report.mjs';
 import {localTime} from './model.mjs';
-export function renderUnmanaged(root,result,bundle,{node,t,lang}){
+export function groupExistingEvents(events){
+ const groups=new Map();for(const event of events){const key=JSON.stringify([event.source,event.utc,event.action]);if(!groups.has(key))groups.set(key,{...event,devices:[]});const group=groups.get(key);if(!group.devices.some(e=>e.entity_id===event.entity_id))group.devices.push(event);}return [...groups.values()];
+}
+export function renderUnmanaged(root,result,bundle,{node,t,lang,icon=haIcon}){
   if(!result.unmanaged)return;
-  const info=result.unmanaged;
-  root.append(node('h3',t('observe_unmanaged')));
-  root.append(node('p',t('observe_forecast_hint'),'hint'));
-  if(info.error){root.append(node('p',t('observe_unresolved'),'error'));return;}
-  for(const id of info.unmapped??[])root.append(node('p',`${t('observe_unmapped')} · ${id}`,'hint'));
-  for(const item of info.overlay.unresolved){root.append(node('p',`${t('observe_unresolved')} · ${item.source} · ${item.reason}`,'hint'));}
-  for(const c of info.ownership.conflicts){root.append(node('p',`${t('observe_conflict_hint')} · ${c.source} · ${c.physical_id}`,'hint'));}
-  for(const event of info.overlay.events){
+  const info=result.unmanaged,overlay=info.overlay??{},events=overlay.events??[],unresolved=overlay.unresolved??[];
+  const excluded=overlay.excluded?.length??0;
+  const issues=unresolved.length+(info.unmapped?.length??0)+(info.ownership?.conflicts?.length??0)+(info.error?1:0);
+  if(events.length){root.append(node('h3',t('observe_unmanaged')),node('p',t('observe_forecast_hint'),'hint'));}
+  if(issues||excluded){
+    root.append(node('p',`${t('observe_forecast_summary')} ${t('observe_review_count')}: ${issues}. ${t('observe_excluded_count')}: ${excluded}.`,'hint forecast-note'));
+    const details=node('details',undefined,'forecast-diagnostics');details.append(node('summary',t('observe_diagnostics')));
+    if(info.error)details.append(node('p',t('observe_unresolved'),'hint'));
+    for(const id of info.unmapped??[])details.append(node('p',`${t('observe_unmapped')} · ${id}`,'hint'));
+    for(const item of unresolved)details.append(node('p',`${item.source_name??item.source} · ${t('observe_reason_'+item.reason)}`,'hint'));
+    for(const c of info.ownership?.conflicts??[])details.append(node('p',`${t('observe_conflict_hint')} · ${c.source} · ${c.physical_id}`,'hint'));
+    if(excluded)details.append(node('p',t('observe_excluded_help'),'hint'));
+    root.append(details);
+  }
+  for(const event of groupExistingEvents(events)){
     const row=node('div',undefined,'event');row.dataset.utc=event.utc;
     const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.utc;
-    row.append(time,node('div',`${event.entity_id} · ${event.source} · ${t('observe_unmanaged')}`),node('bdi',t(event.action.state),event.action.state==='on'?'state on':'state off'));
-    root.append(row);
+    const description=node('div');description.append(node('strong','↻ '+(event.source_name??event.source)),node('small',t('observe_unmanaged'),'existing-automation-label'));
+    for(const device of event.devices){const line=node('div',undefined,'existing-device');line.append(icon(device.entity_icon,device.entity_id.startsWith('climate.')?'mdi:thermostat':'mdi:lightbulb-outline'),node('span',device.entity_name??device.entity_id));description.append(line);}
+    const ids=node('details',undefined,'forecast-identifiers');ids.append(node('summary',t('observe_identifiers')),node('small',event.source+' · '+event.devices.map(d=>d.entity_id).join(', ')));description.append(ids);
+    row.append(time,description,node('bdi',t(event.action.state),event.action.state==='on'?'state on':'state off'));root.append(row);
   }
-  // Interleave by instant, retaining visible source badges and separate chart semantics.
   const rows=[...root.querySelectorAll('.event')];
   rows.sort((a,b)=>Date.parse(a.querySelector('time').dateTime)-Date.parse(b.querySelector('time').dateTime));
   for(const row of rows)root.append(row);
