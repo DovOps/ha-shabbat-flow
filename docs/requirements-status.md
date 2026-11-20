@@ -31,3 +31,6 @@ Update FR/NFR, plan, tasks and evidence in the same change. Update this table an
 
 ## Feature 012 — Settings, notifications and reminders (0.15.0)
 SN-FR-001–010 / SN-NFR-001–006 implemented and tested: discovery-based optional SMS/app channels; private lifecycle settings; secure retained-report links; durable per-channel attempts; dedicated dependency Settings; multiple same-local-day pre-candle push reminders guarded by explicit issur Off and provider calendar coverage. Tests in `tests/ha/test_notifications.py` plus existing observer, renderer/catalog and auth suites. Both channels and reminders default off. Deployed 0.15.0 with live capability/default-off UI verified; real delivery, enabled reminder behavior and mobile report/PDF validation remain pending. No device control enabled.
+
+## Feature 013 — Public documentation website
+WEB-FR-001–006 / WEB-NFR-001–004: Docusaurus brochure, EN/HE guides and RTL, generated canonical technical reference, manifest-driven version, local preview and gated GitHub Pages workflow implemented. Public publication remains pending owner visibility/Pages enablement. The site describes the actual custom-integration preview and separates planned execution from current capabilities; no official HA verification claim.

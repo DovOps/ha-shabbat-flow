@@ -58,3 +58,7 @@ The project license is pending owner selection before public release. No blanket
 Optional HA label filters simplify room setup; see [Setup tips](docs/setup-tips.md).
 
 Preview 0.7.1 adds bathroom daylight/night policies, room night/morning presets, meal lighting/HVAC groups, and optional final-observance shutoff (off by default). Existing workspace exports remain snapshots; create a new workspace after changing house setup.
+
+## Website and documentation
+
+The brochure, EN/HE guides and generated specification reference live in `website/`. Run `npm ci`, `npm run build`, `npm run check` and `npm run serve` there to preview at `http://localhost:3000/ha-shabbat-flow/`. See [website maintenance and Pages setup](docs/website.md). Public publication is owner-enabled; the integration's current device-control and validation boundaries remain explicit.

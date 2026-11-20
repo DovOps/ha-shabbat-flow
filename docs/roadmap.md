@@ -58,3 +58,6 @@ The same 0.14.0 package includes explicit room light/switch activity signals and
 
 ## Settings and optional notifications (0.15.0)
 Feature 012 implements dependency discovery, explicit SMS/Companion App lifecycle notifications and configurable pre-candle push reminders. Tests pass; deployed 0.15.0 with capability detection and disabled defaults verified. User-configured delivery and mobile report export are next validation steps. This does not implement scheduled climate studies, public report hosting, message replies or device execution. Existing execution qualification/activation/recovery roadmap remains unchanged.
+
+## Documentation and brochure website
+Feature 013 adds a local Docusaurus preview and GitHub Actions publication at the repository's Pages path. English/Hebrew visitor content and generated English specs share canonical repository sources. Public launch follows owner-controlled repository visibility and Pages setup; official HA verification and HACS inclusion are not claimed.

@@ -1,0 +1,7 @@
+# Brochure and documentation website
+
+Feature 013 adds an isolated Docusaurus 3.10.2 website at the repository's GitHub Pages base path. English/Hebrew homepage, guides, navigation and RTL layout use the original branding and fictional interactive illustrations. Canonical specs and selected maintained docs are generated into the reference at build time; integration version comes from the manifest. Product copy clearly separates planning/observation from future device execution and makes no official HA endorsement/verification claim.
+
+GitHub Actions builds both locales for main pushes and PRs. Deployment uses Pages artifacts/OIDC only when the repository is public and the owner has set PAGES_ENABLED=true after selecting GitHub Actions as the Pages source. No visibility/Pages settings or HA installation changed. Local preview remains available for owner review.
+
+Verification: 128 built pages; 5,162 project-relative links/assets; all 53 canonical specification files in both locale trees; manifest version and RTL checks. Production build passed with pinned patched transitive packages and zero npm audit findings. Desktop/tablet and mobile Hebrew layout, language navigation, fictional evening/night preview interaction, onboarding navigation and a canonical notification specification were checked in the browser. Standard 76 planner tests, 48 frontend tests, repository hygiene and unchanged generated HA asset checks passed. Actual GitHub workflow and public deployment status are tracked separately below.

@@ -1,0 +1,2 @@
+# Analysis
+Docusaurus was explicitly requested by the owner; it is website tooling only. Existing integration status is installable custom preview with observation and opt-in notification side effects, not approved device execution or official verification. Public copy must preserve this distinction. Build-time canonical source inclusion prevents spec drift; Hebrew authored product content does not imply translated technical specs. Public deployment is gated separately from private repository development because private repositories can otherwise publish public Pages.

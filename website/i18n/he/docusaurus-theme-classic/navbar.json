@@ -1,0 +1,18 @@
+{
+  "logo.alt": {
+    "message": "ShabbatFlow",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Get started": {
+    "message": "מתחילים כאן",
+    "description": "Navbar item with label Get started"
+  },
+  "item.label.Specifications": {
+    "message": "מפרטים",
+    "description": "Navbar item with label Specifications"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}
