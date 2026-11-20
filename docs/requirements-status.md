@@ -58,3 +58,5 @@ Implemented and tested: MD-FR-023–024/MD-NFR-010 (explicit room/nap/home-meal 
 0.16.4 deployment verified: backed-up replacement, 52-file parity, three retained stores, one HA restart, live saved-plan reopening and concurrent plan/climate status display with 20 native room icons. Supersedes the packaged-only state above. No device controls enabled; see checkpoint 022.
 
 Brochure gallery follow-up: WEB-FR-013/WEB-NFR-005 adds four 0.16.4 screenshots (home activity overview and room readiness, EN/HE) from an opt-in fictional loopback fixture. Actual UI captures, descriptive captions/alt text and documented provenance; no household data or HA runtime changes.
+
+PDF font follow-up: MD-FR-025/MD-NFR-011 implemented locally. Fictional bilingual Chrome comparison confirms Arial embedded TrueType subsets versus system-font Type 3 glyphs. Screen fonts and charts unchanged. Not installed in HA; full-report phone performance remains unverified. See pdf-font-verification.md.
