@@ -87,3 +87,5 @@ Implemented/tested: automatic simple-day Home from explicit room/nap/home-meal c
 Brochure gallery now includes 0.16.4 home activity and room-readiness examples in English/Hebrew, using fictional data. Website-only publication; no HA installation needed.
 
 PDF performance first step: print-only Arial/Tahoma preference implemented and bilingual embedding inspected. Next: install in a separately authorized upgrade, export a full report and compare phone rendering. Gradient/chart optimization remains a separate potential follow-up, not part of this change.
+
+PDF font deployment: authorized static-only patch installed on 0.16.4 with seven-file checksum parity and backups; no HA restart or observation interruption. Supersedes the not-installed font note above. Browser cache marker added; phone performance comparison remains pending.

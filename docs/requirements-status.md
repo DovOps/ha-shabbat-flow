@@ -60,3 +60,5 @@ Implemented and tested: MD-FR-023–024/MD-NFR-010 (explicit room/nap/home-meal 
 Brochure gallery follow-up: WEB-FR-013/WEB-NFR-005 adds four 0.16.4 screenshots (home activity overview and room readiness, EN/HE) from an opt-in fictional loopback fixture. Actual UI captures, descriptive captions/alt text and documented provenance; no household data or HA runtime changes.
 
 PDF font follow-up: MD-FR-025/MD-NFR-011 implemented locally. Fictional bilingual Chrome comparison confirms Arial embedded TrueType subsets versus system-font Type 3 glyphs. Screen fonts and charts unchanged. Not installed in HA; full-report phone performance remains unverified. See pdf-font-verification.md.
+
+PDF font deployment: authorized static-only patch installed on 0.16.4 with seven-file checksum parity and backups; no HA restart or observation interruption. Supersedes the not-installed font note above. Browser cache marker added; phone performance comparison remains pending.

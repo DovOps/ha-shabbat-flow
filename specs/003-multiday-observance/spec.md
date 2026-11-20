@@ -78,5 +78,5 @@ Bedroom rest extension: Feature 009 US12 (WIZ-FR-036–041, WIZ-NFR-018–019) s
 - MD-NFR-010: Immutable model operations, EN/HE explanatory copy, existing export/storage schema, deterministic compilation, and tests for meals, naps, existing-control rooms, removal, custom windows, multi-day isolation and input immutability. No implicit saving, observation activation or device execution.
 
 ## Simpler PDF font embedding
-- MD-FR-025: Use a print-only Arial, Tahoma, sans-serif font stack for plan and observation reports, preserving the screen font, semantic emphasis, English/Hebrew text and RTL. Let the browser embed available font subsets; do not bundle proprietary font files or fetch fonts remotely.
+- MD-FR-025: Use a print-only Arial, Tahoma, sans-serif font stack for plan and observation reports, preserving the screen font, semantic emphasis, English/Hebrew text and RTL. Use a stylesheet cache marker so refreshed reports load the updated font preference. Let the browser embed available font subsets; do not bundle proprietary font files or fetch fonts remotely.
 - MD-NFR-011: Verify a fictional bilingual browser-exported comparison for embedded font format and visual legibility. Document browser/platform fallback limits and distinguish font simplification from measured mobile performance; do not claim a phone speed improvement without a phone test.
