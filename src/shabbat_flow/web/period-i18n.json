@@ -242,7 +242,10 @@
     "observe_activity_fan": "Fan",
     "observe_activity_defrosting": "Defrosting",
     "observe_activity_preheating": "Preheating",
-    "observe_activity_unknown": "Unknown"
+    "observe_activity_unknown": "Unknown",
+    "observe_report_title": "Observation summary report",
+    "observe_report_totals": "Planned vs observed power states",
+    "observe_weather_source": "Outdoor weather source"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -487,6 +490,9 @@
     "observe_activity_fan": "מאוורר",
     "observe_activity_defrosting": "הפשרה",
     "observe_activity_preheating": "חימום מקדים",
-    "observe_activity_unknown": "לא ידוע"
+    "observe_activity_unknown": "לא ידוע",
+    "observe_report_title": "דוח סיכום מעקב",
+    "observe_report_totals": "מצבי הפעלה מתוכננים לעומת נצפים",
+    "observe_weather_source": "מקור מזג אוויר חיצוני"
   }
 }

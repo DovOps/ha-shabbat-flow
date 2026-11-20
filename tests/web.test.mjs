@@ -453,5 +453,5 @@ test('observation print renders frozen provenance and handles legacy runs withou
  const report=node('section');renderObservationPrint({report,data,node,t:k=>k,lang:()=> 'en',logo:null});
  const flatten=n=>[n.textContent,...n.children.flatMap(flatten)].join(' ');
  assert.match(flatten(report),/frozen-observation.*frozen-digest/);assert.match(flatten(report),/observe_thermal_legacy/);
- assert.match(flatten(report),/2027-01-08T14:00:00Z/);
+ assert.match(flatten(report),/Jan 8, 2027/);assert.match(flatten(report),/UTC/);
 });

@@ -22,7 +22,7 @@ export function renderThermalReport(data,{node,t,lang}){
  const root=node('section',undefined,'thermal-report'),model=thermalModel(data);
  root.append(node('h2',t('observe_thermal_title')),node('p',t('observe_thermal_chart_hint'),'hint'));
  if(!model){root.append(node('p',t('observe_thermal_legacy')));return root;}
- root.append(node('p',`${t('observe_weather')}: ${model.source??t('observe_weather_missing')} · °C · ${model.zone}`));
+ root.append(node('p',`${t('observe_weather_source')}: ${model.source??t('observe_weather_missing')} · °C · ${model.zone}`));
  const time=at=>new Intl.DateTimeFormat(lang(),{timeZone:model.zone,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZoneName:'shortOffset'}).format(new Date(at));
  const series=[['current','#0075ba',''],['target','#8d3891','7 4'],['low','#8d3891','2 4'],['high','#aa4d70','9 3 2 3'],['outdoor','#b26000','3 3']];
  const modeColors={cool:'#0075ba',heat:'#bb4820',off:'#687581',unknown:'#bec6cb',auto:'#72539b',heat_cool:'#72539b',fan_only:'#16796f',dry:'#9b791a'};
@@ -55,7 +55,17 @@ export function renderThermalReport(data,{node,t,lang}){
  if(!model.lanes.length)root.append(node('p',t('observe_thermal_empty')));
  return root;
 }
+export function renderObservationTotals(data,{node,t}){
+ const root=node('section');root.append(node('h2',t('observe_report_totals')));
+ root.append(node('p',t('observe_sample_notice')));
+ const table=node('table'),head=node('tr');for(const key of ['report_device','observe_match','observe_mismatch','observe_unknown','observe_unplanned'])head.append(node('th',t(key)));table.append(head);
+ for(const [id,totals] of Object.entries(data.run.summary??{})){const row=node('tr');row.append(node('td',data.run.mapping?.[id]?.entity_id??id));for(const key of ['matched','mismatched','unknown','unplanned'])row.append(node('td',((totals[key+'_seconds']??0)/60).toFixed(1)));table.append(row);}root.append(table);
+ const thermal=data.run.thermal;if(thermal)root.append(node('p',`${t('observe_thermal_samples')}: ${thermal.samples.filter(s=>s.status==='sampled').length} / ${thermal.samples.length}`));
+ if(data.collection_error)root.append(node('p',t('observe_error'),'error'));
+ return root;
+}
 export function renderObservationPrint({report,data,node,t,lang,logo}){
  report.replaceChildren();if(logo){const img=logo.cloneNode(true);img.className='brand-logo';report.append(img);}
- report.append(node('h1',t('observe_title')),node('p',`${data.run.start} — ${data.run.end}`),node('p',`${t('observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t('observe_hint'),'report-notice'),renderThermalReport(data,{node,t,lang}));
+ const zone=data.run.bundle?.plan?.snapshot?.timezone??'UTC';const time=value=>new Intl.DateTimeFormat(lang(),{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
+ report.append(node('h1',t('observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t('observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t('observe_hint'),'report-notice'),renderObservationTotals(data,{node,t}),renderThermalReport(data,{node,t,lang}));
 }

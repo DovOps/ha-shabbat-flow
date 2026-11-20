@@ -1,13 +1,13 @@
 # Product requirements and roadmap
 
-All stages inherit English/Hebrew and RTL parity, offline planning, privacy and explicit activation requirements. This is a general product, not a copy of one household's records.
+All stages inherit English/Hebrew and RTL parity, offline planning, contributor household-data separation and explicit activation requirements. This is a general product, not a copy of one household's records.
 
 ## R1: local preview (current feature 001)
 Fictional configurable rooms/resources, meal choices, independent climate/lighting offsets and homeowner-selected bedroom sleep-light cutoff, shared dependencies, explicit dated candle-lighting/sunrise/end inputs, multilingual timeline, validation, browser-local drafts and JSON export. No HA access or execution.
 
 ## R2: Home Assistant discovery and preview integration
 Before hardening the integration, implement continuous multi-day planning from `specs/003-multiday-observance/spec.md`, alongside homeowner-defined schedule groups as specified in `specs/002-extensible-schedule-groups/spec.md`. Lighting and HVAC become presets over a generic schedule model. Include track-only groups and references to existing scenes/scripts; specialized appliance/cycle/elevator capabilities must be explicitly supported and approved, never inferred from on/off availability.
-Read areas/entities and automation definitions using supported APIs; owner-confirm physical load/alias mappings. Guided setup in both languages; reference existing scenes/scripts and flag conflicting ownership. Build a native dashboard card and authenticated backend, with revision-aware household plans and administrator activation permissions. Calendar adapter snapshots verified local zmanim. HA and Good Days compatibility/version matrices are required.
+Read areas/entities and automation definitions using supported APIs; owner-confirm physical load/alias mappings. Guided setup in both languages; reference existing scenes/scripts and flag conflicting ownership. Build a native dashboard card and authenticated backend, with revision-aware household plans and administrator activation permissions. Calendar adapter snapshots verified local zmanim. Maintain a tested HA compatibility matrix. No Good Days dependency or compatibility commitment has been adopted; third-party proposals require review.
 
 ## R3: controlled execution
 Detailed draft: [Feature 010 specification](../specs/010-controlled-execution/spec.md) and [implementation plan](../specs/010-controlled-execution/plan.md). Observe-only persistence, sampled comparison and a bounded unmanaged-automation overlay are implemented and deployed in 0.12.1; device execution remains unimplemented.
@@ -33,13 +33,16 @@ Validated configuration import/export, synthetic example homes, optional sanitiz
 See `specs/005-chat-interface/spec.md`. Offer plan inspection, future-draft editing, feedback and proposal review through the same application services as the dashboard. Evaluate HA-native MCP exposure first; no dependency is selected. Initial scope excludes activation and direct device control.
 
 ## Decisions still open
-Production executor reuse; license choice before public release; supported HA versions; precise default freeze policy; temperature limits; all household defaults; late-time versus relative-time precedence; lifecycle for manual overrides; role permissions; retention policy. No unknown value is silently promoted to an approved default.
+License choice before public release; provider-specific HVAC qualification; temperature limits; remaining household defaults and override lifecycle. Feature 010 records accepted native execution direction, admin activation, preparation deadline, retry/grace and retention defaults; implementation and qualification remain separate gates. No unknown value is silently promoted to an approved default.
 
 ### Approved next iteration: bedroom rest schedules
-Feature 009 US12 adds optional daytime naps and independent late wake-up/HVAC-off choices per bedroom and dated day. Nap HVAC is separate from overnight lighting, supports preconditioning and preserves settings when requested; overlapping compatible demands keep units running continuously. Requirements and acceptance cases are recorded, but implementation and installation remain pending.
+Feature 009 US12 adds optional daytime naps and independent late wake-up/HVAC-off choices per bedroom and dated day. Nap HVAC is separate from overnight lighting, supports preconditioning and preserves settings when requested; overlapping compatible demands keep units running continuously. Implemented, tested and deployed in 0.10.0; see checkpoint-010. Subsequent circulation and independent meal-HVAC settings were deployed in 0.11.0.
 
 ### Existing automation schedule overlay (approved specification)
-Read-only forecasts for time/sun-based HA automations and conditions/triggers on the known mapped issur-melacha state. Show source badges and possible planner conflicts without changing automation ownership. Unsupported or unresolved schedules stay explicit. See MD-FR-020–022 and MD-NFR-009; implementation is deferred from the bedroom-rest/afternoon-hosting release.
+Read-only forecasts for time/sun-based HA automations and conditions/triggers on the known mapped issur-melacha state. Show source badges and possible planner conflicts without changing automation ownership. Unsupported or unresolved schedules stay explicit. See MD-FR-020–022 and MD-NFR-009; literal time/sun triggers, weekday conditions and supported On/Off actions are implemented and deployed in 0.12.1. Issur-melacha conditions/triggers, arbitrary scripts and full ownership handoffs remain pending.
 
 ## Immediate validation path
-See [prediction-only weekend and go-live gates](dry-run-to-live.md). This is a staged review plan: freeze exports, compare normal observed behavior and feedback, specify an executor, run authorized weekday/recovery tests, then explicitly arm a limited validated scope. The current preview remains non-executing.
+See [prediction-only weekend and go-live gates](dry-run-to-live.md). This is a staged review plan: freeze exports, compare normal observed behavior and feedback, complete the specified executor, run authorized weekday/recovery tests, then explicitly arm a limited validated scope. The current preview remains non-executing.
+
+## Current requirement and release coverage
+See [requirements status](requirements-status.md) for the maintained feature map. Hourly thermal evidence and EN/HE visual observation reports are implemented/tested in 0.13.0 but not yet deployed. Installed HA remains 0.12.1.

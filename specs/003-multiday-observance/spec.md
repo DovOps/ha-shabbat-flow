@@ -1,6 +1,6 @@
 # Feature specification: continuous Shabbat and Yom Tov planning
 
-Status: supplied multi-day calendar/selection compilation is implemented in the opt-in v2 local preview. Live providers, freeze/execution policy, copy-day and migration remain planned; the original v1 preview remains single-Shabbat.
+Status: multi-day compilation and reviewed copy-day are implemented. Feature 008 adds the installed Jewish Calendar provider; Feature 010 adds frozen observe snapshots and the accepted future execution policy. General v1 migration, full observance-conditioned automation forecasts and live execution remain pending. The original v1 preview remains single-Shabbat.
 
 ## User scenarios
 A household plans the whole upcoming observance before it starts, whether one day, two days, or three consecutive days. Each evening/day has its own meals, sleeping/recreation uses, lighting and HVAC profiles. Copying a day is an explicit convenience; it does not silently assume identical plans.
