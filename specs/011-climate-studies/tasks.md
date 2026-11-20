@@ -4,3 +4,5 @@
 - [x] S003 Implement EN/HE standalone setup, report and exports.
 - [x] S004 Verify automated regression and fictional UI preview; package checkpoint.
 - [ ] S005 Authorized deployment and real study/PDF validation.
+
+- [x] S006 Include general room switches as explicitly selected activity signals with distinct report labels and uncertainty wording (CS-FR-009, CS-NFR-005).

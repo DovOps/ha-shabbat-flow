@@ -39,7 +39,7 @@ export function thermalBands(run,target){
    return {start:a,end:b,state:['on','off'].includes(state)?state:'unknown'};});
  };
  const seen=new Set();for(const l of loads){if(l.kind!=='binary'||(run.kind==='climate_study'?!target.study_lights?.includes(run.mapping?.[l.physical_id]?.entity_id):l.display?.room!==room)||!['main_lights','night_lights','study_lighting'].includes(l.display?.role)||seen.has(l.physical_id))continue;seen.add(l.physical_id);
-  const base={label:l.label,entity:run.mapping?.[l.physical_id]?.entity_id??l.physical_id,role:l.display.role};
+  const base={label:l.label,entity:run.mapping?.[l.physical_id]?.entity_id??l.physical_id,role:l.display.role,signalKind:l.display.signal_kind??(run.mapping?.[l.physical_id]?.entity_id?.startsWith('switch.')?'switch':'light')};
   const planned=(run.preview?.events??[]).filter(e=>e.physical_id===l.physical_id&&e.intent!=='track_only'&&e.action?.type==='state').map(e=>({at:Date.parse(e.utc??e.local),state:e.action.state}));
   if(run.kind!=='climate_study')bands.push({...base,kind:'planned',intervals:intervals(planned,false)});
   const observed=(run.changes??[]).filter(e=>e.physical_id===l.physical_id).map(e=>({at:Date.parse(e.observed_at),state:e.state}));
@@ -88,7 +88,7 @@ export function renderThermalReport(data,{node,t,lang}){
   for(const p of lane.points){const dot=svg('circle',{cx:x(p.at),cy:214,r:4,fill:modeColors[p.mode]??modeColors.unknown});dot.append(svg('title',{},`${time(p.at)} · ${mode(p.mode)} · ${activity(p.activity)}`));chart.append(dot);}
   const bandDescriptions=[];
   lane.bands.forEach((band,index)=>{
-   const top=235+index*30,description=band.kind==='use'?t('observe_band_use')+' · '+t('observe_use_'+(['sleeping','recreation','nap','meal'].includes(band.purpose)?band.purpose:'other')):t('observe_band_'+band.kind)+' · '+t(band.role==='study_lighting'?'study_lights':'map_role_'+band.role)+' · '+(band.label?.[lang()]??band.entity);
+   const top=235+index*30,description=band.kind==='use'?t('observe_band_use')+' · '+t('observe_use_'+(['sleeping','recreation','nap','meal'].includes(band.purpose)?band.purpose:'other')):t(data.run.kind==='climate_study'&&band.kind==='observed'?(band.signalKind==='switch'?'study_observed_switch':'study_observed_light'):'observe_band_'+band.kind)+(band.role==='study_lighting'?'':' · '+t('map_role_'+band.role))+' · '+(band.label?.[lang()]??band.entity);
    bandDescriptions.push(description+' · '+band.intervals.map(v=>`${v.state==='use'?t('observe_band_use'):t('observe_power_'+v.state)} ${time(v.start)} — ${time(v.end)}`).join('; '));
    chart.append(svg('text',{x:54,y:top,'font-size':10},description));
    chart.append(svg('rect',{x:54,y:top+4,width:724,height:9,fill:'#f0f3f5'}));
