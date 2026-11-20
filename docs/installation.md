@@ -134,3 +134,7 @@ The combined JSON export contains `run.thermal`: preparation-anchored hourly slo
 A delayed slot over 90 seconds is missing, not backfilled with current temperature. Restart/clock rollback cannot duplicate an hourly slot. Existing active runs start thermal collection after upgrade and report when it was added; completed old runs are unchanged. Missing earlier hours remain unknown. Full data is included in Download plan + observation summary; the on-page summary reports collected/due snapshots and source. Thermal data does not enter preserve-settings matching or issue any control commands.
 
 במעקב חדש ניתן לבחור מקור מזג אוויר. מקור יחיד נבחר אוטומטית; כשיש כמה מקורות יש לבחור אחד. דגימה שעתית כוללת תרמוסטטים רשומים ופעילים, טמפרטורה נוכחית ויעד, מצב חימום/קירור/כבוי ופעילות כאשר זמינה, יחד עם טמפרטורת החוץ. הנתונים המלאים בהורדה; שעות חסרות אינן מושלמות בדיעבד. אין שינוי הגדרות או כיול אוטומטי.
+
+**Visual report:** choose a saved run and View observation summary for per-thermostat current/target/outdoor charts and hourly heat/cool/off markers. Expand Hourly readings for the table. Export observation PDF / Print produces a separate logo-branded report from that frozen run. Missing readings break lines; hourly dots do not imply continuous compressor activity. Charts appear as data arrives, not in an unobserved future plan.
+
+**דוח חזותי:** בוחרים מעקב שמור ומציגים סיכום לקבלת תרשימי טמפרטורה ומצב שעתיים. ניתן לפתוח טבלת קריאות ולייצא דוח מעקב נפרד ל־PDF עם לוגו. נתונים חסרים מוצגים כפערים.
