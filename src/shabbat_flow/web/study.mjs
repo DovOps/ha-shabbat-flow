@@ -22,8 +22,15 @@ function draw(){
    const refLabel=node('label',undefined,'study-field'),ref=node('select');refLabel.append(node('span',t('study_reference')),ref);const empty=node('option',t('study_none'));empty.value='';ref.append(empty);
    for(const source of sources.references){const option=node('option',`${source.area_name??''} · ${source.name} · ${source.entity_id}`);option.value=source.entity_id;ref.append(option);}ref.value=selected.reference??'';ref.onchange=()=>selected.reference=ref.value||null;card.append(refLabel);
    const lighting=node('fieldset');lighting.append(node('legend',t('study_lights')));
-   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};label.append(input,node('span',`${e.name} · ${e.entity_id}`));return label;};
+   const signalInputs=new Map();
+   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};label.append(input,node('span',`${e.name} · ${e.entity_id}`));return label;};
    const same=sources.lights.filter(e=>zone.area_id&&e.area_id===zone.area_id);
+   const bulk=node('div',undefined,'toolbar');
+   for(const [key,include] of [['study_select_all_room',true],['study_clear_all_room',false]]){
+    const button=node('button',t(key));button.type='button';button.disabled=!same.length;
+    button.onclick=()=>{const ids=new Set(same.map(e=>e.entity_id));selected.lights=include?[...new Set([...selected.lights,...ids])]:selected.lights.filter(id=>!ids.has(id));for(const id of ids)signalInputs.get(id).checked=include;};bulk.append(button);
+   }
+   lighting.append(bulk);
    for(const e of same)lighting.append(addLight(e));
    const more=node('details');more.append(node('summary',t('study_other_lights')));for(const e of sources.lights.filter(e=>!same.includes(e)))more.append(addLight(e));lighting.append(more);card.append(lighting);
   }root.append(card);

@@ -53,3 +53,5 @@ Observe 0.13.0 report additions: zones ranked by minute sampled On duration, com
 Feature 011 adds manual 1–48-hour studies without a Shabbat plan, selected zones/lighting, optional room reference sensors, read-only persistence and dedicated reports. Automated tests and fictional EN/HE review complete; real collection and PDF pagination pending. Scheduled starts and automatic summary delivery are future scope. Installed HA is 0.14.0; live setup/source discovery verified. No study started.
 
 The same 0.14.0 package includes explicit room light/switch activity signals and distinct observed switch timelines. Both On and Off changes are evidence, never confirmed occupancy or manual operation.
+
+0.14.1 adds room-scoped Select all / Clear all for climate-study activity signals. Implemented/tested, not yet deployed; HA remains 0.14.0.
