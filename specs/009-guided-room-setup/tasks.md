@@ -66,3 +66,9 @@
 - [x] Verify copied native icon graphics in installed HA — 0.16.3, checkpoint 021.
 
 - [x] Apply adjacent logical-start checkbox/icon/name layout in EN/HE.
+
+## 0.16.4 setup usability
+- [x] Specify shared planner shortcuts, room-status overview and main-page activity states.
+- [x] Implement localized UI and pure status model with read-only discovery.
+- [x] Verify models, UI behavior, packaging and compatibility; evidence in docs/checkpoint-022.md.
+- [ ] Separately authorized HA installation and live validation.

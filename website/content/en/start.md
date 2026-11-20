@@ -37,3 +37,10 @@ Settings detects available Twilio SMS UI and Companion App push actions. Both ch
 Pre-candle plan reminders are separately enabled app pushes. Configure multiple offsets before candles (defaults: 180, 60, 30 minutes). They send only on the local candle-lighting date while the same-provider issur melacha signal is explicitly Off. Missing data, active issur and excessively late reminders suppress sending. Reminders prompt review; they never activate a plan.
 
 [Room options explained](./room-options.md)
+
+### Home-page overview
+Use the green **Open planner with my rooms** button at the top or bottom of house setup. **Rooms at a glance** links to room editors and shows Ready, Draft or Needs attention.
+
+**Plans and studies** shows the saved plan in this browser separately from scheduled/active plan observations and climate studies in HA. A saved draft is not activated device control. Report links open the corresponding run; empty states and unavailable status are distinct.
+
+Selecting rooms in use, naps or meals at home sets the simple day-level **Someone home** choice automatically. Custom partial-day availability is preserved for review. Removing a selection does not automatically mark everyone away.

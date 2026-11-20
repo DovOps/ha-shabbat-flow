@@ -47,3 +47,5 @@ Add localized inline selection descriptions and a linked guide. Keep icon metada
 0.16.2: Group icons with text instead of a third flex child. Cache HA-owned native SVG rendering and copy the graphical result into the iframe; extend timeline labels. Test cache ownership, cleanup and standalone fallback; live HA rendering verification remains required.
 
 0.16.3: Place checkbox first in DOM for climate rows and at logical start through shared flex ordering elsewhere. Keep icon/name adjacent and isolate mixed-direction names.
+
+0.16.4: Reuse the planner validation/navigation handler for both green shortcuts. Derive compact room-status links from shared room feedback. Add a pure activity-summary model and read the existing observer listing; distinguish browser-local saved draft from persisted observer runs, show timestamps/status/report links and explicit unavailable states. Resume browser drafts only on an explicit link. No new runtime dependency or device calls.

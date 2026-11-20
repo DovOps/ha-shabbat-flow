@@ -408,7 +408,9 @@
     "observe_reason_unsupported_or_unresolved": "This scheduled rule needs manual review.",
     "study_more_signals": "Show 50 more devices",
     "study_builtin_default": "Use A/C room-temperature reading only (default)",
-    "study_builtin_temperature": "A/C room temperature is included automatically, along with target temperature and heat/cool/off mode. An additional sensor is optional for comparison. Missing readings are shown as unknown, never replaced with the target temperature."
+    "study_builtin_temperature": "A/C room temperature is included automatically, along with target temperature and heat/cool/off mode. An additional sensor is optional for comparison. Missing readings are shown as unknown, never replaced with the target temperature.",
+    "home_auto_help": "Selecting a room in use, a nap or a meal at home marks this day as Someone home. Removing a selection does not mark everyone away.",
+    "home_custom_help": "Custom home/away windows are preserved. Review them in Advanced settings when adding room use or meals at home."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -819,6 +821,8 @@
     "observe_reason_unsupported_or_unresolved": "כלל מתוזמן זה דורש בדיקה ידנית.",
     "study_more_signals": "הצגת 50 התקנים נוספים",
     "study_builtin_default": "קריאת טמפרטורת החדר מהמזגן בלבד (ברירת מחדל)",
-    "study_builtin_temperature": "טמפרטורת החדר מהמזגן נכללת אוטומטית, לצד טמפרטורת היעד ומצב חימום/קירור/כיבוי. אפשר לבחור חיישן נוסף להשוואה. קריאה חסרה מוצגת כלא ידועה ולא מוחלפת בטמפרטורת היעד."
+    "study_builtin_temperature": "טמפרטורת החדר מהמזגן נכללת אוטומטית, לצד טמפרטורת היעד ומצב חימום/קירור/כיבוי. אפשר לבחור חיישן נוסף להשוואה. קריאה חסרה מוצגת כלא ידועה ולא מוחלפת בטמפרטורת היעד.",
+    "home_auto_help": "בחירת חדר בשימוש, מנוחה או ארוחה בבית מסמנת שיש מישהו בבית ביום זה. הסרת בחירה אינה מסמנת שכולם מחוץ לבית.",
+    "home_custom_help": "חלונות הזמן המותאמים של שהייה בבית או מחוץ לו נשמרים. בדקו אותם בהגדרות המתקדמות כשמוסיפים שימוש בחדר או ארוחה בבית."
   }
 }

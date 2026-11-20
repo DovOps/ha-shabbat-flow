@@ -56,6 +56,18 @@ export function setDayHome(bundle,segmentId,state){
   items.push({id:'replacement',...bounds,state});items.sort((a,b)=>new Date(a.start)-new Date(b.start));
   plan.availability=items.map((v,i)=>({...v,id:`availability_${i+1}`}));return next;
 }
+// Explicit household selections imply the simple day-level home default. Preserve
+// advanced partial-day availability for deliberate review rather than erasing it.
+export function markDayHomeFromUse(bundle,segmentId){
+ const segment=bundle.plan.snapshot.segments.find(s=>s.id===segmentId);
+ return dayHomeState(bundle.plan,segment)==='custom'?bundle:setDayHome(bundle,segmentId,'home');
+}
+export function setMealChoice(bundle,mealId,choice){
+ const next=structuredClone(bundle),meal=next.plan.meals.find(m=>m.id===mealId);
+ if(!meal)throw new Error('invalid_mapping');
+ meal.choice=choice;
+ return ['family','hosting'].includes(choice)?markDayHomeFromUse(next,meal.segment):next;
+}
 export function setRoomChoice(bundle,segmentId,room,purpose,profileId){
   const next=structuredClone(bundle),plan=next.plan,segment=plan.snapshot.segments.find(v=>v.id===segmentId);
   const matches=plan.room_uses.filter(v=>v.segment===segmentId&&v.room===room&&v.purpose===purpose);
@@ -72,7 +84,7 @@ export function setRoomChoice(bundle,segmentId,room,purpose,profileId){
   }
   plan.room_uses.push({id:existing?.id??nextId('use',plan.room_uses),room,purpose,segment:segmentId,
     control:profileId==='existing'?'existing':'planner',profile:profileId==='existing'?null:profileId,...window,...(existing?.hvac_end&&profileId!=='existing'?{hvac_end:existing.hvac_end}:{})});
-  return next;
+  return markDayHomeFromUse(next,segmentId);
 }
 function wallDate(iso,zone){const p=zonedParts(iso,zone);return Date.UTC(+p.year,+p.month-1,+p.day);}
 export function localDateTimeValue(iso,zone){
@@ -137,7 +149,7 @@ export function addNap(bundle,segmentId,room){
  const start=d.nap_start_mode==='clock'?+new Date(restClockTime(seg,d.nap_start_time,zone)):+new Date(seg.sunrise)+d.nap_after_sunrise*60000;
  const end=d.nap_end_mode==='period_end'?+new Date(seg.end):d.nap_end_mode==='clock'?+new Date(restClockTime(seg,d.nap_end_time,zone)):start+d.nap_duration*60000;
  if(!(start<end&&start>=+new Date(seg.start)&&end<=+new Date(seg.end)))throw new Error('invalid_time');
- const naps=next.plan.naps??=[];naps.push({id:nextId('nap',naps),room,profile:id,segment:segmentId,start:zonedISO(start,zone),end:zonedISO(end,zone),lead_minutes:d.lead_minutes,bathroom_targets:[]});return next;
+ const naps=next.plan.naps??=[];naps.push({id:nextId('nap',naps),room,profile:id,segment:segmentId,start:zonedISO(start,zone),end:zonedISO(end,zone),lead_minutes:d.lead_minutes,bathroom_targets:[]});return markDayHomeFromUse(next,segmentId);
 }
 export function napBathroomTargets(config,nap){
  const profile=config.profiles[nap.profile];
