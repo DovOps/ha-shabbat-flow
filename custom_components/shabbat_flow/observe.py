@@ -216,7 +216,7 @@ class Observer:
                 left, right = instant(run['last_sample']), min(now,instant(run['end']))
                 if right <= left and run['last_states']: continue
                 changed = True
-                thermal_collect(self.hass,run,now)
+                thermal_collect(self.hass,run,now,rid in self.resumed)
                 gap = rid in self.resumed or not run['last_states'] or (now-left).total_seconds()>90
                 accumulate(run,left,right,gap)
                 if gap and right>left and len(run['gaps'])<1000: run['gaps'].append({'start':left.isoformat(),'end':right.isoformat(),'reason':'restart_or_collection_gap'})

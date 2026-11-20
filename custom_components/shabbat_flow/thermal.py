@@ -4,6 +4,7 @@ import math
 from zoneinfo import ZoneInfo
 from homeassistant.helpers import entity_registry as er, device_registry as dr, area_registry as ar
 from .ownership import instant
+from .household import internal_id
 
 
 def weather_sources(hass):
@@ -18,7 +19,7 @@ def identity(hass, entry):
     area_id = entry.area_id or (device.area_id if device else None)
     area = ar.async_get(hass).async_get_area(area_id) if area_id else None
     return {'entity_id':entry.entity_id, 'registry_id':entry.id, 'platform':entry.platform,
-            'area_id':area_id, 'area_name':area.name if area else None}
+            'area_id':area_id, 'planner_room_id':internal_id('room_',area_id) if area_id else None, 'area_name':area.name if area else None}
 
 
 def initialize(hass, now, weather_entity_id=None):
@@ -66,12 +67,26 @@ def sample_entity(hass, target, now, climate=False):
     return result
 
 
-def collect(hass, run, now):
+def collect(hass, run, now, resumed=False):
     thermal = run.get('thermal')
     if thermal is None:
         thermal = run['thermal'] = initialize(hass,now)
     start, end = instant(run['start']), instant(run['end'])
     if now < start: return
+    # Activity duration is sampled each minute, independently of hourly temperatures.
+    activity = thermal.setdefault('activity', {'last_at':start.isoformat(), 'last_power':{},
+        'totals':{t['entity_id']:{'on_seconds':0,'off_seconds':0,'unknown_seconds':0,'seen_on':False} for t in thermal['climates']}})
+    left, right = instant(activity['last_at']), min(now,end)
+    if right >= left:
+        gap = resumed or not activity['last_power'] or (now-left).total_seconds()>90
+        for target in thermal['climates']:
+            eid = target['entity_id']; totals = activity['totals'][eid]
+            prior = 'unknown' if gap else activity['last_power'].get(eid,'unknown')
+            totals[prior+'_seconds'] += (right-left).total_seconds()
+            current = sample_entity(hass,target,now,True).get('power','unknown')
+            if now <= end and current == 'on': totals['seen_on'] = True
+            activity['last_power'][eid] = current
+        activity['last_at'] = right.isoformat()
     last = min(96,int((min(now,end)-start).total_seconds()//3600))
     for slot in range(thermal['last_slot']+1,last+1):
         due = start+timedelta(hours=slot)

@@ -138,3 +138,7 @@ A delayed slot over 90 seconds is missing, not backfilled with current temperatu
 **Visual report:** choose a saved run and View observation summary for per-thermostat current/target/outdoor charts and hourly heat/cool/off markers. Expand Hourly readings for the table. Export observation PDF / Print produces a separate logo-branded report from that frozen run. Missing readings break lines; hourly dots do not imply continuous compressor activity. Charts appear as data arrives, not in an unobserved future plan.
 
 **דוח חזותי:** בוחרים מעקב שמור ומציגים סיכום לקבלת תרשימי טמפרטורה ומצב שעתיים. ניתן לפתוח טבלת קריאות ולייצא דוח מעקב נפרד ל־PDF עם לוגו. נתונים חסרים מוצגים כפערים.
+
+Reports group zones across the observation period: Active (observed On at least once), Inactive (no On observed, with some Off evidence), then Unknown. Active charts and combined hourly-table sections sort by observed On minutes from one-minute samples. Missing duration is separate; hourly dots are not used to estimate runtime. No-On evidence does not prove no brief use or an unoccupied room. Older exports without counters show duration unavailable.
+
+Each associated zone chart includes planned room use (sleep/recreation/naps/meals where linked), planned lighting and separately observed lighting. Main/background circuits have separate rows. Missing associations/gaps remain explicit; no occupancy is inferred. The all-zone hourly table is also printed, with repeated column headers.

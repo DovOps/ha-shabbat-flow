@@ -10,3 +10,8 @@
 - Commit or push only within the user’s authorization. When the user authorizes ongoing checkpoint commits, do not request confirmation for each routine commit. A commit authorization alone does not authorize a push. When later committing, use the configured GitHub alias/noreply identity; never substitute a personal email.
 - Run `PYTHONPATH=src python3 -m unittest discover -s tests -v`, `node --test tests/web.test.mjs`, and `python3 scripts/check_repository.py` before proposing a checkpoint.
 - Document actual verification and remaining limitations; do not mark HA deployment or future roadmap features complete.
+
+## Required specification maintenance at every checkpoint
+- Before completing any behavior change, add/update functional and nonfunctional requirements, acceptance/verification evidence, implementation plan and task status in the same checkpoint.
+- Update `docs/requirements-status.md` and the roadmap when feature scope or rollout state changes. Distinguish specified, implemented/tested, deployed and live-validated; none implies the next.
+- Keep household-only observations out of reusable specs. Sample reports must use explicitly fictional data. Do not mark an entire feature complete while known acceptance or deployment checks remain pending.

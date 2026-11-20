@@ -453,5 +453,21 @@ test('observation print renders frozen provenance and handles legacy runs withou
  const report=node('section');renderObservationPrint({report,data,node,t:k=>k,lang:()=> 'en',logo:null});
  const flatten=n=>[n.textContent,...n.children.flatMap(flatten)].join(' ');
  assert.match(flatten(report),/frozen-observation.*frozen-digest/);assert.match(flatten(report),/observe_thermal_legacy/);
- assert.match(flatten(report),/2027-01-08T14:00:00Z/);
+ assert.match(flatten(report),/Jan 8, 2027/);assert.match(flatten(report),/UTC/);
+});
+
+test('zone ranking uses minute durations across the period, keeps inactive and unknown distinct',()=>{
+ const make=(id,on,off,seen,mode)=>({id,on,off,seen,mode});const entries=[make('b',60,60,true,'off'),make('a',600,0,true,'cool'),make('d',0,600,false,'off'),make('c',0,0,false,'unknown')];
+ const data={run:{start:'2027-01-01T00:00Z',end:'2027-01-02T00:00Z',bundle:{plan:{snapshot:{timezone:'UTC'}}},thermal:{climates:entries.map(e=>({entity_id:e.id})),activity:{totals:Object.fromEntries(entries.map(e=>[e.id,{on_seconds:e.on,off_seconds:e.off,unknown_seconds:0,seen_on:e.seen}]))},samples:[{due:'2027-01-01T00:00Z',status:'sampled',climates:Object.fromEntries(entries.map(e=>[e.id,{mode:e.mode}]))}]}}};
+ const before=JSON.stringify(data),lanes=thermalModel(data).lanes;
+ assert.deepEqual(lanes.map(l=>l.target.entity_id),['a','b','d','c']);assert.deepEqual(lanes.map(l=>l.group),['active','active','inactive','unknown']);assert.equal(lanes[0].onMinutes,10);assert.equal(JSON.stringify(data),before);
+ delete data.run.thermal.activity;assert.equal(thermalModel(data).lanes[0].onMinutes,null);
+});
+
+import {thermalBands} from '../src/shabbat_flow/web/thermal-report.mjs';
+test('room bands associate exact room, retain naps/meals and break observed light at gaps',()=>{
+ const at=h=>`2027-01-01T${String(h).padStart(2,'0')}:00:00Z`;
+ const run={start:at(0),end:at(6),last_sample:at(5),gaps:[{start:at(2),end:at(3)}],mapping:{lamp:{entity_id:'light.study'}},bundle:{config:{loads:{lamp:{kind:'binary',physical_id:'lamp',display:{room:'study',role:'main_lights'}}},groups:{meal:{rules:[{targets:['lamp']}]}}},plan:{room_uses:[{room:'study',purpose:'sleeping',start:at(1),end:at(2)},{room:'other',purpose:'sleeping',start:at(0),end:at(6)}],naps:[{room:'study',start:at(4),end:at(5)}],meals:[{choice:'family',start:at(3),end:at(4),groups:['meal']}]}},preview:{events:[{physical_id:'lamp',utc:at(0),intent:'set_state',action:{type:'state',state:'on'}}]},changes:[{physical_id:'lamp',observed_at:at(0),state:'on'},{physical_id:'lamp',observed_at:at(4),state:'off'}]};
+ const bands=thermalBands(run,{planner_room_id:'study'});assert.deepEqual(bands.filter(b=>b.kind==='use').map(b=>b.purpose),['sleeping','nap','meal']);
+ const actual=bands.find(b=>b.kind==='observed').intervals;assert.equal(actual.find(i=>i.start===Date.parse(at(2))).state,'unknown');assert.equal(actual.at(-1).state,'unknown');assert.equal(actual.find(i=>i.start===Date.parse(at(4))).state,'off');assert.deepEqual(thermalBands(run,{planner_room_id:'not-mapped'}),[]);
 });
