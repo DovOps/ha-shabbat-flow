@@ -1,4 +1,6 @@
-# ShabbatFlow contributor instructions
+# Shabbat Flow contributor instructions
+
+This is the entry point for coding agents working from the repository root. Read these instructions before editing; then read the constitution and active feature. The public developer guide in `website/content/en/contributing.md` (Hebrew: `website/content/he/contributing.md`) explains the recommended agent-assisted workflow and a starter prompt. Human contributors follow the same requirements.
 
 - Read `.specify/memory/constitution.md` and the active `specs/` feature before edits.
 - Read `docs/dependencies.md`: third-party source, design and dependencies require the owner's review of an exact proposal. Research references are not adopted dependencies.

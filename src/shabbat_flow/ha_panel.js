@@ -23,7 +23,7 @@ class ShabbatFlowPanel extends HTMLElement{
     const style=document.createElement('style');style.textContent=':host{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:0}header{display:flex;align-items:center;padding:8px 12px;gap:12px;background:var(--primary-background-color);color:var(--primary-text-color)}button{font:inherit;padding:8px 12px;border:0;border-radius:8px;cursor:pointer}iframe{flex:1;width:100%;min-height:0;border:0;background:white}';
     const header=document.createElement('header'),button=document.createElement('button');button.textContent='☰';button.setAttribute('aria-label',this._hass.language==='he'?'פתיחת תפריט':'Open sidebar');
     button.onclick=()=>this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true}));
-    const title=document.createElement('span');title.textContent=this._hass.language==='he'?'ShabbatFlow — תצוגה מקדימה':'ShabbatFlow Preview';header.append(button,title);
+    const title=document.createElement('span');title.textContent='Shabbat Flow';header.append(button,title);
     this._frame=document.createElement('iframe');this._frame.title='ShabbatFlow';this._report=reportId;this._frame.src=new URL('./household.html',import.meta.url).href;if(reportId)this._frame.src=new URL('./observation.html?run='+reportId,import.meta.url).href;
     this.shadowRoot.append(style,header,this._frame);
   }

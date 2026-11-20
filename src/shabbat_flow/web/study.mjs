@@ -8,7 +8,7 @@ const t=k=>catalogs[language][k]??k,lang=()=>language;
 function print(){if(printData)renderObservationPrint({report:$('print-report'),data:printData,node,t,lang,logo:document.querySelector('.brand-logo')});}
 function draw(){
  document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';
- $('title').textContent=t('study_title');$('intro').textContent=t('study_intro');$('home').textContent=t('house_setup');
+ $('title').textContent=t('study_title');$('intro').textContent=t('study_intro');$('home').textContent=t('house_setup');$('nav-study').textContent=t('study_title');$('nav-settings').textContent=t('settings_title');
  const root=$('study-setup');root.replaceChildren();
  const field=(text,input)=>{const label=node('label',undefined,'study-field');label.append(node('span',text),input);root.append(label);};
  const hours=node('input');hours.type='number';hours.min='1';hours.max='48';hours.step='1';hours.value=selection.hours;hours.oninput=()=>selection.hours=Number(hours.value);field(t('study_hours'),hours);

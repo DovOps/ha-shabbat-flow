@@ -5,3 +5,6 @@
 - [x] W004 GitHub Pages workflow and maintainer instructions.
 - [x] W005 Production/local/EN/HE/mobile verification.
 - [ ] W006 Public Pages deployment after owner enablement.
+- [x] W007 EN/HE developer onboarding, root AGENTS.md entry point and starter prompt.
+- [x] W008 Actual-interface gallery, fictional capture review and provenance captions.
+- [x] W009 Verify gallery/localized navigation and packaged app presentation changes.

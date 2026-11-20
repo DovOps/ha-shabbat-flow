@@ -20,6 +20,8 @@ def load_assets():
 
 
 async def async_setup_entry(hass, entry):
+    if getattr(entry, "title", None) == "ShabbatFlow Preview":
+        hass.config_entries.async_update_entry(entry, title="Shabbat Flow")
     data = hass.data.setdefault(DOMAIN, {})
     if "household" not in data:
         data["household_store"] = Store(hass, 1, DOMAIN + ".household")
@@ -43,7 +45,7 @@ async def async_setup_entry(hass, entry):
     try:
         await panel_custom.async_register_panel(
             hass, frontend_url_path=PANEL, webcomponent_name="shabbat-flow-panel",
-            sidebar_title="ShabbatFlow Preview", sidebar_icon="mdi:candle",
+            sidebar_title="Shabbat Flow", sidebar_icon="mdi:candle",
             module_url=f"{STATIC}/panel.js?v={VERSION}", require_admin=True,
         )
     except Exception:

@@ -30,5 +30,8 @@
   "copyright": {
     "message": "ShabbatFlow · שילוב עצמאי ומותאם ל־Home Assistant.",
     "description": "The footer copyright"
+  },
+  "link.item.label.Developer guide": {
+    "message": "מדריך מפתחים"
   }
 }
