@@ -64,3 +64,5 @@
 
 - [x] Correct label alignment and iframe icon rendering; add timeline icons and owner-document/cache regression.
 - [ ] Verify copied native icon graphics in installed HA.
+
+- [x] Apply adjacent logical-start checkbox/icon/name layout in EN/HE.

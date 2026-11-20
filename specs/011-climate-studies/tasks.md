@@ -13,3 +13,6 @@ S005 deployment portion completed for 0.14.0; live setup/source discovery verifi
 
 - [x] Implement targeted zone updates and lazy/paged cross-room signals; verify selection retention with large fictional inventory.
 - [ ] Verify freeze correction in installed HA; no study or control activation.
+
+- [x] Clarify default built-in thermostat reading and additional comparison; preserve weather/run locale state; add Off-zone/no-reference regression.
+- [ ] Validate corrected selection/language performance in installed HA after upgrade.

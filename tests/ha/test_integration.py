@@ -1244,3 +1244,20 @@ def test_forecast_calendar_continuous_boundaries_and_state_conditions():
     condition['state']='off';assert not forecast(snapshot,[timer],calendar_entities=ids)['events']
     snapshot['source']['id']='manual';result=forecast(snapshot,[begin],calendar_entities=ids)
     assert not result['events'] and result['unresolved']
+
+
+@pytest.mark.asyncio
+async def test_study_builtin_temperature_without_comparison_sensor(host):
+    from homeassistant.helpers import entity_registry as er
+    from datetime import datetime,timezone
+    hass,_=host
+    zone=er.async_get(hass).async_get_or_create('climate','demo','builtin-reading')
+    hass.states.async_set(zone.entity_id,'off',{'current_temperature':21.5,'temperature':24,'temperature_unit':'°C'})
+    observer=hass.data[DOMAIN]['observer']
+    now=datetime(2027,1,5,10,tzinfo=timezone.utc)
+    run=await observer.start_study({'hours':1,'zones':[{'entity_id':zone.entity_id,'lights':[],'reference':None}],'weather_entity_id':None,'note':''},'builtin-reading-001','actor',now)
+    sample=run['thermal']['samples'][0]
+    assert sample['climates'][zone.entity_id]['current_temperature']['celsius']==21.5
+    assert sample['climates'][zone.entity_id]['target_temperature']['celsius']==24
+    assert sample['climates'][zone.entity_id]['mode']=='off'
+    assert not sample.get('references')

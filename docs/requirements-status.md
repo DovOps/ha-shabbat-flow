@@ -46,3 +46,6 @@ The owner-authorized upgrade is installed and the live panel verified after one 
 
 ## 0.16.2 — study responsiveness and presentation
 CS-FR-011/CS-NFR-007: targeted zone updates, preserved selections and lazy 50-item other-area batches implemented and locally tested with 100 zones/2,000 signals. UI-FR-006/UI-NFR-003: start-aligned icon/name groups, cached HA-owned SVG graphics and timeline labels. WEB-FR-012: fictional EN/HE Settings gallery and prominent current observe/future control scope. See checkpoint 020. Packaged; HA remains 0.16.1 pending installation and live freeze/icon validation.
+
+## 0.16.3 — climate setup clarification
+CS-FR-012/CS-NFR-008 and UI-FR-007 implemented: built-in A/C room-temperature default, optional additional comparison sensor, adjacent logical-start checkbox/icon/name layout, and retained locale selections. Verified with fictional large inventory and native sampling test. See checkpoint 021. Packaged, not installed; HA remains 0.16.1.

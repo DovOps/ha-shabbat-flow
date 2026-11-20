@@ -277,7 +277,7 @@
     "study_hours": "Study duration (1–48 hours)",
     "study_note": "Optional intended-use or comfort note (up to 2,000 characters)",
     "study_select_hint": "Select zones, then choose lights and any room switches as activity signals, plus an optional reference sensor. Same-area devices are suggested, never selected automatically. On/Off changes may suggest room activity; they do not confirm occupancy or who operated a device.",
-    "study_reference": "Room temperature reference sensor",
+    "study_reference": "Additional comparison sensor (optional)",
     "study_none": "None selected",
     "study_lights": "Room activity signals: lights and switches (optional)",
     "study_other_lights": "Show lights / switches in other areas",
@@ -406,7 +406,9 @@
     "observe_reason_ambiguous_time": "The local trigger time is ambiguous or nonexistent at a daylight-saving transition.",
     "observe_reason_forecast_limit": "Forecast size limit reached.",
     "observe_reason_unsupported_or_unresolved": "This scheduled rule needs manual review.",
-    "study_more_signals": "Show 50 more devices"
+    "study_more_signals": "Show 50 more devices",
+    "study_builtin_default": "Use A/C room-temperature reading only (default)",
+    "study_builtin_temperature": "A/C room temperature is included automatically, along with target temperature and heat/cool/off mode. An additional sensor is optional for comparison. Missing readings are shown as unknown, never replaced with the target temperature."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -686,7 +688,7 @@
     "study_hours": "משך המחקר (1–48 שעות)",
     "study_note": "הערה על שימוש מתוכנן או נוחות (רשות, עד 2,000 תווים)",
     "study_select_hint": "בחרו אזורי מיזוג, ואז תאורה ומתגים בחדר כסימני פעילות, וחיישן ייחוס לפי הצורך. מוצעים מכשירים מאותו אזור ללא בחירה אוטומטית. שינויי הפעלה וכיבוי עשויים לרמוז על פעילות, אך אינם מאמתים נוכחות או מי הפעיל מכשיר.",
-    "study_reference": "חיישן ייחוס לטמפרטורת החדר",
+    "study_reference": "חיישן נוסף להשוואה (רשות)",
     "study_none": "לא נבחר",
     "study_lights": "סימני פעילות בחדר: תאורה ומתגים (רשות)",
     "study_other_lights": "הצגת תאורה ומתגים מאזורים אחרים",
@@ -815,6 +817,8 @@
     "observe_reason_ambiguous_time": "זמן הטריגר המקומי דו־משמעי או לא קיים במעבר שעון.",
     "observe_reason_forecast_limit": "התחזית הגיעה למגבלת הגודל.",
     "observe_reason_unsupported_or_unresolved": "כלל מתוזמן זה דורש בדיקה ידנית.",
-    "study_more_signals": "הצגת 50 התקנים נוספים"
+    "study_more_signals": "הצגת 50 התקנים נוספים",
+    "study_builtin_default": "קריאת טמפרטורת החדר מהמזגן בלבד (ברירת מחדל)",
+    "study_builtin_temperature": "טמפרטורת החדר מהמזגן נכללת אוטומטית, לצד טמפרטורת היעד ומצב חימום/קירור/כיבוי. אפשר לבחור חיישן נוסף להשוואה. קריאה חסרה מוצגת כלא ידועה ולא מוחלפת בטמפרטורת היעד."
   }
 }
