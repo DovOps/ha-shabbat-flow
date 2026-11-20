@@ -15,3 +15,6 @@
 
 ## Rollout
 HA 0.16.1 package prepared, not installed; no device/automation changes or HA restart. Public site deployment is authorized; completion is verified separately through GitHub Actions and public HTTP checks.
+
+## Public deployment completed
+GitHub website run 44698117332 and checks run 44698117317 succeeded for main merge 751494f. PAGES_ENABLED is true. Verified HTTP 200 and expected page titles at the public HTTPS homepage, Hebrew homepage, EN/HE galleries and room-options guide. No DNS or CNAME change was made.

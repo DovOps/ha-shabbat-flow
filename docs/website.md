@@ -44,3 +44,6 @@ Website tooling is pinned in its own lockfile. Overrides for `tinypool` 2.2.0, `
 The EN/HE developer guide is `website/content/*/contributing.md`; README and root AGENTS.md point contributors to it. It recommends agent-assisted spec-driven work without requiring a particular agent or claiming automatic instruction loading.
 
 The gallery page uses actual interface captures with fictional data only. See `website/static/img/gallery/README.md` for capture versions and provenance. Recheck every replacement for private content, update both locales and preserve the distinction between actual interface screens and real household evidence. The approved logo remains unchanged; visitor-facing product naming is Shabbat Flow.
+
+## Current public deployment
+Live at https://dovops.io/ha-shabbat-flow/ with Hebrew at /ha-shabbat-flow/he/. The project inherits the account's custom domain. Pages uses GitHub Actions and PAGES_ENABLED=true; merges to main now publish automatically. Keep the project baseUrl and do not add a conflicting project CNAME. Initial public deployment and route verification are recorded in checkpoint 019.
