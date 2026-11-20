@@ -1,3 +1,4 @@
+import {itemIcon,loadIcons} from './ha-icons.mjs';
 import {request as fetch} from './transport.mjs';
 import {setupObservation} from './observe.mjs';
 import {renderObservationPrint} from './thermal-report.mjs';
@@ -15,7 +16,7 @@ function draw(){
  const note=node('textarea');note.maxLength=2000;note.rows=2;note.value=selection.note;note.oninput=()=>selection.note=note.value;field(t('study_note'),note);
  root.append(node('p',t('study_select_hint'),'hint'));
  for(const zone of sources.climates){
-  const card=node('section',undefined,'card');const label=node('label'),box=node('input');box.type='checkbox';box.checked=selection.zones.some(z=>z.entity_id===zone.entity_id);label.append(box,node('span',`${zone.area_name??''} · ${zone.name} · ${zone.entity_id}`));card.append(label);
+  const card=node('section',undefined,'card');const label=node('label'),box=node('input');box.type='checkbox';box.checked=selection.zones.some(z=>z.entity_id===zone.entity_id);label.prepend(itemIcon(zone.entity_id,'mdi:thermostat'));label.append(box,node('span',`${zone.area_name??''} · ${zone.name} · ${zone.entity_id}`));card.append(label);
   box.onchange=()=>{selection.zones=selection.zones.filter(z=>z.entity_id!==zone.entity_id);if(box.checked)selection.zones.push({entity_id:zone.entity_id,lights:[],reference:null});draw();};
   const selected=selection.zones.find(z=>z.entity_id===zone.entity_id);
   if(selected){
@@ -23,7 +24,7 @@ function draw(){
    for(const source of sources.references){const option=node('option',`${source.area_name??''} · ${source.name} · ${source.entity_id}`);option.value=source.entity_id;ref.append(option);}ref.value=selected.reference??'';ref.onchange=()=>selected.reference=ref.value||null;card.append(refLabel);
    const lighting=node('fieldset');lighting.append(node('legend',t('study_lights')));
    const signalInputs=new Map();
-   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};label.append(input,node('span',`${e.name} · ${e.entity_id}`));return label;};
+   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};label.prepend(itemIcon(e.entity_id,'mdi:lightbulb-outline'));label.append(input,node('span',`${e.name} · ${e.entity_id}`));return label;};
    const same=sources.lights.filter(e=>zone.area_id&&e.area_id===zone.area_id);
    const bulk=node('div',undefined,'toolbar');
    for(const [key,include] of [['study_select_all_room',true],['study_clear_all_room',false]]){
@@ -39,5 +40,5 @@ function draw(){
  setupObservation({root:$('observe-panel'),fetch,node,t,lang,study:()=>structuredClone(selection),onPrint:data=>{printData=data;print();window.print();}});
 }
 window.addEventListener('beforeprint',print);
-async function init(){try{const [c,s]=await Promise.all([fetch('/api/v2/i18n'),fetch('/api/v2/observe')]);if(!c.ok||!s.ok)throw Error();catalogs=await c.json();const listing=await s.json();sources=listing.study_sources;draw();$('language').onchange=()=>{language=$('language').value;draw();};}catch{$('error').textContent='Unable to load climate studies. Open this page inside Home Assistant. / לא ניתן לטעון מחקרי אקלים. יש לפתוח מתוך Home Assistant.';}}
+async function init(){try{await loadIcons();const [c,s]=await Promise.all([fetch('/api/v2/i18n'),fetch('/api/v2/observe')]);if(!c.ok||!s.ok)throw Error();catalogs=await c.json();const listing=await s.json();sources=listing.study_sources;draw();$('language').onchange=()=>{language=$('language').value;draw();};}catch{$('error').textContent='Unable to load climate studies. Open this page inside Home Assistant. / לא ניתן לטעון מחקרי אקלים. יש לפתוח מתוך Home Assistant.';}}
 init();

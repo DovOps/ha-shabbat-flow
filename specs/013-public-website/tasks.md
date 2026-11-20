@@ -8,3 +8,6 @@
 - [x] W007 EN/HE developer onboarding, root AGENTS.md entry point and starter prompt.
 - [x] W008 Actual-interface gallery, fictional capture review and provenance captions.
 - [x] W009 Verify gallery/localized navigation and packaged app presentation changes.
+- [x] W010 Expand gallery to setup, planning, timeline, event list and report screens with EN/HE image pairs.
+- [x] W011 Document room options, preset semantics, bedroom applicability and flexible rest timing.
+- [x] W012 Verify updated multilingual site and package checkpoint.

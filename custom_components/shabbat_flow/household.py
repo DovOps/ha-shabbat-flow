@@ -28,7 +28,7 @@ def strings(value):
 
 
 def inventory(hass):
-    areas = [{'id': a.id, 'name': a.name, 'floor_id': a.floor_id, 'labels': sorted(a.labels)} for a in ar.async_get(hass).async_list_areas()]
+    areas = [{'id': a.id, 'name': a.name, 'floor_id': a.floor_id, 'icon': getattr(a, 'icon', None), 'labels': sorted(a.labels)} for a in ar.async_get(hass).async_list_areas()]
     floors = [{'id': f.floor_id, 'name': f.name} for f in fr.async_get(hass).async_list_floors()]
     device_registry = dr.async_get(hass)
     devices = {}
@@ -53,6 +53,7 @@ def inventory(hass):
                     'max_temperature': attrs.get('max_temp') if finite(attrs.get('max_temp')) else None,
                     'unit': {'°C': 'C', '°F': 'F'}.get(hass.config.units.temperature_unit)}
         entities.append({'id': e.id, 'entity_id': e.entity_id, 'name': e.name or attrs.get('friendly_name') or e.original_name or e.entity_id,
+                         'icon': e.icon or attrs.get('icon') or e.original_icon,
                          'domain': domain, 'device_id': e.device_id, 'labels': sorted(e.labels),
                          'device_labels': sorted(device.labels) if device else [],
                          'area_id': e.area_id or (device.area_id if device else None),
@@ -72,7 +73,7 @@ def inventory(hass):
                                  for d in devices.values() if d.id in used_devices], key=lambda v: v['id']),
               'entities': sorted(entities, key=lambda v: v['id']), 'timezone': hass.config.time_zone}
     # Availability is live telemetry; renames/moves/capability changes affect the structural revision.
-    result['revision'] = digest({**result, 'entities': [{k: v for k, v in e.items() if k not in ('available', 'current')} for e in result['entities']]})
+    result['revision'] = digest({**result, 'areas': [{k:v for k,v in a.items() if k!='icon'} for a in result['areas']], 'entities': [{k: v for k, v in e.items() if k not in ('available', 'current', 'icon')} for e in result['entities']]})
     return result
 
 

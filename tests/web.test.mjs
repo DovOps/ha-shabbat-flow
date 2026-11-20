@@ -201,7 +201,7 @@ test('wizard saves freeze controls, reject duplicate submits and preserve edits 
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const controls=[{disabled:false},{disabled:true}],button={disabled:false};let resolve;
  const context={updateRoomFeedback:()=>{},staleSettings:false,offline:false,saveError:null,postShutoff:false,labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
-  document:{querySelectorAll:()=>controls},$:()=>button,status:()=>{},fail:()=>{},wizardError:()=>{},catalogs:{en:{}},language:'en',api:()=>new Promise(r=>resolve=r)};
+  document:{querySelector:()=>null,querySelectorAll:()=>controls},$:()=>button,status:()=>{},fail:()=>{},wizardError:()=>{},catalogs:{en:{}},language:'en',api:()=>new Promise(r=>resolve=r)};
  runInNewContext(source.slice(source.indexOf('async function save('),source.indexOf('function planProblems(')),context);
  const pending=context.save();assert.ok(controls.every(c=>c.disabled));assert.equal(await context.save(),false);
  resolve({settings:{revision:4,rooms:{example:{enabled:true}}},inventory:{revision:'a'}});assert.equal(await pending,true);assert.equal(context.dirty,false);assert.equal(controls[0].disabled,false);assert.equal(controls[1].disabled,true);
@@ -494,4 +494,27 @@ test('study switch activity stays separate from light signals and preserves unkn
  const run={kind:'climate_study',start,end,last_sample:end,bundle:{config:{loads:{outlet:{kind:'binary',physical_id:'outlet',display:{role:'study_lighting',signal_kind:'switch'}}}}},mapping:{outlet:{entity_id:'switch.desk'}},changes:[{physical_id:'outlet',observed_at:start,state:'on'},{physical_id:'outlet',observed_at:middle,state:'off'}],gaps:[{start,end:middle}]};
  const bands=thermalBands(run,{study_lights:['switch.desk']});assert.equal(bands.length,1);assert.equal(bands[0].signalKind,'switch');assert.equal(bands[0].kind,'observed');assert.deepEqual(bands[0].intervals.map(i=>i.state),['unknown','off']);
  delete run.bundle.config.loads.outlet.display.signal_kind;assert.equal(thermalBands(run,{study_lights:['switch.desk']})[0].signalKind,'switch');
+});
+
+test('clock rest defaults resolve local afternoon, boundary end and late wake; reject DST gaps and folds',async()=>{
+ const {lateWakeTime,restClockTime}=await import('../src/shabbat_flow/web/period-model.mjs');
+ const b=structuredClone(period),profile=Object.values(b.config.profiles).find(p=>p.room==='room_a'&&p.label.en==='Standard');
+ profile.rest_defaults={...restDefaults(profile),nap_start_mode:'clock',nap_start_time:'14:00',nap_end_mode:'period_end',wake_mode:'clock',wake_time:'11:00'};
+ const n=addNap(b,'day_1','room_a').plan.naps.at(-1),seg=b.plan.snapshot.segments[0];
+ assert.equal(n.start.slice(11,16),'14:00');assert.equal(n.end,seg.end);
+ assert.equal(lateWakeTime(profile,seg,b.plan.snapshot.timezone).slice(11,16),'11:00');
+ assert.throws(()=>restClockTime({sunrise:'2027-03-14T12:00:00Z'},'02:30','America/New_York'));
+ assert.throws(()=>restClockTime({sunrise:'2027-11-07T12:00:00Z'},'01:30','America/New_York'));
+ profile.rest_defaults.nap_end_mode='clock';profile.rest_defaults.nap_end_time='13:00';assert.throws(()=>addNap(b,'day_1','room_a'));
+});
+test('HH:MM offsets preserve signed minutes and reject malformed or out-of-range text',async()=>{
+ const {parseOffset,formatOffset}=await import('../src/shabbat_flow/web/time-input.mjs');
+ for(const n of [-180,-60,0,360,1440])assert.equal(parseOffset(formatOffset(n)),n);
+ for(const v of ['1:60','abc','01:99','1','-00:01'])assert.equal(parseOffset(v,0,720),null);
+ assert.equal(parseOffset('12:01',0,720),null);
+});
+test('icon names accept HA namespaces but never URLs or markup',async()=>{
+ const {validIcon}=await import('../src/shabbat_flow/web/ha-icons.mjs');
+ assert.equal(validIcon('mdi:bed'),'mdi:bed');assert.equal(validIcon('custom:lamp'),'custom:lamp');
+ for(const v of ['https://example.com/icon','<svg>',null,'mdi:bad name'])assert.equal(validIcon(v),null);
 });

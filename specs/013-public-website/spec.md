@@ -28,3 +28,8 @@ A5 Homepage makes clear that device execution remains future scope and official 
 - WEB-NFR-005: Review every published image for private names, entities, contact details, URLs and history; use only fictional fixtures. Keep source provenance and capture version adjacent to the gallery implementation. EN/HE navigation, captions, brochure and setup/developer guides are maintained together; canonical technical specs may stay English with an explicit notice.
 
 A6 A new contributor can find AGENTS.md and copy a starter prompt without searching the technical specs. A7 Both locales expose gallery images/captions/full-size links and clear active navigation. Gallery screenshots contain no actual household data and do not claim to show a newer capture version.
+
+## Localized workflow gallery and option guide
+- WEB-FR-010: Each locale uses actual interface captures in that language, including room setup, configured daily planning, schedule timeline/event list and observation/climate reporting. Explain synthetic calendar/data and capture version. This supersedes FR-008's English-only screenshot allowance.
+- WEB-FR-011: EN/HE user guide documents each lighting preset, night-mode alternative, daylight policy, HVAC choice, bathroom-link window, bedroom applicability and rest timing option with concrete examples. Explain what is changed, what remains independent and when changes are saved.
+- WEB-NFR-006: Maintain locale pairs and privacy-reviewed provenance; build checks fail for absent gallery assets. No live household captures. Capture actual local production renderers rather than illustrative mockups.

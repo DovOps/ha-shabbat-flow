@@ -125,11 +125,18 @@ export function actionBadge(event){
 }
 
 export function restDefaults(profile){return profile?.rest_defaults??{nap_after_sunrise:480,nap_duration:120,lead_minutes:60,late_wake_after_sunrise:240};}
+export function restClockTime(segment,clock,zone){
+ const date=localDateTimeValue(segment.sunrise,zone).slice(0,10);const values=localDateTimeCandidates(date+'T'+clock,zone);
+ if(values.length!==1)throw new Error('invalid_time');return values[0];
+}
+export function lateWakeTime(profile,segment,zone){const d=restDefaults(profile);return d.wake_mode==='clock'?restClockTime(segment,d.wake_time,zone):zonedISO(+new Date(segment.sunrise)+d.late_wake_after_sunrise*60000,zone);}
 export function addNap(bundle,segmentId,room){
  const next=structuredClone(bundle),seg=next.plan.snapshot.segments.find(v=>v.id===segmentId),profiles=availableProfiles(next.config,room,'sleeping');
  if(!profiles.length)throw new Error('invalid_mapping');
  const [id,profile]=profiles.find(([,p])=>p.label.en==='Standard')??profiles[0],d=restDefaults(profile),zone=next.plan.snapshot.timezone;
- const start=+new Date(seg.sunrise)+d.nap_after_sunrise*60000,end=start+d.nap_duration*60000;
+ const start=d.nap_start_mode==='clock'?+new Date(restClockTime(seg,d.nap_start_time,zone)):+new Date(seg.sunrise)+d.nap_after_sunrise*60000;
+ const end=d.nap_end_mode==='period_end'?+new Date(seg.end):d.nap_end_mode==='clock'?+new Date(restClockTime(seg,d.nap_end_time,zone)):start+d.nap_duration*60000;
+ if(!(start<end&&start>=+new Date(seg.start)&&end<=+new Date(seg.end)))throw new Error('invalid_time');
  const naps=next.plan.naps??=[];naps.push({id:nextId('nap',naps),room,profile:id,segment:segmentId,start:zonedISO(start,zone),end:zonedISO(end,zone),lead_minutes:d.lead_minutes,bathroom_targets:[]});return next;
 }
 export function napBathroomTargets(config,nap){
