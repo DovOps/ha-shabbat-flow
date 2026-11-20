@@ -1,14 +1,14 @@
 {
-  "title": "ShabbatFlow Preview",
+  "title": "Shabbat Flow",
   "config": {
     "step": {
       "user": {
-        "title": "ShabbatFlow preview",
-        "description": "Add the sample planning panel. No devices are controlled and no automations are changed. Administrator-only for this sample."
+        "title": "Shabbat Flow",
+        "description": "Add the planning and observation panel. Device schedules are not executed. Optional notifications require explicit enablement. Administrator access required."
       }
     },
     "abort": {
-      "single_instance_allowed": "Only one preview instance is supported."
+      "single_instance_allowed": "Only one Shabbat Flow instance is supported."
     }
   },
   "options": {

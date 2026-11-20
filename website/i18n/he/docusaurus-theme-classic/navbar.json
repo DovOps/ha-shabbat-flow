@@ -14,5 +14,11 @@
   "item.label.GitHub": {
     "message": "GitHub",
     "description": "Navbar item with label GitHub"
+  },
+  "item.label.Developer guide": {
+    "message": "מדריך מפתחים"
+  },
+  "item.label.Gallery": {
+    "message": "גלריה"
   }
 }

@@ -1,14 +1,14 @@
 {
-  "title": "ShabbatFlow Preview",
+  "title": "Shabbat Flow",
   "config": {
     "step": {
       "user": {
-        "title": "תצוגת ShabbatFlow",
-        "description": "הוספת לוח תכנון לדוגמה. אין שליטה במכשירים או שינוי אוטומציות. מנהלים בלבד בשלב זה."
+        "title": "Shabbat Flow",
+        "description": "הוספת לוח תכנון ותצפית. לוחות התקנים אינם מופעלים. הודעות אופציונליות דורשות הפעלה מפורשת. נדרשת הרשאת מנהל."
       }
     },
     "abort": {
-      "single_instance_allowed": "כבר הוגדרה תצוגה אחת."
+      "single_instance_allowed": "ניתן להגדיר מופע אחד של Shabbat Flow."
     }
   },
   "options": {

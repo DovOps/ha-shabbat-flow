@@ -38,3 +38,9 @@ Reference: [Docusaurus deployment](https://docusaurus.io/docs/deployment), [GitH
 ## Dependency maintenance
 
 Website tooling is pinned in its own lockfile. Overrides for `tinypool` 2.2.0, `serialize-javascript` 7.1.4 and `uuid` 11.1.1 select patched transitive versions compatible with the verified build. Re-evaluate overrides when upgrading Docusaurus; run `npm audit`, both locale builds and the output checks. They add no HA runtime dependency.
+
+## Developer guide and screenshot gallery
+
+The EN/HE developer guide is `website/content/*/contributing.md`; README and root AGENTS.md point contributors to it. It recommends agent-assisted spec-driven work without requiring a particular agent or claiming automatic instruction loading.
+
+The gallery page uses actual interface captures with fictional data only. See `website/static/img/gallery/README.md` for capture versions and provenance. Recheck every replacement for private content, update both locales and preserve the distinction between actual interface screens and real household evidence. The approved logo remains unchanged; visitor-facing product naming is Shabbat Flow.

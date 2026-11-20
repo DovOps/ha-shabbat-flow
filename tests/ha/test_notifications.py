@@ -190,3 +190,19 @@ async def test_pre_candle_reminders_same_day_off_only_dedup_and_restart(host,mon
     assert not reminders.allowed(hass,previous,datetime.fromisoformat(previous['due']))
     for offsets in ([],[0],[30,30],[721],['30']):
         with pytest.raises(ValueError):validate(dict(DEFAULT,reminder_offsets=offsets),hass)
+
+@pytest.mark.asyncio
+async def test_product_name_and_only_legacy_default_title_migration(host):
+    from custom_components.shabbat_flow import async_setup_entry, async_unload_entry
+    from homeassistant.components import frontend
+    hass,entry=host
+    hass.config_entries.async_update_entry=Mock()
+    await async_unload_entry(hass,entry)
+    entry.title='ShabbatFlow Preview'
+    await async_setup_entry(hass,entry)
+    hass.config_entries.async_update_entry.assert_called_once_with(entry,title='Shabbat Flow')
+    assert hass.data[frontend.DATA_PANELS]['shabbat-flow'].sidebar_title=='Shabbat Flow'
+    await async_unload_entry(hass,entry)
+    hass.config_entries.async_update_entry.reset_mock();entry.title='Custom title'
+    await async_setup_entry(hass,entry)
+    hass.config_entries.async_update_entry.assert_not_called()

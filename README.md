@@ -1,4 +1,4 @@
-# ShabbatFlow
+# Shabbat Flow
 
 ![ShabbatFlow logo](assets/logo.png)
 
@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current checkpoint: installable HA preview sample 0.13.0 plus local prototypes.** Observe-only runs and a bounded read-only existing-automation overlay are packaged; no actuation is available. [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current package: Shabbat Flow 0.15.1 — planning, observation and optional notifications.** Observe-only runs and a bounded read-only existing-automation overlay are packaged; no actuation is available. [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
 
 ## Try the preview
 
@@ -22,6 +22,12 @@ Open **http://127.0.0.1:8765**. Select rooms and meals, adjust independent HVAC/
 The new **[multi-day preview](http://127.0.0.1:8765/v2)** adds separate sleeping/recreation windows, configurable sleep profiles, per-day meals, availability windows, explicit heating/cooling, shared-load conflict checks and a combined timeline. It uses separate v2 draft storage. Adding/removing days requires supplying the corresponding dated anchors and adjusting period coverage. The default view uses day tabs, room tiles and meal choices, with a reviewed copy-previous-day action. Optional bedroom timing sliders keep HVAC and lights independent. Calendar, interval/group editors and JSON are under Advanced setup. Browser visual/interaction verification of v2 is pending.
 
 Calendar inputs are deliberately illustrative. The original v1 preview covers a single ordinary Friday/Saturday and is not a full operational schedule. The v1 compiler is unchanged. V2 accepts supplied multi-day periods and explicit HVAC settings but the standalone server has no live HA calendar data. Neither host provides production execution, automatic v1 migration, feedback storage or boiler automation management. It cannot activate a plan.
+
+## Develop with a coding agent
+
+Shabbat Flow is designed for **LLM/coding-agent-assisted, specification-driven development**. Start your agent at the repository root and explicitly ask it to read [AGENTS.md](AGENTS.md), then the constitution and relevant feature specs. Update FRs/NFRs, acceptance criteria, plans and tasks before implementation; keep evidence and status current afterward. Human-only contributions follow the same process.
+
+The [developer guide](website/content/en/contributing.md) includes the workflow and a copyable starter prompt; the [Hebrew guide](website/content/he/contributing.md) covers the same process. Agent output still requires human review, and deployment/device control needs separate authorization.
 
 ## Requirements and development
 

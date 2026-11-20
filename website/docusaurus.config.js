@@ -1,5 +1,5 @@
 const config = {
-  title: 'ShabbatFlow',
+  title: 'Shabbat Flow',
   tagline: 'A peaceful Shabbat starts with a plan.',
   url: 'https://dovops.github.io',
   baseUrl: '/ha-shabbat-flow/',
@@ -13,10 +13,12 @@ const config = {
     colorMode: {defaultMode:'light',disableSwitch:true},
     navbar: {title:'',logo:{alt:'ShabbatFlow',src:'img/logo.png'},items:[
       {to:'/docs/start',label:'Get started',position:'right'},
+      {to:'/gallery',label:'Gallery',position:'right'},
+      {to:'/docs/contributing',label:'Developer guide',position:'right'},
       {to:'/docs/specifications',label:'Specifications',position:'right'},
       {href:'https://github.com/DovOps/ha-shabbat-flow',label:'GitHub',position:'right'},
       {type:'localeDropdown',position:'right'}]},
-    footer:{style:'dark',links:[{title:'Explore',items:[{label:'Get started',to:'/docs/start'},{label:'Capabilities & roadmap',to:'/docs/capabilities'},{label:'Specifications',to:'/docs/specifications'}]},{title:'Build together',items:[{label:'Contribute',to:'/docs/contributing'},{label:'Source on GitHub',href:'https://github.com/DovOps/ha-shabbat-flow'}]}],copyright:'ShabbatFlow · An independent Home Assistant custom integration.'}
+    footer:{style:'dark',links:[{title:'Explore',items:[{label:'Get started',to:'/docs/start'},{label:'Capabilities & roadmap',to:'/docs/capabilities'},{label:'Specifications',to:'/docs/specifications'}]},{title:'Build together',items:[{label:'Developer guide',to:'/docs/contributing'},{label:'Source on GitHub',href:'https://github.com/DovOps/ha-shabbat-flow'}]}],copyright:'ShabbatFlow · An independent Home Assistant custom integration.'}
   }
 };
 module.exports=config;

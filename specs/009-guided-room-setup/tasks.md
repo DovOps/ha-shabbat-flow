@@ -49,3 +49,8 @@
 - [x] W035 Implement additive validation, generation, compiler anchors and home clipping.
 - [x] W036 Add multilingual setup controls and explanations; document category selection.
 - [x] W037 Verify migration, schedule semantics, ownership and package a reviewable update.
+
+## Presentation follow-up
+- [x] W038 Specify and implement Shabbat Flow display naming, active-page navigation and dependency status tiles.
+- [x] W039 Verify exact-default title migration, language catalogs, build and local desktop presentation.
+- [ ] W040 Install 0.15.1 and verify presentation in production HA when separately authorized.

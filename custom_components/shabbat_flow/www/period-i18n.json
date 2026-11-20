@@ -371,7 +371,10 @@
     "sms_reminder_offsets": "Minutes before candle lighting (comma-separated, 5–720; up to 8)",
     "sms_reminder_hint": "Reminders use the selected app device. Only on the candle-lighting local date, while issur melacha is explicitly off. Default: 180, 60, 30 minutes. Reminders do not activate a plan and continue even if a draft exists. Missed reminders older than two minutes are not replayed.",
     "sms_reminder_missing": "Reminders need Companion App push, one Jewish Calendar provider with daily/yearly calendars, and its issur melacha status sensor. Unknown/on status suppresses reminders.",
-    "sms_reminder": "Plan preparation reminder"
+    "sms_reminder": "Plan preparation reminder",
+    "nav_house": "House setup",
+    "nav_study": "Climate Study",
+    "nav_plan": "Plan preview"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -745,6 +748,9 @@
     "sms_reminder_offsets": "דקות לפני הדלקת נרות (מופרדות בפסיקים, 5–720; עד 8)",
     "sms_reminder_hint": "התזכורות נשלחות למכשיר שנבחר, רק בתאריך המקומי של הדלקת הנרות וכשאיסור מלאכה כבוי במפורש. ברירת מחדל: 180, 60, 30 דקות. אינן מפעילות תוכנית ונמשכות גם אם קיימת טיוטה. תזכורות שהוחמצו ביותר משתי דקות אינן נשלחות מחדש.",
     "sms_reminder_missing": "נדרשים דחיפה באפליקציה, שילוב Jewish Calendar יחיד עם יומנים יומיים ושנתיים וחיישן איסור מלאכה. מצב פעיל או לא ידוע מונע תזכורות.",
-    "sms_reminder": "תזכורת להכנת תוכנית"
+    "sms_reminder": "תזכורת להכנת תוכנית",
+    "nav_house": "הגדרות הבית",
+    "nav_study": "מחקר אקלים",
+    "nav_plan": "תצוגת תוכנית"
   }
 }

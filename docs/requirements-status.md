@@ -34,3 +34,5 @@ SN-FR-001–010 / SN-NFR-001–006 implemented and tested: discovery-based optio
 
 ## Feature 013 — Public documentation website
 WEB-FR-001–006 / WEB-NFR-001–004: Docusaurus brochure, EN/HE guides and RTL, generated canonical technical reference, manifest-driven version, local preview and gated GitHub Pages workflow implemented. Public publication remains pending owner visibility/Pages enablement. The site describes the actual custom-integration preview and separates planned execution from current capabilities; no official HA verification claim.
+
+Website follow-up: WEB-FR-007–009 / WEB-NFR-005 add agent-assisted developer onboarding, root AGENTS.md guidance, a fictional-data actual-interface gallery, EN/HE captions and active navigation. UI-FR-001–003 / UI-NFR-001 specify Shabbat Flow naming, app navigation and lime/amber/neutral dependency tiles. HA 0.15.1 presentation changes are packaged for a future install; installed HA remains 0.15.0 until explicitly upgraded.

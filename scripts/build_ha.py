@@ -22,7 +22,7 @@ def generated():
         html = html.replace('"/'+name+'"', '"./'+name+'"')
     html = html.replace('href="/"', 'href="./period.html"')
     html = html.replace('<p><a href="./period.html" data-i18n="original_preview"></a></p>', '')
-    html = html.replace('<p id="status"', '<p><a href="./household.html" data-i18n="house_setup"></a></p><p id="status"')
+    html = html.replace('<p id="status"', '<nav class="app-nav" aria-label="Navigation / ניווט"><a href="./household.html" data-i18n="house_setup"></a><a href="./period.html" data-i18n="nav_plan" aria-current="page"></a><a href="./study.html" data-i18n="study_title"></a><a href="./settings.html" data-i18n="settings_title"></a></nav><p id="status"')
     files['www/period.html'] = html.encode()
     files['www/household.html'] = (web/'household.html').read_bytes()
     files['www/transport.mjs'] = (ROOT/'src/shabbat_flow/ha_transport.mjs').read_bytes()
