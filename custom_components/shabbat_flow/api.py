@@ -242,6 +242,9 @@ class ObserveView(BaseView):
             payload = await read_body(request)
             observer = self.hass.data[DOMAIN]['observer']
             op = payload.get('op')
+            if op=='study_start' and set(payload)=={'op','selection','request_id'}:
+                run=await observer.start_study(payload['selection'],payload['request_id'],getattr(request['hass_user'],'id',None))
+                return self.response({'id':run['id'],'status':run['status'],'mode':'observe'})
             if op in ('start','forecast'):
                 allowed = {'op','bundle','policy','request_id'} if op == 'start' else {'op','bundle'}
                 if set(payload) != allowed and not (op == 'start' and set(payload) == allowed | {'weather_entity_id'}): raise ValueError('invalid_request')

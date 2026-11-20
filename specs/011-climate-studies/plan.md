@@ -1,0 +1,4 @@
+# Implementation plan
+Extend the existing observer with an explicit climate_study kind and validated immutable study bundle. Keep shared persistence, minute ticks, hourly thermal snapshots and export; bypass schedule compilation, ownership forecasts and recovery checks for studies. Add optional reference sampling and read-only registry candidates. A separate page exposes zone/light/reference selection and report controls, linked from setup. Reuse report renderer with study-specific headings and observed-only bands. No runtime dependency or actuation adapter.
+
+Verify API validation, idempotency, stop/completion, restart, missing references, no service calls and legacy regression on both supported HA versions. Package as 0.14.0. Installation requires separate authorization; production remains 0.13.0 until deployed.

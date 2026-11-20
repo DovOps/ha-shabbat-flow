@@ -1,0 +1,5 @@
+# Analysis
+Studies reuse observe-only storage but have a distinct kind so no schedule or religious-calendar semantics are invented. Lighting association is explicitly selected and frozen. Sensor differences are evidence only: location, update age and placement may explain differences. Scheduled studies, automatic delivery and automatic calibration remain excluded. No dependency additions or device control.
+
+## Verification — 0.14.0 checkpoint
+76 compiler tests, 47 frontend tests, and 97 HA tests on each of 2026.8.2 and 2026.11.2 passed. New coverage exercises calendar-independent startup, selected-only capture, reference Celsius/Fahrenheit normalization, admin access, invalid selections, duplicate retries, restart persistence/gaps, early stop, full 48-hour completion/missing slots, refusal of corrective checks and zero service calls. Report tests cover observed-only light bands, references and absence of plan-compliance headings. English/Hebrew setup and report visually reviewed with fictional data; native PDF pagination and real-study collection remain pending. Production stays 0.13.0. No study was started in HA.

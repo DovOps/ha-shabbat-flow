@@ -1,0 +1,10 @@
+# Standalone Climate Study — 0.14.0
+
+Feature 011 introduces a direct house-setup entry for manual 1–48-hour read-only studies independent of calendar/household planning. Explicit zone and associated lighting selection, optional per-zone reference temperature sensors, current weather and user-reported context are frozen in a durable study. Minute HVAC/light changes and hourly temperature evidence reuse the observer, with active-zone ranking, reference comparisons, observed lighting bands and combined tables in HTML and native PDF/print; combined JSON is available at any time.
+
+Studies auto-complete, survive restarts with unknown gaps, and can stop early. One active study at a time; plan observations may run concurrently. No device services, scheduled starts, summary delivery, occupancy inference or automatic calibration. Raw thermostat/reference differences are not certified sensor offsets. No runtime dependencies added.
+
+The observer store remains backward-readable for legacy plan runs in this version. Earlier releases cannot read study records: before downgrading after creating a study, export evidence and restore the pre-upgrade observer backup while HA is stopped. Do not overwrite live study data with an old backup during an ordinary upgrade.
+
+## Verification — 0.14.0 checkpoint
+76 compiler tests, 47 frontend tests, and 97 HA tests on each of 2026.8.2 and 2026.11.2 passed. New coverage exercises calendar-independent startup, selected-only capture, reference Celsius/Fahrenheit normalization, admin access, invalid selections, duplicate retries, restart persistence/gaps, early stop, full 48-hour completion/missing slots, refusal of corrective checks and zero service calls. Report tests cover observed-only light bands, references and absence of plan-compliance headings. English/Hebrew setup and report visually reviewed with fictional data; native PDF pagination and real-study collection remain pending. Production stays 0.13.0. No study was started in HA.
