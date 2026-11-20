@@ -3,10 +3,11 @@ import base64
 from datetime import datetime, timedelta, timezone
 import json
 import math
+import sys
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-start=datetime(2027,1,8,14,tzinfo=timezone.utc)
+start=datetime(2027,1,5 if '--study' in sys.argv else 8,14,tzinfo=timezone.utc)
 end=start+timedelta(hours=25)
 series=[]
 for i in range(26):
@@ -38,6 +39,16 @@ for role,name,events,actual in [('main_lights','Study main',[(0,'on'),(7,'off'),
     run['mapping'][physical]={'entity_id':'light.'+physical}
     for hour,state in events:run['preview']['events'].append({'physical_id':physical,'utc':stamp(hour),'action':{'type':'state','state':state},'intent':'set_state'})
     for hour,state in actual:run['changes'].append({'physical_id':physical,'observed_at':stamp(hour),'state':state})
+study_mode='--study' in sys.argv
+if study_mode:
+    run['kind']='climate_study';run['status']='completed';run['finished_at']=end.isoformat()
+    run['bundle']['study']={'note':'Fictional weekday comfort study with a room reference sensor.'}
+    run['bundle']['plan'].pop('room_uses',None);run['bundle']['plan'].pop('naps',None);run['bundle']['plan'].pop('meals',None)
+    run['preview']['events']=[]
+    target=run['thermal']['climates'][0];target['reference']={'entity_id':'sensor.study_reference'}
+    target['study_lights']=[v['entity_id'] for v in run['mapping'].values() if v['entity_id'].startswith('light.')]
+    for frame in series:
+        frame['references']={'climate.study':{'current_temperature':{'celsius':frame['climates']['climate.study']['current_temperature']['celsius']-1.2}}}
 labels=json.loads((ROOT/'src/shabbat_flow/web/period-i18n.json').read_text())
 renderer=(ROOT/'src/shabbat_flow/web/thermal-report.mjs').read_text().replace('export function','function')
 css=(ROOT/'src/shabbat_flow/web/style.css').read_text()
@@ -50,6 +61,6 @@ const lang=()=>new URLSearchParams(location.search).get('lang')==='he'?'he':'en'
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};const logo=node('img');logo.src="data:image/png;base64,'''+logo+'''";logo.alt='ShabbatFlow';renderObservationPrint({report:document.getElementById('print-report'),data,node,t:k=>labels[lang()][k],lang,logo});
 document.querySelector('.thermal-card').id='sample-zone-first';document.querySelector('.thermal-combined').id='sample-combined';
 </script></html>'''
-output=ROOT/'dist'/'shabbat-flow-sample-observation-report.html'
+output=ROOT/'dist'/('shabbat-flow-sample-climate-study.html' if study_mode else 'shabbat-flow-sample-observation-report.html')
 output.parent.mkdir(exist_ok=True);output.write_text(html)
 print(output)

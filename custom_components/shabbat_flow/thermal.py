@@ -53,11 +53,15 @@ def sample_entity(hass, target, now, climate=False):
     if state is None or state.state in ('unknown','unavailable') or state.attributes.get('restored') is True:
         return {'status':'unavailable'}
     attrs = state.attributes
-    unit = attrs.get('temperature_unit') or (str(hass.config.units.temperature_unit) if climate else None)
+    unit = attrs.get('unit_of_measurement') if state.domain=='sensor' else attrs.get('temperature_unit') or (str(hass.config.units.temperature_unit) if climate else None)
     if unit not in ('°C','C','°F','F'): unit = None
+    value=attrs.get('current_temperature' if climate else 'temperature')
+    if state.domain=='sensor':
+        try: value=float(state.state)
+        except (ValueError,TypeError): value=None
     result = {'status':'available', 'state_updated_at':state.last_updated.isoformat(),
               'state_age_seconds':max(0,(now-state.last_updated).total_seconds()),
-              'current_temperature':temperature(attrs.get('current_temperature' if climate else 'temperature'),unit)}
+              'current_temperature':temperature(value,unit)}
     if climate:
         mode = state.state
         result.update(mode=mode, power='off' if mode=='off' else 'on' if mode in ('heat','cool','heat_cool','auto','dry','fan_only') else 'unknown',
@@ -96,6 +100,7 @@ def collect(hass, run, now, resumed=False):
                   'reason':None if timely else 'late_start_upgrade_or_collection_gap'}
         if timely:
             record['climates'] = {t['entity_id']:sample_entity(hass,t,now,True) for t in thermal['climates']}
+            record['references'] = {t['entity_id']:sample_entity(hass,t['reference'],now) for t in thermal['climates'] if t.get('reference')}
             record['outdoor'] = sample_entity(hass,thermal['outdoor'],now) if thermal['outdoor'] else {'status':thermal['outdoor_status']}
         thermal['samples'].append(record)
         thermal['last_slot'] = slot

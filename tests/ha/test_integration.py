@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.13.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.14.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
@@ -1077,3 +1077,86 @@ async def test_thermal_minute_activity_unscheduled_zone_restart_and_gaps(host):
     assert len(thermal['samples'])==1
     await restored.tick(start+timedelta(seconds=400));assert restored.export(run['id'])['run']['thermal']==thermal
     restored.close()
+
+@pytest.mark.asyncio
+async def test_standalone_climate_study_lifecycle_references_and_no_services(host,monkeypatch):
+    from datetime import datetime,timedelta,timezone
+    from custom_components.shabbat_flow.observe import Observer,read_store
+    from custom_components.shabbat_flow.api import ObserveView
+    hass,_=host;registry=er.async_get(hass)
+    climate=registry.async_get_or_create('climate','demo','study-zone')
+    ignored=registry.async_get_or_create('climate','demo','study-ignored')
+    light=registry.async_get_or_create('light','demo','study-light')
+    ref=registry.async_get_or_create('sensor','demo','study-reference')
+    weather=registry.async_get_or_create('weather','demo','study-weather')
+    hass.states.async_set(climate.entity_id,'cool',{'current_temperature':25,'temperature':23,'temperature_unit':'°C','hvac_action':'cooling'})
+    hass.states.async_set(light.entity_id,'on')
+    hass.states.async_set(ref.entity_id,'73.4',{'device_class':'temperature','unit_of_measurement':'°F'})
+    hass.states.async_set(weather.entity_id,'sunny',{'temperature':30,'temperature_unit':'°C'})
+    selection={'hours':2,'zones':[{'entity_id':climate.entity_id,'lights':[light.entity_id],'reference':ref.entity_id}],'weather_entity_id':None,'note':'Comfort review'}
+    observer=hass.data[DOMAIN]['observer'];now=datetime(2027,3,25,21,tzinfo=timezone.utc)
+    monkeypatch.setattr(type(hass.services),'async_call',AsyncMock(side_effect=AssertionError('No service calls permitted')))
+    run=await observer.start_study(selection,'study-request-001','private-actor',now)
+    rid=run['id'];assert run['kind']=='climate_study' and run['preview']['events']==[]
+    assert len(run['thermal']['climates'])==1 and ignored.entity_id not in str(run)
+    assert run['thermal']['samples'][0]['references'][climate.entity_id]['current_temperature']['celsius']==23
+    assert (await observer.start_study(selection,'study-request-001','private-actor',now+timedelta(minutes=1)))['id']==rid
+    changed={**selection,'hours':3}
+    with pytest.raises(ValueError,match='observe_conflict'): await observer.start_study(changed,'study-request-001','actor',now)
+    with pytest.raises(ValueError,match='observe_conflict'): await observer.start_study(selection,'study-request-002','actor',now)
+    await observer.tick(now+timedelta(minutes=1));hass.states.async_set(light.entity_id,'off');await observer.tick(now+timedelta(minutes=2))
+    observer.close();restored=Observer(hass);await restored.load();assert not restored.error
+    await restored.tick(now+timedelta(hours=1));export=restored.export(rid)
+    assert export['run']['gaps'] and export['device_commands_sent']==0
+    assert 'actor' not in export['run'] and 'request_id' not in export['run']
+    assert len(export['run']['thermal']['samples'])==2
+    await restored.tick(now+timedelta(hours=2));assert restored.export(rid)['run']['status']=='completed'
+    assert read_store(restored.path)['runs'][rid]['status']=='completed'
+    next_run=await restored.start_study(selection,'study-request-003','actor',now+timedelta(hours=3))
+    stopped=await restored.stop(next_run['id'],now+timedelta(hours=3,minutes=10));assert stopped['run']['status']=='stopped'
+    assert stopped['run']['finished_at']!=stopped['run']['end']
+    hass.services.async_call.assert_not_called();restored.close()
+
+
+@pytest.mark.asyncio
+async def test_study_selection_validation_and_admin_api(host):
+    from custom_components.shabbat_flow.api import ObserveView
+    from custom_components.shabbat_flow.study import snapshot
+    from datetime import datetime,timezone
+    from copy import deepcopy
+    hass,_=host;registry=er.async_get(hass);climate=registry.async_get_or_create('climate','demo','study-valid')
+    base={'hours':48,'zones':[{'entity_id':climate.entity_id,'lights':[],'reference':None}],'weather_entity_id':None,'note':''}
+    now=datetime.now(timezone.utc)
+    bundle,thermal,mapping=snapshot(hass,base,now);assert len(mapping)==1
+    for field,value in [('hours',49),('hours',0),('hours',True),('hours',1.5),('zones',[]),('note','x'*2001),('weather_entity_id','weather.missing')]:
+        invalid={**base,field:value}
+        with pytest.raises(ValueError): snapshot(hass,invalid,now)
+    for key,value in [('entity_id','climate.missing'),('lights',['switch.missing']),('reference',climate.entity_id)]:
+        invalid=deepcopy(base);invalid['zones'][0][key]=value
+        with pytest.raises(ValueError): snapshot(hass,invalid,now)
+    invalid=deepcopy(base);invalid['zones']*=2
+    with pytest.raises(ValueError): snapshot(hass,invalid,now)
+    view=ObserveView(hass);body=json.dumps({'op':'study_start','selection':base,'request_id':'study-api-001'}).encode()
+    with pytest.raises(web.HTTPForbidden): await view.post(Request(body,admin=False))
+    result=await view.post(Request(body));assert result.status==200
+    listed=decoded(await view.get(Request()));assert listed['runs'][0]['kind']=='climate_study'
+    assert listed['study_sources']['climates'][0]['entity_id']==climate.entity_id
+    with pytest.raises(ValueError,match='observe_conflict'): await hass.data[DOMAIN]['observer'].configure(decoded(result)['id'],{'enabled':True,'boot_delay_minutes':5,'interval_minutes':30})
+
+
+@pytest.mark.asyncio
+async def test_study_full_48_hours_missing_slots_and_stop_boundary(host):
+    from datetime import datetime,timedelta,timezone
+    from custom_components.shabbat_flow.ownership import instant
+    hass,_=host;climate=er.async_get(hass).async_get_or_create('climate','demo','long-study')
+    hass.states.async_set(climate.entity_id,'off',{'current_temperature':21,'temperature':float('nan'),'temperature_unit':'°C'})
+    start=datetime(2027,3,25,22,tzinfo=timezone.utc)
+    observer=hass.data[DOMAIN]['observer']
+    run=await observer.start_study({'hours':48,'zones':[{'entity_id':climate.entity_id,'lights':[],'reference':None}],'weather_entity_id':None,'note':''},'long-study-001','actor',start)
+    assert instant(run['end'])-instant(run['start'])==timedelta(hours=48)
+    await observer.tick(start+timedelta(hours=48,minutes=2))
+    completed=observer.export(run['id'])['run'];assert completed['status']=='completed'
+    assert len(completed['thermal']['samples'])==49
+    assert all(s['status']=='missing' for s in completed['thermal']['samples'][1:])
+    assert completed['thermal']['activity']['totals'][climate.entity_id]['unknown_seconds']==48*3600
+    await observer.tick(start+timedelta(hours=49));assert observer.export(run['id'])['run']==completed

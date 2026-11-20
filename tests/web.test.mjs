@@ -471,3 +471,20 @@ test('room bands associate exact room, retain naps/meals and break observed ligh
  const bands=thermalBands(run,{planner_room_id:'study'});assert.deepEqual(bands.filter(b=>b.kind==='use').map(b=>b.purpose),['sleeping','nap','meal']);
  const actual=bands.find(b=>b.kind==='observed').intervals;assert.equal(actual.find(i=>i.start===Date.parse(at(2))).state,'unknown');assert.equal(actual.at(-1).state,'unknown');assert.equal(actual.find(i=>i.start===Date.parse(at(4))).state,'off');assert.deepEqual(thermalBands(run,{planner_room_id:'not-mapped'}),[]);
 });
+
+test('standalone studies show explicit observed lighting and references without invented plans',()=>{
+ const start='2027-01-01T00:00:00Z',end='2027-01-02T00:00:00Z';
+ const run={kind:'climate_study',start,end,last_sample:end,bundle:{plan:{snapshot:{timezone:'UTC'}},config:{loads:{lamp:{physical_id:'lamp',kind:'binary',display:{room:null,role:'main_lights'}}}}},mapping:{lamp:{entity_id:'light.example'}},changes:[{physical_id:'lamp',observed_at:start,state:'on'}],thermal:{climates:[{entity_id:'climate.example',study_lights:['light.example'],reference:{entity_id:'sensor.reference'}}],samples:[{due:start,status:'sampled',climates:{'climate.example':{mode:'heat',current_temperature:{celsius:23}}},references:{'climate.example':{current_temperature:{celsius:21}}}}]}};
+ const lane=thermalModel({run}).lanes[0];assert.equal(lane.points[0].reference,21);assert.equal(lane.points[0].current,23);
+ assert.deepEqual(lane.bands.map(b=>b.kind),['observed']);assert.equal(lane.bands[0].intervals[0].state,'on');
+ run.thermal.climates[0].study_lights=[];assert.deepEqual(thermalModel({run}).lanes[0].bands,[]);
+ run.thermal.samples[0].status='missing';assert.equal(thermalModel({run}).lanes[0].points[0].reference,null);
+});
+
+test('climate study reports have no plan-compliance heading and retain private user notes as text',()=>{
+ const node=(tag,text='',className='')=>({tag,textContent:text,className,children:[],append(...items){this.children.push(...items);},replaceChildren(){this.children=[];}});
+ const data={run:{kind:'climate_study',id:'study-only',snapshot_hash:'selection-digest',start:'2027-01-05T14:00:00Z',end:'2027-01-06T14:00:00Z',finished_at:'2027-01-05T16:00:00Z',bundle:{study:{note:'<b>Comfort note</b>'},plan:{snapshot:{timezone:'Asia/Jerusalem'}}}}};
+ const report=node('section');renderObservationPrint({report,data,node,t:k=>k,lang:()=> 'en',logo:null});
+ const flatten=n=>[n.textContent,...n.children.flatMap(flatten)].join(' '),text=flatten(report);
+ assert.match(text,/study_report_title/);assert.match(text,/study_context/);assert.match(text,/<b>Comfort note<\/b>/);assert.doesNotMatch(text,/observe_report_totals|observe_hint|observe_run_id/);
+});

@@ -52,3 +52,5 @@ Observe-only 0.12.0 uses the HA automation component raw_config source behind it
 Forecast 0.12.1 also uses HA’s existing read-only target helper for literal label/area/device membership. Tested on both supported versions; no service dispatch, registry writes or new package.
 
 Hourly thermal evidence (0.13.0) uses the existing HA state machine and entity/device/area registries only. Current weather temperature comes from a selected installed weather entity; no new provider, weather API call or dependency is introduced.
+
+Feature 011 standalone climate studies reuse HA registries/state reads and the existing atomic observer storage, SVG renderer and native printing. No calendar service, new runtime dependency, external delivery or actuator is introduced.

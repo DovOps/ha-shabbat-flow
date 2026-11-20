@@ -247,7 +247,8 @@
     "phase_constant_conflict": "Always-on main lights conflict with morning/evening main phases, sleeping use or bathroom night switching. Disable those choices first.",
     "phase_morning_bounds": "Morning Off must be later than morning On.",
     "phase_external_mode": "Existing morning release requires candle-offset or end-of-entertaining night lighting.",
-    "phase_night_main_off": "Explicitly turn selected main lights off at night changeover"
+    "phase_night_main_off": "Explicitly turn selected main lights off at night changeover",
+    "study_open": "Climate Study — no Shabbat plan required"
   },
   "he": {
     "language": "שפה",
@@ -497,6 +498,7 @@
     "phase_constant_conflict": "תאורה ראשית קבועה מתנגשת עם שלבי בוקר/ערב, שימוש לשינה או החלפת תאורת חדר רחצה בלילה. יש לבטל אותם תחילה.",
     "phase_morning_bounds": "כיבוי הבוקר חייב להיות מאוחר מהדלקת הבוקר.",
     "phase_external_mode": "כיבוי בוקר חיצוני דורש תאורת לילה לפי הדלקת נרות או סיום אירוח.",
-    "phase_night_main_off": "כיבוי מפורש של התאורה הראשית במעבר ללילה"
+    "phase_night_main_off": "כיבוי מפורש של התאורה הראשית במעבר ללילה",
+    "study_open": "מחקר אקלים — ללא צורך בתוכנית שבת"
   }
 }

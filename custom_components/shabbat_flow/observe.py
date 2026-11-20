@@ -3,6 +3,7 @@ import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -57,9 +58,12 @@ def read_store(path):
         if run['id'] != rid or run['mode'] != 'observe' or digest(run['bundle']) != run['snapshot_hash']:
             raise ValueError('observe_store')
         if run['status'] not in ACTIVE | {'completed','stopped'}: raise ValueError('observe_store')
-        if not isinstance(run['mapping'],dict) or len(run['mapping']) > 100: raise ValueError('observe_store')
+        if not isinstance(run['mapping'],dict) or len(run['mapping']) > (200 if run.get('kind')=='climate_study' else 100): raise ValueError('observe_store')
         policy(run['policy']); instant(run['start']); instant(run['end']); instant(run['last_sample'])
-        if compile_schedule(**run['bundle']) != run['preview']: raise ValueError('observe_store')
+        if run.get('kind')=='climate_study':
+            from .study import valid_saved
+            if not valid_saved(run): raise ValueError('observe_store')
+        elif compile_schedule(**run['bundle']) != run['preview']: raise ValueError('observe_store')
     return data
 
 
@@ -88,7 +92,7 @@ def reading(hass, target):
     if power not in ('on','off'): power = 'unknown'
     fields = ('temperature','target_temp_low','target_temp_high','fan_mode','preset_mode','swing_mode','swing_horizontal_mode')
     return {'state':power, 'mode':state.state if state.domain == 'climate' else None,
-            'settings':{k:state.attributes[k] for k in fields if isinstance(state.attributes.get(k), (int,float,str))},
+            'settings':{k:state.attributes[k] for k in fields if isinstance(state.attributes.get(k),str) or (type(state.attributes.get(k)) in (int,float) and math.isfinite(state.attributes[k]))},
             'unit':state.attributes.get('temperature_unit')}
 
 
@@ -185,7 +189,7 @@ class Observer:
                 if run['request_id'] == request_id:
                     if run['snapshot_hash'] != snapshot_hash or run['policy'] != options or run.get('weather_selection') != weather_entity_id: raise ValueError('observe_conflict')
                     return deepcopy(run)
-                if run['status'] in ACTIVE and start < instant(run['end']) and end > instant(run['start']) and set(mapping)&set(run['mapping']):
+                if run.get('kind')!='climate_study' and run['status'] in ACTIVE and start < instant(run['end']) and end > instant(run['start']) and set(mapping)&set(run['mapping']):
                     raise ValueError('observe_conflict')
             candidate = deepcopy(self.data)
             candidate['runs'] = {k:r for k,r in candidate['runs'].items() if r['status'] in ACTIVE or (now-instant(r.get('finished_at',r['end']))).days < 90}
@@ -200,6 +204,36 @@ class Observer:
                    'summary':{p:{k+'_seconds':0 for k in ('matched','mismatched','unknown','unplanned','settings_matched','settings_mismatched','settings_unknown','settings_unplanned')} for p in mapping},
                    'checks':[],'event_checks':{},'last_check':None,'source_changed':False}
             candidate['runs'][rid] = run
+            await self.commit(candidate)
+        await self.tick(now)
+        if self.error: raise ValueError(self.error)
+        return deepcopy(self.data['runs'][rid])
+
+    async def start_study(self, selection, request_id, actor, now=None):
+        from .study import snapshot, validate
+        now=now or datetime.now(timezone.utc)
+        selection=validate(selection)
+        if not isinstance(request_id,str) or not 8<=len(request_id)<=100: raise ValueError('invalid_request')
+        async with self.lock:
+            if self.error or self.closed: raise ValueError('observe_store')
+            for run in self.data['runs'].values():
+                if run['request_id']==request_id:
+                    if run.get('kind')!='climate_study' or run['bundle']['study']!=selection: raise ValueError('observe_conflict')
+                    return deepcopy(run)
+                if run.get('kind')=='climate_study' and run['status'] in ACTIVE: raise ValueError('observe_conflict')
+            bundle,thermal,mapping=snapshot(self.hass,selection,now)
+            candidate=deepcopy(self.data)
+            candidate['runs']={k:r for k,r in candidate['runs'].items() if r['status'] in ACTIVE or (now-instant(r.get('finished_at',r['end']))).days<90}
+            if len(candidate['runs'])>=20: raise ValueError('observe_limit')
+            rid=uuid4().hex
+            run={'id':rid,'kind':'climate_study','mode':'observe','status':'observing','bundle':bundle,'snapshot_hash':digest(bundle),
+                 'preview':{'complete':True,'events':[]},'mapping':mapping,'unmapped':[],
+                 'policy':{**DEFAULT_POLICY,'enabled':False},'thermal':thermal,'request_id':request_id,'actor':actor,
+                 'created_at':now.isoformat(),'start':now.isoformat(),'end':bundle['plan']['snapshot']['end'],
+                 'last_sample':now.isoformat(),'last_states':{},'baselines':{},'changes':[],'truncated':False,'gaps':[],
+                 'summary':{p:{k+'_seconds':0 for k in ('matched','mismatched','unknown','unplanned','settings_matched','settings_mismatched','settings_unknown','settings_unplanned')} for p in mapping},
+                 'checks':[],'event_checks':{},'last_check':None,'source_changed':False}
+            candidate['runs'][rid]=run
             await self.commit(candidate)
         await self.tick(now)
         if self.error: raise ValueError(self.error)
@@ -273,7 +307,7 @@ class Observer:
             candidate = deepcopy(self.data)
             if rid not in candidate['runs']: raise ValueError('observe_missing')
             run = candidate['runs'][rid]
-            if run['status'] not in ACTIVE: raise ValueError('observe_conflict')
+            if run.get('kind')=='climate_study' or run['status'] not in ACTIVE: raise ValueError('observe_conflict')
             history = run.setdefault('policy_history', [])
             if len(history) >= 100: raise ValueError('observe_limit')
             history.append({'at':datetime.now(timezone.utc).isoformat(),'previous':run['policy']})
@@ -282,7 +316,8 @@ class Observer:
         return self.export(rid)
 
     def listing(self):
-        return {'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
+        from .study import sources
+        return {'study_sources':sources(self.hass),'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
 
     def export(self,rid):
         if rid not in self.data['runs']: raise ValueError('observe_missing')
