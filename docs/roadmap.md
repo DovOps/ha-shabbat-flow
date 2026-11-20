@@ -63,3 +63,5 @@ Feature 012 implements dependency discovery, explicit SMS/Companion App lifecycl
 Feature 013 adds a local Docusaurus preview and GitHub Actions publication at the repository's Pages path. English/Hebrew visitor content and generated English specs share canonical repository sources. Public launch follows owner-controlled repository visibility and Pages setup; official HA verification and HACS inclusion are not claimed.
 
 Documentation follow-up adds a prominent coding-agent/spec-driven developer guide and reviewed actual-interface gallery. Display name becomes Shabbat Flow with release limits shown separately. App navigation/status tile updates are included in packaged 0.15.1; production upgrade remains separate.
+
+0.16.0 local checkpoint: EN/HE workflow gallery and room-option guide; selected-option inline explanations; HA icon metadata/fallback presentation; additive clock/sunrise nap and wake defaults, day-end naps and HH:MM lighting/rest offsets. Implemented and packaged locally; HA remains on 0.15.0. Native HA icon rendering and production UI installation are not yet live-validated. No execution or device-control changes.

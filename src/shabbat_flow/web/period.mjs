@@ -1,3 +1,5 @@
+import {formatOffset,offsetControl} from './time-input.mjs';
+import {itemIcon,loadIcons} from './ha-icons.mjs';
 import {renderObservationPrint} from './thermal-report.mjs';
 import {setupObservation,renderUnmanaged} from './observe.mjs';
 import {renderHvacMap} from './hvac-map.mjs';
@@ -5,7 +7,7 @@ import {renderLightingMap} from './lighting-map.mjs';
 import {renderPrintReport} from './period-report.mjs';
 import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
-import {addNap,restDefaults,napBathroomTargets,afternoonActivity,zonedISO,actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
+import {lateWakeTime,addNap,restDefaults,napBathroomTargets,afternoonActivity,zonedISO,actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
 const householdMode=new URLSearchParams(location.search).get('household')==='1';
 let observationPrint=null;
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
@@ -128,7 +130,7 @@ function render(){
     for(const [room,label] of Object.entries(bundle.config.rooms)){
       const matches=dayUses.filter(v=>v.room===room&&v.purpose===purpose),use=matches[0];
       if(!matches.length&&!availableProfiles(bundle.config,room,purpose).length)continue;
-      const tile=node('div',undefined,'room-tile'+(use?' selected':''));tile.append(node('h3',label[lang()]));
+      const tile=node('div',undefined,'room-tile'+(use?' selected':''));tile.append(node('h3',label[lang()]));tile.querySelector('h3').prepend(itemIcon(room));
       const choices=[['off',t('not_used')],...availableProfiles(bundle.config,room,purpose).map(([id,p])=>[id,p.label[lang()]]),['existing',t('existing_control')]];
       const select=field('profile_label',use?(use.profile??'existing'):'off',v=>{try{applyChange(setRoomChoice(bundle,segment.id,room,purpose,v));}catch(e){error(e);}},choices);
       if(matches.length>1){select.querySelector('select').disabled=true;tile.append(node('p',t('custom_windows'),'hint'),button('review_custom',openAdvanced));}
@@ -139,7 +141,7 @@ function render(){
 
         if(purpose==='sleeping'&&use.control==='planner'){
           const wake=node('details');wake.append(node('summary',t('wake_heading')),node('p',t('wake_help'),'hint'));
-          wake.append(field('wake_choice',use.hvac_end?'custom':'default',v=>{if(v==='default')delete use.hvac_end;else if(v==='late')use.hvac_end=zonedISO(+new Date(segment.sunrise)+restDefaults(bundle.config.profiles[use.profile]).late_wake_after_sunrise*60000,bundle.plan.snapshot.timezone);else use.hvac_end??=use.end;changed();render();},[['default',t('wake_default')],['late',t('wake_late')],['custom',t('wake_custom')]]));
+          wake.append(field('wake_choice',use.hvac_end?'custom':'default',v=>{try{if(v==='default')delete use.hvac_end;else if(v==='late')use.hvac_end=lateWakeTime(bundle.config.profiles[use.profile],segment,bundle.plan.snapshot.timezone);else use.hvac_end??=use.end;changed();render();}catch(e){error(e);}},[['default',t('wake_default')],['late',t('wake_late')],['custom',t('wake_custom')]]));
           if(use.hvac_end)wake.append(field('wake_time',use.hvac_end,v=>use.hvac_end=v));
           wake.append(node('p',`${t('wake_time')}: ${safeTime(use.hvac_end??use.end)}`,'hint'));tile.append(wake);
         }
@@ -152,10 +154,10 @@ function render(){
   }
   const napsPanel=section('naps_title');napsPanel.append(node('p',t('naps_help'),'hint'));
   const napRooms=Object.entries(bundle.config.rooms).filter(([room])=>availableProfiles(bundle.config,room,'sleeping').length);
-  for(const [room,label] of napRooms){const row=node('div',undefined,'room-tile');row.append(node('h3',label[lang()]),button('add_nap',()=>applyChange(addNap(bundle,segment.id,room))));
+  for(const [room,label] of napRooms){const row=node('div',undefined,'room-tile');row.append(node('h3',label[lang()]),button('add_nap',()=>{try{applyChange(addNap(bundle,segment.id,room));}catch(e){error(e);}}));
     for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id&&n.room===room)){
       const item=node('div',undefined,'period-item');item.append(field('profile_label',nap.profile,v=>{nap.profile=v;nap.bathroom_targets=[];changed();render();},availableProfiles(bundle.config,room,'sleeping').map(([id,p])=>[id,p.label[lang()]])));windowFields(item,nap);
-      const lead=field('nap_lead',nap.lead_minutes,v=>nap.lead_minutes=Number(v));const input=lead.querySelector('input');input.type='number';input.min=0;input.max=240;item.append(lead);
+      const lead=field('nap_lead',nap.lead_minutes,v=>nap.lead_minutes=Number(v));const input=lead.querySelector('input');offsetControl(input,nap.lead_minutes,0,240,v=>{nap.lead_minutes=v;changed();},t('offset_invalid'),changed);item.append(lead,button('nap_until_end',()=>{nap.end=segment.end;changed();render();}));
       const profile=bundle.config.profiles[nap.profile],hvac=profile.groups.some(g=>bundle.config.groups[g].rules.some(r=>['hvac','hvac_power'].includes(r.action.type)&&r.release&&r.action.mode!=='off'&&r.action.state!=='off'));
       if(!hvac)item.append(node('p',t('nap_no_hvac'),'inline-issue'));
       const bathrooms=node('details');bathrooms.append(node('summary',t('nap_bathroom')));
@@ -188,7 +190,7 @@ function render(){
   const summary=section('family_summary');
   const sleeping=dayUses.filter(v=>v.purpose==='sleeping'),recreation=dayUses.filter(v=>v.purpose==='recreation');
   summary.append(node('p',`${t('sleeping')}: ${sleeping.length? [...new Set(sleeping.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`),node('p',`${t('recreation')}: ${recreation.length?[...new Set(recreation.map(v=>bundle.config.rooms[v.room][lang()]))].join(', '):t('not_used')}`));
-  for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id))summary.append(node('p',`${t('naps_title')}: ${bundle.config.rooms[nap.room][lang()]} · ${safeTime(nap.start)} — ${safeTime(nap.end)} · ${t('nap_lead')}: ${nap.lead_minutes}`));
+  for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id))summary.append(node('p',`${t('naps_title')}: ${bundle.config.rooms[nap.room][lang()]} · ${safeTime(nap.start)} — ${safeTime(nap.end)} · ${t('nap_lead')}: ${formatOffset(nap.lead_minutes)}`));
   for(const use of sleeping.filter(u=>u.hvac_end))summary.append(node('p',`${bundle.config.rooms[use.room][lang()]} · ${t('wake_time')}: ${safeTime(use.hvac_end)}`));
   for(const meal of meals)summary.append(node('p',`${catalogs[lang()]['meal_'+meal.kind]??meal.kind}: ${t(meal.choice)}`));
   const extraUses=dayUses.some(v=>v.purpose==='other'),manual=bundle.plan.groups.some(v=>v.segment===segment.id);
@@ -248,7 +250,7 @@ function renderTimeline(){
   for(const event of result.events){
     const row=node('div',undefined,'event');const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.local;
     const load=Object.values(bundle.config.loads).find(v=>v.physical_id===event.physical_id);
-    const description=node('div',load?.label[lang()]??event.physical_id);
+    const description=node('div',load?.label[lang()]??event.physical_id);description.prepend(itemIcon(event.physical_id,load?.kind?.startsWith('hvac')?'mdi:thermostat':'mdi:lightbulb-outline'));
     const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${reason.kind==='nap'?t('naps_title')+' · ':reason.kind==='overnight_hvac'?t('wake_heading')+' · ':''}${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
     const action=event.action,badge=actionBadge(event);let value=t(badge.key);
     if(badge.preserve)description.append(node('small',t('power_only_preview')));
@@ -260,12 +262,14 @@ function renderTimeline(){
 }
 function printReport(){if(observationPrint){renderObservationPrint({report:$('print-report'),data:observationPrint,node,t,lang,logo:document.querySelector('.brand-logo')});return;}renderPrintReport({report:$('print-report'),bundle,result,t,lang,dayLabel,node,timeline:$('timeline'),logo:document.querySelector('.brand-logo')});}
 async function validate(candidate){
+  const invalid=document.querySelector('input:invalid');if(invalid){invalid.reportValidity();throw new Error('offset_invalid');}
   const response=await fetch('/api/v2/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(candidate)});
   const value=await response.json();if(!response.ok)throw new Error(value.error);if(householdMode){try{const r=await fetch('/api/v2/observe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op:'forecast',bundle:candidate})});const extra=await r.json();if(r.ok)value.unmanaged=extra;else value.unmanaged={error:extra.error};}catch{value.unmanaged={error:'network'};}}return value;
 }
 async function preview(){const token=revision;try{const next=await validate(structuredClone(bundle));if(token!==revision)return;result=next;$('export').disabled=!next.complete;$('export-pdf').disabled=!next.complete;renderTimeline();message(next.complete?'preview_ready':'period_incomplete',!next.complete);}catch(e){if(token===revision)error(e);}}
 async function boot(){
   try{
+    await loadIcons();
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);

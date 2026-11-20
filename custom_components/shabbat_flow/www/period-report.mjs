@@ -1,3 +1,4 @@
+import {formatOffset} from './time-input.mjs';
 export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,timeline,logo}){
   report.replaceChildren();
   if(!result?.complete){report.append(node('p',t('report_unavailable')));return;}
@@ -14,7 +15,7 @@ export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,tim
     const uses=bundle.plan.room_uses.filter(u=>u.segment===segment.id);
     if(uses.length){section.append(node('h3',t('report_uses')));for(const use of uses)section.append(node('p',`${bundle.config.rooms[use.room]?.[lang()]??use.room} · ${t(use.purpose)} · ${date(use.start)} — ${date(use.end)}`));}
     for(const use of uses.filter(u=>u.hvac_end))section.append(node('p',`${bundle.config.rooms[use.room]?.[lang()]??use.room} · ${t('wake_time')}: ${date(use.hvac_end)}`));
-    for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id))section.append(node('p',`${t('naps_title')}: ${bundle.config.rooms[nap.room]?.[lang()]??nap.room} · ${date(nap.start)} — ${date(nap.end)} · ${t('nap_lead')}: ${nap.lead_minutes}`));
+    for(const nap of (bundle.plan.naps??[]).filter(n=>n.segment===segment.id))section.append(node('p',`${t('naps_title')}: ${bundle.config.rooms[nap.room]?.[lang()]??nap.room} · ${date(nap.start)} — ${date(nap.end)} · ${t('nap_lead')}: ${formatOffset(nap.lead_minutes)}`));
     report.append(section);
   }
   report.append(node('h2',t('report_windows')));

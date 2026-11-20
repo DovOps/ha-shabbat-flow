@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.15.1/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.16.0/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
@@ -1185,3 +1185,31 @@ async def test_study_room_switch_activity_device_area_and_read_only(host,monkeyp
     hass.states.async_set(switch.entity_id,'off');await observer.tick(now+timedelta(minutes=2))
     changes=[e['state'] for e in observer.export(run['id'])['run']['changes'] if e['physical_id']==physical]
     assert changes==['off','on','off'];hass.services.async_call.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_icon_metadata_does_not_change_inventory_revision_or_workspace(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass)
+    before=inventory(hass)
+    ar.async_get(hass).async_update(bed.id,icon='mdi:bed')
+    er.async_get(hass).async_update_entity(light.entity_id,icon='mdi:lamp')
+    hass.states.async_set(light.entity_id,'off',{'friendly_name':'Example light','icon':'mdi:lightbulb'})
+    after=inventory(hass)
+    assert after['revision']==before['revision']
+    assert next(a for a in after['areas'] if a['id']==bed.id)['icon']=='mdi:bed'
+    assert next(e for e in after['entities'] if e['id']==light.id)['icon']=='mdi:lamp'
+    r=wizard_room(room(['sleeping'],[light.id]));rooms={bed.id:r}
+    settings={**empty_settings(),'rooms':rooms,'bindings':validate_settings(rooms,before)}
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    assert workspace(settings,before,snapshot)==workspace(settings,after,snapshot)
+
+@pytest.mark.asyncio
+async def test_clock_rest_defaults_are_additive_and_persist(host):
+    hass,_=host;bed,bath,light,shared=fixtures(hass);inv=inventory(hass)
+    r=wizard_room(room(['sleeping'],[light.id]))
+    defaults={'nap_after_sunrise':480,'nap_duration':120,'lead_minutes':30,'late_wake_after_sunrise':240,'nap_start_mode':'clock','nap_start_time':'14:00','nap_end_mode':'period_end','wake_mode':'clock','wake_time':'11:00'}
+    r['setup']['rest_defaults']=defaults;rooms={bed.id:r}
+    result=decoded(await HouseholdView(hass).post(Request(json.dumps({'revision':0,'inventory_revision':inv['revision'],'rooms':rooms}).encode())))
+    assert result['settings']['rooms'][bed.id]['setup']['rest_defaults']==defaults
+    for key,value in [('wake_time','25:00'),('nap_start_time','14:99'),('nap_end_mode','invalid')]:
+        invalid=deepcopy(rooms);invalid[bed.id]['setup']['rest_defaults'][key]=value
+        with pytest.raises(ValueError):validate_settings(invalid,inv)

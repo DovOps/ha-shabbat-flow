@@ -4,6 +4,7 @@ from datetime import timedelta
 from hashlib import sha256
 import json
 import math
+import re
 
 from .compiler import PlanError, identifier, keys, labels, parse_instant, references, require
 from .planning import bounded_list, choice, validate_calendar, validate_room_uses
@@ -63,7 +64,14 @@ def validate_time(value):
 
 
 def validate_rest_defaults(value):
-    keys(value, {'nap_after_sunrise', 'nap_duration', 'lead_minutes', 'late_wake_after_sunrise'})
+    require(type(value) is dict)
+    keys(value, {'nap_after_sunrise', 'nap_duration', 'lead_minutes', 'late_wake_after_sunrise'} | (set(value) & {'nap_start_mode','nap_start_time','nap_end_mode','nap_end_time','wake_mode','wake_time'}))
+    for key, choices in [('nap_start_mode',('sunrise','clock')),('wake_mode',('sunrise','clock')),('nap_end_mode',('duration','clock','period_end'))]:
+        if key in value: require(value[key] in choices)
+    for key in ('nap_start_time','nap_end_time','wake_time'):
+        if key in value: require(type(value[key]) is str and bool(re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',value[key])))
+    for mode, clock in [('nap_start_mode','nap_start_time'),('wake_mode','wake_time'),('nap_end_mode','nap_end_time')]:
+        if value.get(mode)=='clock': require(clock in value)
     for key, low, high in [('nap_after_sunrise',0,720), ('nap_duration',15,480), ('lead_minutes',0,240), ('late_wake_after_sunrise',0,720)]:
         require(type(value[key]) is int and low <= value[key] <= high)
 

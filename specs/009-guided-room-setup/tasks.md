@@ -54,3 +54,10 @@
 - [x] W038 Specify and implement Shabbat Flow display naming, active-page navigation and dependency status tiles.
 - [x] W039 Verify exact-default title migration, language catalogs, build and local desktop presentation.
 - [ ] W040 Install 0.15.1 and verify presentation in production HA when separately authorized.
+
+## Explainable room choices and rest timing
+- [x] W041 Add inline EN/HE option descriptions and offline/website user guides.
+- [x] W042 Read HA icon metadata and render setup/planning/study presentation with nonblocking fallbacks.
+- [x] W043 Add local-clock/sunrise rest defaults, end-of-day naps and HH:MM offset controls.
+- [x] W044 Verify locale UI, legacy compatibility, DST, invalid input and package (checkpoint 018); production HA deployment is separate.
+- [ ] W045 Verify native HA icons and new controls in an authorized production installation.

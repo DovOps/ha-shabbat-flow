@@ -35,3 +35,5 @@ Reports rank zones by sampled active minutes and combine thermostat readings, se
 Settings detects available Twilio SMS UI and Companion App push actions. Both channels are off by default. Select a sender/recipient or app device, enable the desired channel and save. Lifecycle notifications can announce study start, early stop and completion. Report links require an HA administrator login; no public report file is created.
 
 Pre-candle plan reminders are separately enabled app pushes. Configure multiple offsets before candles (defaults: 180, 60, 30 minutes). They send only on the local candle-lighting date while the same-provider issur melacha signal is explicitly Off. Missing data, active issur and excessively late reminders suppress sending. Reminders prompt review; they never activate a plan.
+
+[Room options explained](./room-options.md)

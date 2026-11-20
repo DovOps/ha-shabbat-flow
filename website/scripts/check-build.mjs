@@ -8,7 +8,7 @@ const output=await files(build),exists=new Set(output),html=output.filter(f=>f.e
 const version=JSON.parse(await fs.readFile(path.join(repo,'custom_components/shabbat_flow/manifest.json'),'utf8')).version;
 for(const locale of ['','he/']){
  const home=await fs.readFile(path.join(build,locale,'index.html'),'utf8');assert.ok(home.replace(/<!--.*?-->/g,'').includes('v'+version));assert.ok(home.includes(locale?'dir="rtl"':'dir="ltr"'));
- for(const page of ['start','capabilities','specifications','contributing'])assert.ok(exists.has(path.join(build,locale,'docs',page,'index.html')),`Missing ${locale}${page}`);
+ for(const page of ['room-options','start','capabilities','specifications','contributing'])assert.ok(exists.has(path.join(build,locale,'docs',page,'index.html')),`Missing ${locale}${page}`);
  for(const f of (await files(path.join(repo,'specs'))).filter(f=>f.endsWith('.md'))){const rel=path.relative(repo,f).replace(/\.md$/,'');assert.ok(exists.has(path.join(build,locale,'docs/reference',rel,'index.html')),`Missing canonical reference ${locale}${rel}`);}
 }
 let links=0;
