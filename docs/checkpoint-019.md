@@ -14,7 +14,10 @@
 - Both locale website production builds and project-path checks passed.
 
 ## Rollout
-HA 0.16.1 package prepared, not installed; no device/automation changes or HA restart. Public site deployment is authorized; completion is verified separately through GitHub Actions and public HTTP checks.
+HA 0.16.1 was subsequently installed with explicit owner authorization; see deployment evidence below. Public site deployment is authorized; completion is verified separately through GitHub Actions and public HTTP checks.
 
 ## Public deployment completed
 GitHub website run 44698117332 and checks run 44698117317 succeeded for main merge 751494f. PAGES_ENABLED is true. Verified HTTP 200 and expected page titles at the public HTTPS homepage, Hebrew homepage, EN/HE galleries and room-options guide. No DNS or CNAME change was made.
+
+## HA deployment completed
+Authorized upgrade to 0.16.1 completed with an on-host integration/storage backup and one HA restart. All 51 package files matched the archive; Python source parsed successfully and both saved storage files were byte-identical during installation. The live panel loaded versioned 0.16.1 assets, retained saved room setup and notification preferences, and displayed the renamed navigation and dependency status tiles. Native HA icon elements were present in room summaries. No device control was enabled, no study was started and no notification settings were changed. Real-plan forecast review and completed-study validation remain pending.
