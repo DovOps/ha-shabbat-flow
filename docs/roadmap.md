@@ -46,3 +46,5 @@ See [prediction-only weekend and go-live gates](dry-run-to-live.md). This is a s
 
 ## Current requirement and release coverage
 See [requirements status](requirements-status.md) for the maintained feature map. Hourly thermal evidence and EN/HE visual observation reports are implemented/tested in 0.13.0 but not yet deployed. Installed HA remains 0.12.1.
+
+Observe 0.13.0 report additions: zones ranked by minute sampled On duration, combined all-zone hourly table, and aligned planned room-use/planned-light/observed-light bands. Missing time remains unknown. Implemented/tested, not yet deployed.

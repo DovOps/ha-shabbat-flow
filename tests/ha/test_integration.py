@@ -1055,3 +1055,25 @@ async def test_thermal_source_selection_missing_values_and_upgrade(host):
     identity=run['thermal']['climates'][0]
     registry.async_remove(identity['entity_id'])
     assert sample_entity(hass,identity,start,True)['status']=='mapping_changed'
+
+
+@pytest.mark.asyncio
+async def test_thermal_minute_activity_unscheduled_zone_restart_and_gaps(host):
+    from custom_components.shabbat_flow.observe import Observer,DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from datetime import timedelta
+    hass,_=host;bundle,_=observation_bundle(hass)
+    extra=er.async_get(hass).async_get_or_create('climate','fixture','unplanned_zone')
+    hass.states.async_set(extra.entity_id,'cool')
+    observer=hass.data[DOMAIN]['observer'];start=instant(bundle['plan']['snapshot']['preparation_start'])
+    run=await observer.start(bundle,DEFAULT_POLICY,'minutes-test-001','admin',now=start)
+    await observer.tick(start+timedelta(seconds=60))
+    hass.states.async_set(extra.entity_id,'off')
+    await observer.tick(start+timedelta(seconds=120));await observer.tick(start+timedelta(seconds=180))
+    await observer.tick(start+timedelta(seconds=360))
+    observer.close();restored=Observer(hass);await restored.load();await restored.tick(start+timedelta(seconds=420))
+    thermal=restored.export(run['id'])['run']['thermal'];totals=thermal['activity']['totals'][extra.entity_id]
+    assert totals=={'on_seconds':120,'off_seconds':60,'unknown_seconds':240,'seen_on':True}
+    assert len(thermal['samples'])==1
+    await restored.tick(start+timedelta(seconds=400));assert restored.export(run['id'])['run']['thermal']==thermal
+    restored.close()

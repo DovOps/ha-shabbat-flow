@@ -16,3 +16,5 @@ The specification-only statement above describes the preceding checkpoint. Versi
 Compatibility patch review: empty editor metadata is not an action; resolving literal registry targets does not transfer ownership. Membership must invalidate source fingerprints. Unresolved conditions still reject the whole source, avoiding falsely certain partial schedules.
 
 Thermal evidence review: outdoor provider temperatures and thermostat sensor placement can differ from occupied-room conditions. Preserve raw units, source identity and update age; do not derive calibration offsets automatically. All enabled climate entities are observation-only even when absent from the schedule. Their data does not alter compiler events, ownership or HVAC settings comparison.
+
+Active-zone sorting is based on minute sampled On duration, never hourly temperature points; inactive means no On observed, with gaps reported independently. Observed lighting bands are distinct from planned commands and stop at coverage boundaries. Tests cover exact room links, naps/meals, gap splitting, unknown zones and restart duration accounting. No occupancy inference or device call is added.
