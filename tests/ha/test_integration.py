@@ -1160,3 +1160,28 @@ async def test_study_full_48_hours_missing_slots_and_stop_boundary(host):
     assert all(s['status']=='missing' for s in completed['thermal']['samples'][1:])
     assert completed['thermal']['activity']['totals'][climate.entity_id]['unknown_seconds']==48*3600
     await observer.tick(start+timedelta(hours=49));assert observer.export(run['id'])['run']==completed
+
+@pytest.mark.asyncio
+async def test_study_room_switch_activity_device_area_and_read_only(host,monkeypatch):
+    from datetime import datetime,timedelta,timezone
+    from custom_components.shabbat_flow.study import sources
+    hass,_=host;registry=er.async_get(hass)
+    room=ar.async_get(hass).async_create('Example study')
+    hass.config_entries.async_get_entry=Mock(return_value=SimpleNamespace(domain='demo',pref_disable_new_entities=False,disabled_by=None,entry_id='example-entry'))
+    device=dr.async_get(hass).async_get_or_create(config_entry_id='example-entry',identifiers={('demo','room-device')},name='Example room device')
+    dr.async_get(hass).async_update_device(device.id,area_id=room.id)
+    switch=registry.async_get_or_create('switch','demo','desk-outlet',device_id=device.id)
+    other=registry.async_get_or_create('switch','demo','not-selected',device_id=device.id)
+    climate=registry.async_get_or_create('climate','demo','room-hvac',device_id=device.id)
+    assert next(e for e in sources(hass)['lights'] if e['entity_id']==switch.entity_id)['area_id']==room.id
+    hass.states.async_set(climate.entity_id,'off');hass.states.async_set(switch.entity_id,'off')
+    monkeypatch.setattr(type(hass.services),'async_call',AsyncMock(side_effect=AssertionError('No services')))
+    observer=hass.data[DOMAIN]['observer'];now=datetime(2027,1,5,10,tzinfo=timezone.utc)
+    run=await observer.start_study({'hours':1,'zones':[{'entity_id':climate.entity_id,'lights':[switch.entity_id],'reference':None}],'weather_entity_id':None,'note':''},'switch-study-001','actor',now)
+    physical=next(p for p,t in run['mapping'].items() if t['entity_id']==switch.entity_id)
+    assert run['bundle']['config']['loads'][physical]['display']['signal_kind']=='switch'
+    assert other.entity_id not in str(run)
+    hass.states.async_set(switch.entity_id,'on');await observer.tick(now+timedelta(minutes=1))
+    hass.states.async_set(switch.entity_id,'off');await observer.tick(now+timedelta(minutes=2))
+    changes=[e['state'] for e in observer.export(run['id'])['run']['changes'] if e['physical_id']==physical]
+    assert changes==['off','on','off'];hass.services.async_call.assert_not_called()

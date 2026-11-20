@@ -488,3 +488,10 @@ test('climate study reports have no plan-compliance heading and retain private u
  const flatten=n=>[n.textContent,...n.children.flatMap(flatten)].join(' '),text=flatten(report);
  assert.match(text,/study_report_title/);assert.match(text,/study_context/);assert.match(text,/<b>Comfort note<\/b>/);assert.doesNotMatch(text,/observe_report_totals|observe_hint|observe_run_id/);
 });
+
+test('study switch activity stays separate from light signals and preserves unknown gaps',()=>{
+ const start='2027-01-05T10:00:00Z',middle='2027-01-05T10:30:00Z',end='2027-01-05T11:00:00Z';
+ const run={kind:'climate_study',start,end,last_sample:end,bundle:{config:{loads:{outlet:{kind:'binary',physical_id:'outlet',display:{role:'study_lighting',signal_kind:'switch'}}}}},mapping:{outlet:{entity_id:'switch.desk'}},changes:[{physical_id:'outlet',observed_at:start,state:'on'},{physical_id:'outlet',observed_at:middle,state:'off'}],gaps:[{start,end:middle}]};
+ const bands=thermalBands(run,{study_lights:['switch.desk']});assert.equal(bands.length,1);assert.equal(bands[0].signalKind,'switch');assert.equal(bands[0].kind,'observed');assert.deepEqual(bands[0].intervals.map(i=>i.state),['unknown','off']);
+ delete run.bundle.config.loads.outlet.display.signal_kind;assert.equal(thermalBands(run,{study_lights:['switch.desk']})[0].signalKind,'switch');
+});

@@ -49,7 +49,7 @@ def snapshot(hass, value, now):
         for eid in [zone['entity_id'],*zone['lights']]:
             source=indexes['climates'].get(eid) or indexes['lights'][eid]; physical=internal_id('load_',source['registry_id'])
             mapping[physical]=deepcopy(source)
-            loads[physical]={'physical_id':physical,'kind':'hvac' if eid==zone['entity_id'] else 'binary','label':{'en':source['name'],'he':source['name']},'display':{'room':source['planner_room_id'],'role':'hvac' if eid==zone['entity_id'] else 'study_lighting'}}
+            loads[physical]={'physical_id':physical,'kind':'hvac' if eid==zone['entity_id'] else 'binary','label':{'en':source['name'],'he':source['name']},'display':{'room':source['planner_room_id'],'role':'hvac' if eid==zone['entity_id'] else 'study_lighting','signal_kind':eid.split('.')[0]}}
     end=now+timedelta(hours=value['hours'])
     bundle={'study':value,'config':{'loads':loads},'plan':{'snapshot':{'timezone':hass.config.time_zone,'preparation_start':now.isoformat(),'end':end.isoformat()}}}
     return bundle,thermal,mapping

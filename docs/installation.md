@@ -153,3 +153,7 @@ You may close the browser. Collection persists in HA, stops automatically or via
 Back up the integration and its observation Store before upgrading. Earlier releases cannot read standalone study records; a downgrade after starting a study requires exported evidence and restoring the matching pre-upgrade Store while HA is stopped. Current 0.14.0 reads existing plan observations unchanged.
 
 מחקר אקלים עצמאי מאפשר לבחור אזורי מיזוג, תאורה וחיישני ייחוס למשך 1–48 שעות ללא תוכנית שבת. ההתחלה מיידית, הסיום אוטומטי וניתן לעצור מוקדם. אפשר לסגור את הדפדפן. הדוח וההורדה כוללים קריאות מדווחות ופערי איסוף; אין הפעלת מכשירים, הוכחת נוכחות או כיול אוטומטי. תזמון מחקרים ומשלוח סיכומים נדחו לשלב עתידי.
+
+**Room activity signals (0.14.0):** select lights and any relevant room switches, including outlets or other non-lighting switches, as contextual signals alongside climate readings. Same-area membership includes an entity's device area when it has no explicit area. Nothing is selected automatically. Reports label switches separately from lights and preserve sampled On/Off changes. These may suggest activity but do not prove occupancy or manual operation; automated changes, devices left On and missed short episodes limit interpretation. The JSON fields `lights` and `study_lights` retain their names for compatibility and include both domains.
+
+סימני פעילות בחדר יכולים לכלול תאורה וכל מתג רלוונטי, לרבות שקעים. יש לבחור אותם במפורש. בדוח מוצגים מתגים בנפרד מתאורה. שינויי הפעלה וכיבוי עשויים לרמוז על פעילות, אך אינם מוכיחים נוכחות או הפעלה ידנית.
