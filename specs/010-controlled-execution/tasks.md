@@ -36,3 +36,5 @@ O009 deployment and live preview verification completed in 0.12.1; real observe-
 - [x] O013 Reconcile requirement/rollout index; include sampled totals in printable report and generate a fictional summary example (EX-FR-039).
 - [x] O014 Add all-zone sampled power-duration counters and shared active-first chart/table ranking with coverage-aware combined table (EX-FR-040, EX-NFR-018).
 - [x] O015 Add linked planned-use/planned-light/observed-light bands, gap-aware tests and updated fictional visual (EX-FR-041, EX-NFR-019).
+
+O009 rollout follow-up: 0.13.0 installed and live observe/weather controls verified. No run started; real collection/export and PDF acceptance remain open. See checkpoint-013.

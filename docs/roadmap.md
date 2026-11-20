@@ -45,6 +45,6 @@ Read-only forecasts for time/sun-based HA automations and conditions/triggers on
 See [prediction-only weekend and go-live gates](dry-run-to-live.md). This is a staged review plan: freeze exports, compare normal observed behavior and feedback, complete the specified executor, run authorized weekday/recovery tests, then explicitly arm a limited validated scope. The current preview remains non-executing.
 
 ## Current requirement and release coverage
-See [requirements status](requirements-status.md) for the maintained feature map. Hourly thermal evidence and EN/HE visual observation reports are implemented/tested in 0.13.0 but not yet deployed. Installed HA remains 0.12.1.
+See [requirements status](requirements-status.md) for the maintained feature map. Hourly thermal evidence and EN/HE visual observation reports are implemented/tested and deployed in 0.13.0. Live observation collection and real-data report review remain pending.
 
-Observe 0.13.0 report additions: zones ranked by minute sampled On duration, combined all-zone hourly table, and aligned planned room-use/planned-light/observed-light bands. Missing time remains unknown. Implemented/tested, not yet deployed.
+Observe 0.13.0 report additions: zones ranked by minute sampled On duration, combined all-zone hourly table, and aligned planned room-use/planned-light/observed-light bands. Missing time remains unknown. Implemented/tested/deployed in 0.13.0; real observation review remains pending.
