@@ -211,3 +211,7 @@ Acceptance examples (fictional):
 - UI-NFR-002: EN/HE helper parity, RTL, keyboard access, aria-describedby for selected guidance. No hover-only help. Missing/invalid/custom icons never block planning and never introduce remote asset requests. Icon refresh is presentation-only. Verify unchanged legacy rest defaults, clock-time resolution, until-end nap, invalid duration and DST boundaries. No device controls or HA installation implied.
 
 Acceptance: select each night mode and see a distinct explanation; apply and review every preset; preserve old nap defaults; set a 14:00 nap ending at the day boundary and an 11:00 wake time; verify in both languages. HA icon overrides appear without changing the compiled plan. Standalone renders labeled fallbacks.
+
+## Icon and alignment correction
+- UI-FR-006: Keep entity/area icons beside their names in setup choices and summaries, planner tiles, event rows, lighting/HVAC timeline labels and climate-study choices. Native dropdown option text remains the documented exception. Group each icon and label as one start-aligned unit; checkboxes remain on the opposite edge in EN/HE.
+- UI-NFR-003: Render HA custom icons in the HA document where their nested components are registered; reuse copied SVGs by icon name in the planner iframe. Bound missing-icon waits and retain labeled fallbacks. Do not add an icon dependency or make device calls.

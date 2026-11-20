@@ -1,3 +1,4 @@
+import {itemIcon} from './ha-icons.mjs';
 const HALF_HOUR=30*60*1000;
 export function hvacMap(bundle,result){
  if(!result?.complete)return null;
@@ -34,7 +35,7 @@ export function renderHvacMap({bundle,result,node,t,lang}){
   const scroll=node('div',undefined,'map-scroll'),chart=node('div',undefined,'map-chart'),axis=node('div',undefined,'map-axis');axis.append(node('span',t('hvac_map_unit')));
   const ticks=node('div',undefined,'map-ticks');for(let i=0;i<=4;i++)ticks.append(node('span',time(map.start+(map.end-map.start)*i/4)));axis.append(ticks);chart.append(axis);
   for(const lane of map.lanes.slice(index,index+8)){
-   const row=node('div',undefined,'map-row'),label=node('div',lane.load.label[lang()],'map-label');
+   const row=node('div',undefined,'map-row'),label=node('div',lane.load.label[lang()],'map-label');label.prepend(itemIcon(lane.load.physical_id,'mdi:thermostat'));
    const room=bundle.config.rooms[lane.load.display?.room];if(room)label.append(node('small',room[lang()]));row.append(label);
    const cells=node('div',undefined,'hvac-cells');cells.setAttribute('role','img');cells.tabIndex=0;
    cells.setAttribute('aria-label',lane.intervals.map(v=>`${t('map_'+v.state)} ${time(v.start)} — ${time(v.end)}`).join('; '));

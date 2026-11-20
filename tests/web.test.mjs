@@ -526,3 +526,43 @@ test('existing automation grouping preserves separate actions and raw records',a
  const before=JSON.stringify(events),groups=groupExistingEvents(events);
  assert.equal(groups.length,3);assert.equal(groups[0].devices.length,2);assert.equal(JSON.stringify(events),before);
 });
+
+test('study zone selection keeps controls and other zones, and defers cross-room devices',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const source=fs.readFileSync(new URL('../src/shabbat_flow/web/study.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/init\(\);\s*$/,'');
+ class Element{
+  constructor(tag){this.tag=tag;this.children=[];this.style={};}
+  append(...items){for(const item of items){if(item.tag==='fragment')this.children.push(...item.children);else this.children.push(item);}}
+  prepend(...items){this.children.unshift(...items);}
+  replaceChildren(...items){this.children=[];this.append(...items);}
+  insertBefore(item,before){const index=this.children.indexOf(before);this.children.splice(index,0,...(item.tag==='fragment'?item.children:[item]));}
+  setAttribute(){}
+ }
+ const roots=new Map(),document={documentElement:{},createElement:tag=>new Element(tag),createDocumentFragment:()=>new Element('fragment'),getElementById:id=>{if(!roots.has(id))roots.set(id,new Element('root'));return roots.get(id);}};
+ const sources={climates:Array.from({length:100},(_,i)=>({entity_id:'climate.'+i,area_id:'room'+i,name:'Zone '+i})),lights:Array.from({length:2000},(_,i)=>({entity_id:'switch.'+i,area_id:'room'+(i%100),name:'Signal '+i})),references:[]};
+ let observations=0;
+ const context={fetch:()=>{},document,window:{addEventListener(){}},itemIcon:()=>new Element('icon'),setupObservation:()=>observations++,structuredClone,sourcesFixture:sources};
+ runInNewContext(source+'\ncatalogs={en:{}};sources=sourcesFixture;draw();',context);
+ const root=roots.get('study-setup'),cards=root.children.filter(e=>e.tag==='section'),all=e=>[e,...e.children.flatMap(all)],box=card=>all(card).find(e=>e.type==='checkbox');
+ const note=root.children.find(e=>e.children.some(c=>c.tag==='textarea')).children.find(e=>e.tag==='textarea');note.value='Keep context';note.oninput();
+ box(cards[0]).checked=true;box(cards[0]).onchange();
+ assert.equal(observations,1);assert.equal(root.children.filter(e=>e.tag==='section')[0],cards[0]);
+ assert.equal(all(cards[0]).filter(e=>e.type==='checkbox').length,21);
+ const firstSignal=all(cards[0]).filter(e=>e.type==='checkbox')[1];firstSignal.checked=true;firstSignal.onchange();
+ box(cards[1]).checked=true;box(cards[1]).onchange();assert.equal(firstSignal.checked,true);assert.equal(note.value,'Keep context');assert.equal(observations,1);
+ const more=all(cards[0]).find(e=>e.tag==='details');assert.equal(all(more).filter(e=>e.type==='checkbox').length,0);more.open=true;more.ontoggle();assert.equal(all(more).filter(e=>e.type==='checkbox').length,50);more.ontoggle();assert.equal(all(more).filter(e=>e.type==='checkbox').length,50);
+ const next=more.children.find(e=>e.tag==='button');next.onclick();assert.equal(all(more).filter(e=>e.type==='checkbox').length,100);
+});
+
+test('HA icons render once per name in their owner document and copy SVG into the iframe',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const source=fs.readFileSync(new URL('../src/shabbat_flow/web/ha-icons.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replace(/export /g,'');
+ let created=0,removed=0,imported=0;
+ const svg={localName:'svg',querySelector:()=>({}),cloneNode:()=>({kind:'svg'})};
+ const parent={customElements:{get:()=>true},document:{body:{append(){}},createElement:()=>{created++;return {style:{},setAttribute(){},shadowRoot:{querySelectorAll:()=>[svg]},remove(){removed++;}};}}};
+ const document={createElement:()=>({setAttribute(){},replaceChildren(node){this.rendered=node;}}),importNode:node=>{imported++;return {...node};}};
+ const context={window:{parent},document,setTimeout,request:()=>{},Map};
+ runInNewContext(source+'\nthis.a=haIcon("mdi:lamp");this.b=haIcon("mdi:lamp");',context);
+ await Promise.resolve();
+ assert.equal(created,1);assert.equal(removed,1);assert.equal(imported,2);assert.equal(context.a.rendered.kind,'svg');assert.notEqual(context.a.rendered,context.b.rendered);
+});

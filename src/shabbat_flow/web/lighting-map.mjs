@@ -1,3 +1,4 @@
+import {itemIcon} from './ha-icons.mjs';
 import {localDateTimeCandidates} from './period-model.mjs';
 
 // An event-free interval is unknown until a scheduled state command establishes intent.
@@ -42,7 +43,7 @@ export function renderLightingMap({bundle,result,node,t,lang}){
    for(const lane of day.lanes.slice(offset,offset+8)){
     const display=lane.load.display,group=`${t('map_type_'+(display?.area_type??'legacy'))} · ${bundle.config.rooms[display?.room]?.[lang()]??t('map_unassigned')}`;
     if(group!==previous){chart.append(node('h4',group));previous=group;}
-    const row=node('div',undefined,'map-row'),label=node('div',lane.load.label[lang()],'map-label');if(display)label.append(node('small',t('map_role_'+display.role)));row.append(label);
+    const row=node('div',undefined,'map-row'),label=node('div',lane.load.label[lang()],'map-label');label.prepend(itemIcon(lane.load.physical_id,'mdi:lightbulb-outline'));if(display)label.append(node('small',t('map_role_'+display.role)));row.append(label);
     const track=node('div',undefined,'map-track');track.setAttribute('role','img');
     const summary=lane.intervals.map(v=>`${t('map_'+v.state)} ${time(v.start)} — ${time(v.end)}`).join('; ');track.setAttribute('aria-label',summary);track.title=summary;
     // CSS grid positions are set through CSSOM, not inserted HTML or provider content.
