@@ -6,3 +6,5 @@
 - [x] I006 Real HA package tests, existing checks and verification evidence.
 
 Implementation and package-level checks are complete; live deployment and browser acceptance remain explicitly pending in [verification.md](verification.md).
+
+- [x] Reject mismatched release/static markers; test rejection and manifest-based panel registration.

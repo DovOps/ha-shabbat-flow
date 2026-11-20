@@ -76,3 +76,5 @@ CS-FR-011/CS-NFR-007: targeted zone updates, preserved selections and lazy 50-it
 
 ## 0.16.3 — climate setup clarification
 CS-FR-012/CS-NFR-008 and UI-FR-007 implemented: built-in A/C room-temperature default, optional additional comparison sensor, adjacent logical-start checkbox/icon/name layout, and retained locale selections. Verified with fictional large inventory and native sampling test. See checkpoint 021. Packaged, not installed; HA remains 0.16.1.
+
+0.16.3 deployment completed: corrected versioned frontend URL, native SVG graphics, responsive tested zone/language interaction and EN/HE alignment verified live. Supersedes packaged-only notes above. Release marker consistency is now enforced during packaging and HA lifecycle tests. See checkpoint 021; real study/report validation and future device execution remain separate.

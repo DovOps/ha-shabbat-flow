@@ -5,3 +5,5 @@
 4. Build a self-contained package from reviewed source assets/compiler; check generated files and produce a checksummed ZIP.
 5. Test against an isolated pinned HA installation and run existing checks. Document installation, upgrade, rollback, removal and known limits.
 6. Commit/push checkpoint and merge to main under existing authorization. Do not install or restart household HA.
+
+Validate manifest/constant/static-route equality before any archive build. Exercise mismatch rejection and compare the actual registered HA panel URL with the manifest in lifecycle tests.

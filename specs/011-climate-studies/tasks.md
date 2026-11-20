@@ -12,7 +12,7 @@ S005 deployment portion completed for 0.14.0; live setup/source discovery verifi
 - [x] S007 Add room-scoped Select all / Clear all controls in EN/HE without resetting other form choices (CS-FR-010, CS-NFR-006).
 
 - [x] Implement targeted zone updates and lazy/paged cross-room signals; verify selection retention with large fictional inventory.
-- [ ] Verify freeze correction in installed HA; no study or control activation.
+- [x] Verify freeze correction in installed HA; no study or control activation — tested zone and language spot check, checkpoint 021.
 
 - [x] Clarify default built-in thermostat reading and additional comparison; preserve weather/run locale state; add Off-zone/no-reference regression.
-- [ ] Validate corrected selection/language performance in installed HA after upgrade.
+- [x] Validate corrected selection/language performance in installed HA after upgrade — checkpoint 021 spot check.
