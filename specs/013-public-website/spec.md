@@ -35,3 +35,6 @@ A6 A new contributor can find AGENTS.md and copy a starter prompt without search
 - WEB-NFR-006: Maintain locale pairs and privacy-reviewed provenance; build checks fail for absent gallery assets. No live household captures. Capture actual local production renderers rather than illustrative mockups.
 
 - WEB-FR-012: Include EN/HE Settings gallery captures from the actual renderer using fictional capabilities, never household notification/contact settings. State prominently that planning and observe mode are available and device control is future functionality; do not imply that an unreleased executor is production-ready.
+
+- WEB-FR-013: Extend the brochure gallery with English/Hebrew production-renderer captures of the home overview, including concurrent scheduled plan observation and active climate study, and Rooms at a glance with Ready, Draft and Needs attention examples. Explain browser-local drafts versus persisted observations and clickable room review. Label statuses/dates as fictional; never publish live household captures.
+- WEB-NFR-005: Keep new screenshots paired by locale, inspect legibility and RTL, provide descriptive captions/alt text and capture provenance/version. Use a read-only loopback fixture and no production data, study creation or device control.

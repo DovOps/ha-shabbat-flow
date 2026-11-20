@@ -1,4 +1,5 @@
 """Loopback-only fictional gallery fixture. Never connects to Home Assistant."""
+import argparse
 import json
 from datetime import datetime, timezone
 from shabbat_flow.server import Handler, ThreadingHTTPServer, ROOT, WEB
@@ -18,6 +19,11 @@ fixture={'observed_at':datetime.now(timezone.utc).isoformat(),'issues':[],'inven
 # Public screenshots and performance checks use only fictional capabilities/devices.
 dependencies=[{'id':i,'requirement':r,'hint':i,'ready':True,'detected':True,'status':'ready'} for i,r in [('core','required'),('areas','required_for_rooms'),('calendar','preferred'),('twilio','optional'),('push','optional'),('external_url','optional'),('climate','required_for_climate'),('weather','optional'),('temperature','optional'),('labels','optional'),('automations','optional'),('issur','optional')]]
 study_sources={'climates':[{'entity_id':f'climate.zone_{i}','name':f'Zone {i}','area_id':f'area_{i}','area_name':f'Room {i}'} for i in range(100)],'lights':[{'entity_id':f'switch.signal_{i}','name':f'Signal {i}','area_id':f'area_{i%100}'} for i in range(2000)],'references':[],'weather':[]}
+activity_examples = False
+example_runs = [
+    {'id': 'a'*32, 'kind': 'plan', 'status': 'scheduled', 'start': '2027-01-08T15:30:00+02:00', 'end': '2027-01-09T18:00:00+02:00', 'timezone': 'Asia/Jerusalem'},
+    {'id': 'b'*32, 'kind': 'climate_study', 'status': 'observing', 'start': '2027-01-08T09:00:00+02:00', 'end': '2027-01-09T09:00:00+02:00', 'timezone': 'Asia/Jerusalem'},
+]
 class GalleryHandler(Handler):
     def do_POST(self):
         if not self.permitted(): return
@@ -32,7 +38,7 @@ class GalleryHandler(Handler):
     def do_GET(self):
         if not self.permitted(): return
         path=self.path.split('?')[0]
-        if path=='/api/v2/observe':self.reply(200,{'study_sources':study_sources,'runs':[],'thermal_sources':{'climates':[],'weather':[]}})
+        if path=='/api/v2/observe':self.reply(200,{'study_sources':study_sources,'runs':example_runs if activity_examples else [],'thermal_sources':{'climates':[],'weather':[]}})
         elif path=='/api/v2/household':self.reply(200,fixture)
         elif path=='/api/v2/upcoming':self.reply(200,{'status':'unavailable','error':'calendar_unavailable'})
         elif path.startswith('/sample-'):
@@ -44,5 +50,14 @@ class GalleryHandler(Handler):
             else:self.reply(404,{'error':'not_found'})
         else:super().do_GET()
 if __name__=='__main__':
-    print('Fictional gallery fixture: http://127.0.0.1:8773',flush=True)
-    ThreadingHTTPServer(('127.0.0.1',8773),GalleryHandler).serve_forever()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--port',type=int,default=8773)
+    parser.add_argument('--activity-examples',action='store_true')
+    args=parser.parse_args()
+    activity_examples=args.activity_examples
+    if activity_examples:
+        rooms['family_room']['setup']['status']='draft'
+        rooms['bathroom']['roles']['main_lights']=[]
+        rooms['bathroom']['roles']['night_lights']=[]
+    print(f'Fictional gallery fixture: http://127.0.0.1:{args.port}',flush=True)
+    ThreadingHTTPServer(('127.0.0.1',args.port),GalleryHandler).serve_forever()

@@ -83,3 +83,5 @@ CS-FR-012/CS-NFR-008 and UI-FR-007 implemented: built-in A/C room-temperature de
 Implemented/tested: automatic simple-day Home from explicit room/nap/home-meal choices, top/bottom green planner actions, compact room-status links and main-page plan/observation/climate-study overview. Custom partial-day availability remains deliberate review; saved drafts are identified as browser-local and are not activation. Package ready; no HA upgrade performed. HA remains 0.16.3. Next: authorized installation and validation against real saved plans/concurrent observation runs; execution roadmap remains separate.
 
 0.16.4 deployment verified: backed-up replacement, 52-file parity, three retained stores, one HA restart, live saved-plan reopening and concurrent plan/climate status display with 20 native room icons. Supersedes the packaged-only state above. No device controls enabled; see checkpoint 022.
+
+Brochure gallery now includes 0.16.4 home activity and room-readiness examples in English/Hebrew, using fictional data. Website-only publication; no HA installation needed.
