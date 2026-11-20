@@ -6,3 +6,5 @@ Follow-up: expand the existing localized contributor page into a prominent devel
 Refresh the gallery with EN/HE pairs from a loopback fictional fixture server, ordered setup → planning → schedule → reports. Add a user-facing option guide sourced from the same explanatory copy; verify all asset links in both locale builds.
 
 0.16.2: Capture production Settings in both locales with the loopback fictional provider, add provenance and gallery entries, and clarify current observe versus future control status in the hero.
+
+Gallery follow-up 0.16.4: add an opt-in fictional activity/status fixture mode; capture the production home page and focused room-readiness strip in both locales. Add paired gallery cards with version/provenance, build both locales, review resulting gallery and publish through the existing main-branch Pages workflow. No HA package/deployment change.

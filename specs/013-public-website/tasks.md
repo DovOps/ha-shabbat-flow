@@ -13,3 +13,8 @@
 - [x] W012 Verify updated multilingual site and package checkpoint.
 
 - [x] Add fictional EN/HE Settings gallery and prominent observe/control availability wording.
+
+## Home overview gallery follow-up
+- [x] Add optional fictional concurrent-run and room-readiness examples to the loopback capture fixture.
+- [x] Capture/review production-renderer EN/HE home overview and Rooms at a glance; add localized gallery cards and provenance.
+- [x] Verify both locale builds and local asset links; publish through main-branch Pages workflow.
