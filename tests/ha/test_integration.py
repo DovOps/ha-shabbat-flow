@@ -57,7 +57,7 @@ async def test_real_panel_lifecycle(host):
     hass, entry = host
     panel = hass.data[frontend.DATA_PANELS]['shabbat-flow']
     assert panel.require_admin
-    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.16.0/panel.js')
+    assert panel.config['_panel_custom']['module_url'].startswith('/shabbat_flow_static/0.16.1/panel.js')
     assert hass.http.async_register_static_paths.await_count == 1
     assert hass.http.register_view.call_count == 8
     await async_unload_entry(hass, entry)
@@ -962,7 +962,8 @@ async def test_forecast_editor_metadata_and_registry_targets_without_calls(host,
     raw={'triggers':[{'trigger':'time','at':'23:00:00'}], 'actions':[{'action':'switch.turn_off','metadata':{},'data':{},'target':{'label_id':label.label_id}}]}
     entity=SimpleNamespace(raw_config=raw)
     hass.data['automation']=SimpleNamespace(get_entity=lambda _:entity)
-    hass.states.async_set('automation.exterior','on')
+    hass.states.async_set('automation.exterior','on',{'friendly_name':'Exterior timer'})
+    hass.states.async_set(first.entity_id,'on',{'friendly_name':'Porch light','icon':'mdi:outdoor-lamp'})
     spy=AsyncMock()
     monkeypatch.setattr(type(hass.services), "async_call", spy)
     snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
@@ -970,6 +971,8 @@ async def test_forecast_editor_metadata_and_registry_targets_without_calls(host,
     assert not result['unresolved']
     assert {e['entity_id'] for e in result['events']}=={first.entity_id}
     assert len(result['events'])==3
+    assert result['events'][0]['source_name']=='Exterior timer'
+    assert result['events'][0]['entity_name']=='Porch light' and result['events'][0]['entity_icon']=='mdi:outdoor-lamp'
     second=registry.async_get_or_create('switch','test','exterior-two')
     registry.async_update_entity(second.entity_id, labels={label.label_id})
     changed=forecast_ha(hass,snapshot)
@@ -1213,3 +1216,31 @@ async def test_clock_rest_defaults_are_additive_and_persist(host):
     for key,value in [('wake_time','25:00'),('nap_start_time','14:99'),('nap_end_mode','invalid')]:
         invalid=deepcopy(rooms);invalid[bed.id]['setup']['rest_defaults'][key]=value
         with pytest.raises(ValueError):validate_settings(invalid,inv)
+
+def test_forecast_excludes_reactive_sync_but_preserves_audit_and_scheduled_branch():
+    from custom_components.shabbat_flow.ownership import forecast,ownership_report
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    action={'action':'switch.turn_off','target':{'entity_id':'switch.example_outdoor'}}
+    sync={'id':'automation.sync_example','enabled':True,'config':{'triggers':[{'trigger':'state','entity_id':'switch.example_remote'}],'actions':[action]}}
+    timer={'id':'automation.timer_example','enabled':True,'name':'Outdoor bedtime','config':{'triggers':[{'trigger':'time','at':'23:00'}, {'trigger':'state','entity_id':'switch.example_remote'}],'actions':[action]}}
+    result=forecast(snapshot,[sync,timer]);assert not result['unresolved']
+    assert [e['source'] for e in result['excluded']]==[sync['id']]
+    assert len(result['events'])==3 and all(e['source_name']=='Outdoor bedtime' for e in result['events'])
+    assert sync['id'] in result['fingerprints']
+    assert ownership_report([],{},result)['unresolved'] and not ownership_report([],{},result)['live_clearance']
+
+def test_forecast_calendar_continuous_boundaries_and_state_conditions():
+    from custom_components.shabbat_flow.ownership import forecast
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot'];snapshot['source']['id']='jewish_calendar'
+    ids={'binary_sensor.example_issur':'issur_melacha_in_effect'}
+    def src(name,trigger,conditions=[]):return {'id':'automation.'+name,'enabled':True,'config':{'triggers':[trigger],'conditions':conditions,'actions':[{'action':'light.turn_off','target':{'entity_id':'light.example'}}]}}
+    begin=src('start',{'trigger':'state','entity_id':next(iter(ids)),'to':'on'})
+    finish=src('end',{'trigger':'state','entity_id':next(iter(ids)),'to':'off'})
+    condition={'condition':'state','entity_id':next(iter(ids)),'state':'on'}
+    timer=src('timer',{'trigger':'time','at':'23:00'},[condition])
+    result=forecast(snapshot,[begin,finish,timer],calendar_entities=ids)
+    assert not result['unresolved'] and len(result['events'])==5
+    assert len([e for e in result['events'] if e['source']==begin['id']])==1
+    condition['state']='off';assert not forecast(snapshot,[timer],calendar_entities=ids)['events']
+    snapshot['source']['id']='manual';result=forecast(snapshot,[begin],calendar_entities=ids)
+    assert not result['events'] and result['unresolved']

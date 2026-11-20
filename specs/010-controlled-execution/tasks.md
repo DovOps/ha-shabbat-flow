@@ -38,3 +38,9 @@ O009 deployment and live preview verification completed in 0.12.1; real observe-
 - [x] O015 Add linked planned-use/planned-light/observed-light bands, gap-aware tests and updated fictional visual (EX-FR-041, EX-NFR-019).
 
 O009 rollout follow-up: 0.13.0 installed and live observe/weather controls verified. No run started; real collection/export and PDF acceptance remain open. See checkpoint-013.
+
+## Relevant existing-automation preview
+- [x] X041 Filter reactive triggers; retain ownership audit and bounded calendar transition support.
+- [x] X042 Friendly grouped existing-automation events, device icons and expandable IDs.
+- [x] X043 Collapsed diagnostics and concise PDF summaries.
+- [x] X044 Verify forecast, renderer, print and package behavior; production installation separate.

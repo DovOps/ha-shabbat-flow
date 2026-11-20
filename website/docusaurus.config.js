@@ -1,7 +1,7 @@
 const config = {
   title: 'Shabbat Flow',
   tagline: 'A peaceful Shabbat starts with a plan.',
-  url: 'https://dovops.github.io',
+  url: 'https://dovops.io',
   baseUrl: '/ha-shabbat-flow/',
   organizationName: 'DovOps', projectName: 'ha-shabbat-flow', trailingSlash: true,
   favicon: 'img/favicon.svg',

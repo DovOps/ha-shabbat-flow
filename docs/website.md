@@ -29,7 +29,7 @@ When ready:
 3. In **Settings → Secrets and variables → Actions → Variables**, add repository variable `PAGES_ENABLED` with value `true`.
 4. Run the **website** workflow manually on `main`, or merge a change into `main`.
 
-The site target is `https://dovops.github.io/ha-shabbat-flow/`. PRs build both languages without deploying. Every main push builds, checks and publishes once the repository is public and the enablement variable is set. Until then, builds produce a Pages artifact and skip publication. To stop future deployments, unset `PAGES_ENABLED`; this does not remove an already published site. Use Pages settings separately to unpublish.
+The site target is `https://dovops.io/ha-shabbat-flow/`. PRs build both languages without deploying. Every main push builds, checks and publishes once the repository is public and the enablement variable is set. Until then, builds produce a Pages artifact and skip publication. To stop future deployments, unset `PAGES_ENABLED`; this does not remove an already published site. Use Pages settings separately to unpublish.
 
 No PAT, SSH key or HA credential is needed. PR jobs have contents-read permission; the deployment job uses only Pages-write and OIDC. The site has no HA connection, analytics or public household reports.
 

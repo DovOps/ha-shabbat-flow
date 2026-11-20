@@ -330,17 +330,17 @@ test('print report contains all dated days and events, localized warnings, and n
  const {renderPrintReport}=await import('../src/shabbat_flow/web/period-report.mjs');
  const bundle=JSON.parse(fs.readFileSync(new URL('../examples/period-preview.json',import.meta.url)));
  const before=JSON.stringify(bundle),catalog=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
- const node=(tag,text='',className='')=>({tag,text,children:[],className,append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},cloneNode(){const copy=node(this.tag,this.text,this.className);copy.children=this.children.map(c=>c.cloneNode());return copy;},classList:{contains:value=>className.split(' ').includes(value)}});
+ const node=(tag,text='',className='')=>({tag,text,children:[],className,append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},querySelectorAll(){return [];},cloneNode(){const copy=node(this.tag,this.text,this.className);copy.children=this.children.map(c=>c.cloneNode());return copy;},classList:{contains:value=>className.split(' ').includes(value)}});
  const text=n=>[n.text,...n.children.map(text)].join(' ');
  const event=node('div','','event');event.append(node('time','Jan 8 10:00'),node('div','Example light'),node('bdi','Off','state off'));
- const timeline=node('div');timeline.append(node('p','Example retained warning'),event);timeline.querySelectorAll=()=>[event];
+ const timeline=node('div');timeline.append(node('p','Example retained warning'),node('details','Hidden forecast diagnostic','forecast-diagnostics'),node('p','Brief forecast count','forecast-note'),event);timeline.querySelectorAll=()=>[event];
  for(const language of ['en','he']){
   const report=node('article'),t=key=>{const value=catalog[language][key]??catalogs[language][key];assert.ok(value,key);return value;};
   renderPrintReport({report,bundle,result:{complete:true},t,lang:()=>language,dayLabel:s=>s.id,node,timeline,logo:node('img')});
   assert.equal(report.children.filter(n=>n.tag==='section').length,3);
   assert.match(text(report),/Asia\/Jerusalem/);assert.match(text(report),/2027/);assert.match(text(report),/Example retained warning/);
   const table=report.children.find(n=>n.tag==='table');assert.equal(table.children[0].tag,'thead');assert.equal(table.children[1].children.length,1);
-  assert.match(text(table),/Example light.*Off/);assert.doesNotMatch(text(report),/physical_id|schema_version/);
+  assert.match(text(table),/Example light.*Off/);assert.doesNotMatch(text(report),/physical_id|schema_version|Hidden forecast diagnostic/);assert.match(text(report),/Brief forecast count/);
   renderPrintReport({report,bundle,result:null,t,lang:()=>language,dayLabel:s=>s.id,node,timeline,logo:node('img')});
   assert.equal(report.children.length,1);assert.equal(text(report).trim(),t('report_unavailable'));
  }
@@ -427,8 +427,8 @@ test('unmanaged forecast rows interleave without changing planner events and kee
  const node=(tag,text='',className='')=>({tag,textContent:text,className,children:[],dataset:{},append(...children){for(const child of children){if(child.parent)child.parent.children=child.parent.children.filter(x=>x!==child);child.parent=this;this.children.push(child);}},querySelector(selector){return this.children.find(c=>c.tag===selector);},querySelectorAll(selector){return this.children.filter(c=>selector==='.event'&&c.className==='event');}});
  const root=node('div'),row=node('div','','event'),time=node('time');time.dateTime='2027-01-08T08:00:00Z';row.append(time,node('div','planned'));root.append(row);
  const result={events:[{id:'unchanged'}],unmanaged:{overlay:{unresolved:[],events:[{id:'external',entity_id:'light.hall',source:'automation.hall_off',utc:'2027-01-08T07:00:00Z',local:'2027-01-08T09:00:00+02:00',action:{state:'off'}}]},ownership:{conflicts:[]}}};
- const before=JSON.stringify(result);renderUnmanaged(root,result,{plan:{snapshot:{timezone:'Asia/Jerusalem'}}},{node,t:k=>k,lang:()=> 'en'});
- const rows=root.querySelectorAll('.event');assert.equal(rows.length,2);assert.equal(rows[0].children[2].className,'state off');assert.match(rows[0].children[1].textContent,/observe_unmanaged/);assert.equal(JSON.stringify(result),before);
+ const before=JSON.stringify(result);renderUnmanaged(root,result,{plan:{snapshot:{timezone:'Asia/Jerusalem'}}},{node,t:k=>k,lang:()=> 'en',icon:()=>node('span')});
+ const rows=root.querySelectorAll('.event');assert.equal(rows.length,2);assert.equal(rows[0].children[2].className,'state off');assert.ok(rows[0].children[1].children.some(n=>n.textContent==='observe_unmanaged'));assert.equal(JSON.stringify(result),before);
 });
 test('observe UI strings have English and Hebrew parity',()=>{
  const labels=JSON.parse(fs.readFileSync(new URL('../src/shabbat_flow/web/period-i18n.json',import.meta.url)));
@@ -517,4 +517,12 @@ test('icon names accept HA namespaces but never URLs or markup',async()=>{
  const {validIcon}=await import('../src/shabbat_flow/web/ha-icons.mjs');
  assert.equal(validIcon('mdi:bed'),'mdi:bed');assert.equal(validIcon('custom:lamp'),'custom:lamp');
  for(const v of ['https://example.com/icon','<svg>',null,'mdi:bad name'])assert.equal(validIcon(v),null);
+});
+
+test('existing automation grouping preserves separate actions and raw records',async()=>{
+ const {groupExistingEvents}=await import('../src/shabbat_flow/web/observe.mjs');
+ const a={source:'automation.example',utc:'2027-01-08T21:00:00Z',action:{type:'state',state:'off'},entity_id:'light.porch'};
+ const events=[a,{...a,entity_id:'light.deck'},{...a,action:{type:'state',state:'on'},entity_id:'light.shelf'},{...a,utc:'2027-01-08T22:00:00Z'}];
+ const before=JSON.stringify(events),groups=groupExistingEvents(events);
+ assert.equal(groups.length,3);assert.equal(groups[0].devices.length,2);assert.equal(JSON.stringify(events),before);
 });
