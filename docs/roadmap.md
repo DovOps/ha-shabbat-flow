@@ -49,7 +49,7 @@ See [requirements status](requirements-status.md) for the maintained feature map
 
 Observe 0.13.0 report additions: zones ranked by minute sampled On duration, combined all-zone hourly table, and aligned planned room-use/planned-light/observed-light bands. Missing time remains unknown. Implemented/tested/deployed in 0.13.0; real observation review remains pending.
 
-## Standalone climate studies (0.14.0, not deployed)
-Feature 011 adds manual 1–48-hour studies without a Shabbat plan, selected zones/lighting, optional room reference sensors, read-only persistence and dedicated reports. Automated tests and fictional EN/HE review complete; real collection and PDF pagination pending. Scheduled starts and automatic summary delivery are future scope. Installed HA remains 0.13.0.
+## Standalone climate studies (0.14.0, deployed)
+Feature 011 adds manual 1–48-hour studies without a Shabbat plan, selected zones/lighting, optional room reference sensors, read-only persistence and dedicated reports. Automated tests and fictional EN/HE review complete; real collection and PDF pagination pending. Scheduled starts and automatic summary delivery are future scope. Installed HA is 0.14.0; live setup/source discovery verified. No study started.
 
 The same 0.14.0 package includes explicit room light/switch activity signals and distinct observed switch timelines. Both On and Off changes are evidence, never confirmed occupancy or manual operation.
