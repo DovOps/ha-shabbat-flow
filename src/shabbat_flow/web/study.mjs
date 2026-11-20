@@ -5,6 +5,7 @@ import {renderObservationPrint} from './thermal-report.mjs';
 const $=id=>document.getElementById(id),node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 let language='en',catalogs,sources,printData;
 const selection={hours:24,zones:[],note:''};
+const observeState={};
 const t=k=>catalogs[language][k]??k,lang=()=>language;
 function print(){if(printData)renderObservationPrint({report:$('print-report'),data:printData,node,t,lang,logo:document.querySelector('.brand-logo')});}
 function draw(){
@@ -16,18 +17,19 @@ function draw(){
  const note=node('textarea');note.maxLength=2000;note.rows=2;note.value=selection.note;note.oninput=()=>selection.note=note.value;field(t('study_note'),note);
  root.append(node('p',t('study_select_hint'),'hint'));
  for(const zone of sources.climates){
-  const card=node('section',undefined,'card');const label=node('label'),box=node('input');box.type='checkbox';box.checked=selection.zones.some(z=>z.entity_id===zone.entity_id);label.prepend(itemIcon(zone.entity_id,'mdi:thermostat'));label.append(box,node('span',`${zone.area_name??''} · ${zone.name} · ${zone.entity_id}`));card.append(label);
+  const card=node('section',undefined,'card');const label=node('label',undefined,'toggle'),box=node('input');box.type='checkbox';box.checked=selection.zones.some(z=>z.entity_id===zone.entity_id);const zoneName=node('span',`${zone.area_name??''} · ${zone.name} · ${zone.entity_id}`);zoneName.prepend(itemIcon(zone.entity_id,'mdi:thermostat'));label.append(box,zoneName);card.append(label);
   const body=node('div');card.append(body);
   box.onchange=()=>{selection.zones=selection.zones.filter(z=>z.entity_id!==zone.entity_id);if(box.checked)selection.zones.push({entity_id:zone.entity_id,lights:[],reference:null});drawZone();};
   function drawZone(){
   body.replaceChildren();
   const selected=selection.zones.find(z=>z.entity_id===zone.entity_id);
   if(selected){
-   const refLabel=node('label',undefined,'study-field'),ref=node('select');refLabel.append(node('span',t('study_reference')),ref);const empty=node('option',t('study_none'));empty.value='';ref.append(empty);
+   body.append(node('p',t('study_builtin_temperature'),'hint'));
+   const refLabel=node('label',undefined,'study-field'),ref=node('select');refLabel.append(node('span',t('study_reference')),ref);const empty=node('option',t('study_builtin_default'));empty.value='';ref.append(empty);
    for(const source of sources.references){const option=node('option',`${source.area_name??''} · ${source.name} · ${source.entity_id}`);option.value=source.entity_id;ref.append(option);}ref.value=selected.reference??'';ref.onchange=()=>selected.reference=ref.value||null;body.append(refLabel);
    const lighting=node('fieldset');lighting.append(node('legend',t('study_lights')));
    const signalInputs=new Map();
-   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};const text=node('span',`${e.name} · ${e.entity_id}`);text.prepend(itemIcon(e.entity_id,'mdi:lightbulb-outline'));label.append(text,input);return label;};
+   const addLight=e=>{const label=node('label',undefined,'toggle'),input=node('input');input.type='checkbox';signalInputs.set(e.entity_id,input);input.checked=selected.lights.includes(e.entity_id);input.onchange=()=>{selected.lights=selected.lights.filter(id=>id!==e.entity_id);if(input.checked)selected.lights.push(e.entity_id);};const text=node('span',`${e.name} · ${e.entity_id}`);text.prepend(itemIcon(e.entity_id,'mdi:lightbulb-outline'));label.append(input,text);return label;};
    const same=sources.lights.filter(e=>zone.area_id&&e.area_id===zone.area_id);
    const bulk=node('div',undefined,'toolbar');
    for(const [key,include] of [['study_select_all_room',true],['study_clear_all_room',false]]){
@@ -42,7 +44,7 @@ function draw(){
   }}drawZone();root.append(card);
  }
  if(!sources.climates.length)root.append(node('p',t('observe_thermal_empty')));
- setupObservation({root:$('observe-panel'),fetch,node,t,lang,study:()=>structuredClone(selection),onPrint:data=>{printData=data;print();window.print();}});
+ setupObservation({root:$('observe-panel'),fetch,node,t,lang,uiState:observeState,study:()=>structuredClone(selection),onPrint:data=>{printData=data;print();window.print();}});
 }
 window.addEventListener('beforeprint',print);
 async function init(){try{await loadIcons();const [c,s]=await Promise.all([fetch('/api/v2/i18n'),fetch('/api/v2/observe')]);if(!c.ok||!s.ok)throw Error();catalogs=await c.json();const listing=await s.json();sources=listing.study_sources;draw();$('language').onchange=()=>{language=$('language').value;draw();};}catch{$('error').textContent='Unable to load climate studies. Open this page inside Home Assistant. / לא ניתן לטעון מחקרי אקלים. יש לפתוח מתוך Home Assistant.';}}

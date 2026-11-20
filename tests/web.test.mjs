@@ -552,6 +552,11 @@ test('study zone selection keeps controls and other zones, and defers cross-room
  box(cards[1]).checked=true;box(cards[1]).onchange();assert.equal(firstSignal.checked,true);assert.equal(note.value,'Keep context');assert.equal(observations,1);
  const more=all(cards[0]).find(e=>e.tag==='details');assert.equal(all(more).filter(e=>e.type==='checkbox').length,0);more.open=true;more.ontoggle();assert.equal(all(more).filter(e=>e.type==='checkbox').length,50);more.ontoggle();assert.equal(all(more).filter(e=>e.type==='checkbox').length,50);
  const next=more.children.find(e=>e.tag==='button');next.onclick();assert.equal(all(more).filter(e=>e.type==='checkbox').length,100);
+ runInNewContext('catalogs.he={};language="he";draw();',context);
+ const translatedCards=root.children.filter(e=>e.tag==='section');assert.equal(document.documentElement.dir,'rtl');assert.equal(box(translatedCards[0]).checked,true);assert.equal(all(translatedCards[0]).filter(e=>e.type==='checkbox')[1].checked,true);assert.equal(all(translatedCards[0]).find(e=>e.tag==='details').children.length,1);
+ assert.equal(all(translatedCards[0]).find(e=>e.tag==='option').textContent,'study_builtin_default');
+ assert.equal(all(translatedCards[0]).find(e=>e.tag==='label').children[0].type,'checkbox');
+ runInNewContext('language="en";draw();',context);assert.equal(document.documentElement.dir,'ltr');
 });
 
 test('HA icons render once per name in their owner document and copy SVG into the iframe',async()=>{

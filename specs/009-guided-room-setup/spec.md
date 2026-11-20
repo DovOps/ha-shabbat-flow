@@ -215,3 +215,5 @@ Acceptance: select each night mode and see a distinct explanation; apply and rev
 ## Icon and alignment correction
 - UI-FR-006: Keep entity/area icons beside their names in setup choices and summaries, planner tiles, event rows, lighting/HVAC timeline labels and climate-study choices. Native dropdown option text remains the documented exception. Group each icon and label as one start-aligned unit; checkboxes remain on the opposite edge in EN/HE.
 - UI-NFR-003: Render HA custom icons in the HA document where their nested components are registered; reuse copied SVGs by icon name in the planner iframe. Bound missing-icon waits and retain labeled fallbacks. Do not add an icon dependency or make device calls.
+
+- UI-FR-007: All checkbox rows use checkbox then icon/name adjacent at the logical start: left in English, right in Hebrew. Do not distribute checkbox/icon/name across the row or let English device IDs reverse the Hebrew row alignment. This supersedes UI-FR-006’s opposite-edge checkbox placement.

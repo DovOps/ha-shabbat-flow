@@ -8,3 +8,5 @@ Room-activity follow-up: reuse existing light/switch registry selection and minu
 0.14.1 bulk-selection follow-up: room-scoped native buttons update selection and checkbox state in place. Do not redraw observation controls or include collapsed other-area choices. No backend changes; existing input bounds remain. Installed version remains 0.14.0 until authorized upgrade.
 
 0.16.2: Update zone bodies in place, defer cross-room lists until disclosure, paginate by 50 and preserve observer controls. Verify against a 100-zone/2,000-signal fictional fixture and DOM regression tests.
+
+0.16.3: Keep automatic native climate sampling unchanged; clarify the default and optional independent comparison in EN/HE. Preserve observer selector state across locale redraws. Extend large-inventory language regression and verify built-in measured versus target temperature while Off with no reference.
