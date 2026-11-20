@@ -298,7 +298,9 @@
     "study_report_hint": "Observed use only. Missing intervals remain unknown. Enabled HVAC minutes are not compressor runtime; lights do not establish occupancy.",
     "study_band_hint": "Teal: observed signal On. Grey: Off. Sand/dashed: unknown or not yet observed. Light and switch changes are possible room-activity evidence, not confirmed occupancy or manual operation. Automated changes and devices left On can be misleading; minute sampling may miss brief episodes.",
     "study_observed_switch": "Observed switch activity",
-    "study_observed_light": "Observed light activity"
+    "study_observed_light": "Observed light activity",
+    "study_select_all_room": "Select all in this room",
+    "study_clear_all_room": "Clear all in this room"
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -599,6 +601,8 @@
     "study_report_hint": "שימוש נצפה בלבד. פרקי זמן חסרים נשארים לא ידועים. דקות מיזוג מופעל אינן זמן פעולת מדחס; תאורה אינה הוכחה לנוכחות.",
     "study_band_hint": "טורקיז: אות שנצפה פועל. אפור: כבוי. חול ומקווקו: לא ידוע או טרם נצפה. שינויי תאורה ומתגים הם ראיות אפשריות לפעילות בחדר, לא נוכחות או הפעלה ידנית מאומתת. שינויים אוטומטיים ומכשירים שנותרו פועלים עלולים להטעות; דגימה בדקות עלולה להחמיץ פעילות קצרה.",
     "study_observed_switch": "פעילות מתג שנצפתה",
-    "study_observed_light": "פעילות תאורה שנצפתה"
+    "study_observed_light": "פעילות תאורה שנצפתה",
+    "study_select_all_room": "בחירת הכל בחדר זה",
+    "study_clear_all_room": "ביטול כל הבחירות בחדר זה"
   }
 }
