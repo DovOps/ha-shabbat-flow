@@ -80,3 +80,6 @@ No HA installation or production observation started at this checkpoint. EN/HE c
 
 ### Forecast compatibility patch (0.12.1)
 Accept editor metadata and resolve literal label/area/device selectors using HA’s existing read-only target helper. Filter to service domain, reject missing/empty selectors, and fingerprint resolved membership. No service invocation or new dependency. State/issur conditions, scripts and template targets remain unresolved. Test native registry expansion on both supported versions before deployment.
+
+### Hourly thermal evidence
+Add a read-only `thermal.py` collector using already accepted HA state/registry APIs. Freeze all enabled climate identities and selected weather source independently of commanded-load mappings. Keep measured temperature out of preserve-settings comparison. Use UTC hourly slots from preparation start (local labels in exports), with missing-slot markers and actual collection timestamps. Extend observe export and source selection/summary in both languages; no actuator or new dependency. Backward-compatible active-run enrichment starts at upgrade, with explicit unknown past coverage.

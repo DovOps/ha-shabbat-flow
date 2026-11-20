@@ -201,7 +201,17 @@
     "error_observe_limit": "Observation storage or record limit reached. Export existing runs; older completed runs expire after 90 days.",
     "error_observe_missing": "The selected observation no longer exists. Refresh the list.",
     "error_observe_incomplete": "Resolve incomplete plan choices before starting observation.",
-    "observe_unmapped": "Device cannot be mapped for observation"
+    "observe_unmapped": "Device cannot be mapped for observation",
+    "observe_weather": "Outdoor weather source (new observation)",
+    "observe_weather_auto": "Automatic — only when exactly one source exists",
+    "observe_weather_choose": "Multiple weather sources found. Select one for outdoor comparison; otherwise outdoor readings will be missing.",
+    "observe_weather_missing": "No outdoor source selected",
+    "observe_thermal_title": "Hourly HVAC and outdoor temperatures",
+    "observe_thermal_samples": "Collected / due hourly snapshots",
+    "observe_thermal_hint": "Hourly readings include all enabled registered HVAC thermostats: measured temperature, target/range, heat/cool/off mode, power and activity when available. The download includes the full series and weather temperature, units and update age. These are sensor/provider reports, not verified room comfort or calibration offsets.",
+    "observe_thermal_truncated": "Only the first 100 HVAC entities are included; the export flags the limit.",
+    "observe_thermal_legacy": "This older run has no hourly thermal series. Active runs begin collecting after the upgrade; past hours remain missing.",
+    "error_observe_weather": "Choose an available HA weather entity, or use automatic selection."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -405,6 +415,16 @@
     "error_observe_limit": "הגעתם למגבלת רשומות או אחסון. יש לייצא מעקבים קיימים; מעקבים שהושלמו נמחקים לאחר 90 יום.",
     "error_observe_missing": "המעקב שנבחר אינו קיים עוד. יש לרענן את הרשימה.",
     "error_observe_incomplete": "יש להשלים את הבחירות בתוכנית לפני התחלת מעקב.",
-    "observe_unmapped": "לא ניתן למפות מכשיר למעקב"
+    "observe_unmapped": "לא ניתן למפות מכשיר למעקב",
+    "observe_weather": "מקור מזג אוויר חיצוני (למעקב חדש)",
+    "observe_weather_auto": "אוטומטי — רק כאשר קיים מקור יחיד",
+    "observe_weather_choose": "נמצאו כמה מקורות מזג אוויר. יש לבחור מקור להשוואה חיצונית; אחרת נתוני החוץ יהיו חסרים.",
+    "observe_weather_missing": "לא נבחר מקור חיצוני",
+    "observe_thermal_title": "טמפרטורות מיזוג וחוץ בכל שעה",
+    "observe_thermal_samples": "דגימות שנאספו / דגימות שעתיות שהגיע זמנן",
+    "observe_thermal_hint": "הדגימות כוללות את כל תרמוסטטי המיזוג הרשומים והפעילים: טמפרטורה מדווחת, יעד או טווח, מצב חימום/קירור/כבוי, הפעלה ופעילות כאשר זמינה. ההורדה כוללת את הסדרה המלאה, מזג האוויר, יחידות וגיל העדכון. אלה דיווחי חיישנים וספקים, לא מדידה מאומתת של נוחות בחדר או הוכחה לצורך בכיול.",
+    "observe_thermal_truncated": "נכללות רק 100 ישויות המיזוג הראשונות; ההגבלה מסומנת בייצוא.",
+    "observe_thermal_legacy": "למעקב הישן אין סדרת טמפרטורות שעתית. מעקבים פעילים מתחילים לאסוף לאחר השדרוג; השעות הקודמות נשארות חסרות.",
+    "error_observe_weather": "יש לבחור ישות מזג אוויר זמינה או בחירה אוטומטית."
   }
 }
