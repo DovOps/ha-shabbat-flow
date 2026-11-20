@@ -33,3 +33,5 @@ A5 EN/HE rendering and print layout are reviewed; live deployment and real 48-ho
 ### Bulk signal selection
 - CS-FR-010: Provide Select all in this room and Clear all in this room buttons for each selected zone's activity signals. Affect same-area lights and switches only; preserve explicitly selected other-area signals. Entities with no area do not form an implicit room. Never start observation or control devices through bulk selection.
 - CS-NFR-006: Bulk controls have English/Hebrew labels, native keyboard activation and disabled states when no room candidates exist. Update checkboxes in place, retaining focus, weather source, references, duration, notes and saved-run selection. Existing 100-unique-signal server validation remains authoritative.
+
+Feature 012 adds optional explicitly enabled lifecycle SMS/app-push and secure report links. Default studies remain silent and read-only with no device/automation actions; notification settings are separate and excluded from exports. Scheduled studies and automatic calibration remain deferred.

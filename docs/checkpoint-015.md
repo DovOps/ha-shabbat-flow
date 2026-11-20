@@ -1,0 +1,11 @@
+# Settings and notifications — 0.15.0
+
+Feature 012 adds a dedicated Settings page with read-only required/feature-specific/preferred/optional capability checks. SMS uses installed Twilio SMS UI sender metadata; app push uses registered Companion App actions. Both channels are off by default, with private explicit recipient/device selection, EN/HE messages, independent channel participation and shared lifecycle event/type controls. Stop/completion can link to an authenticated retained report with PDF / Print and JSON export. No public PDF is created.
+
+Separately enabled push reminders offer 1–8 offsets (defaults 180/60/30 minutes) before the next continuous period's first candle lighting. They require same-provider Jewish Calendar event calendars and explicit issur Off, same local date and a two-minute late limit. Minute checks use a 15-minute calendar cache. Reminders open planning but never create, approve or activate it, and continue if a draft exists.
+
+Durable bounded claims provide at-most-one dispatch attempt per event/channel; uncertain calls are never automatically retried. Provider submission is unconfirmed delivery. Settings changes cancel queued older-revision work; in-flight calls cannot be recalled. Notification faults do not stop the observer. No actuator/automation-mutation path added. No credentials collected; private targets and ledger remain outside study exports/repository.
+
+Includes 0.14.1 same-room Select all / Clear all signal controls. The earlier 0.14.1 files were staged on the installation but not restarted; this release combines the changes for a single restart from running 0.14.0.
+
+Verification: 76 compiler, 48 frontend, 106 HA tests on each of HA 2026.8.2 and 2026.11.2 passed. New tests exercise unavailable/partial dependencies, admin restrictions, private settings, opt-in transitions, SMS/push/both channels, exact service allowlist, repeated ticks/restarts, interrupted/failed attempts, cancellation, missing provider/store failure and same-day/issur/missed/candle-boundary reminder suppression. Real handset delivery, enabled reminders and mobile PDF export remain pending until owner configuration. Deployment pending.
