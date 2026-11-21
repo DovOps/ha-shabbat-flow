@@ -1,6 +1,6 @@
 # Feature 016 — Stored PDF downloads
 
-Status: implemented and locally verified; deployment and phone acceptance pending.
+Status: implemented and locally verified; deployed and desktop download verified; phone acceptance pending.
 
 ## Problem
 Native browser printing does not reliably open in the HA Companion App. Reports need an actual PDF stored on the HA host and a download command, independent of the mobile print dialog.

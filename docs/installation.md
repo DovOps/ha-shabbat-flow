@@ -161,3 +161,8 @@ Back up the integration and its observation Store before upgrading. Earlier rele
 Deployment verification (2026-11-20): authorized 0.14.0 installation completed with an on-host backup of the previous integration and existing ShabbatFlow storage. Archive checksum, Python syntax and all 41 installed files verified; saved household bytes unchanged. After one HA restart, the live versioned panel and standalone Climate Study entry loaded. Registered HVAC zones, weather source and same-area lights/switches were displayed; temporary browser selections were cleared without starting a study. No device control activated. Real study collection/export and native PDF pagination remain pending.
 
 In 0.14.1 (packaged, not yet deployed), use **Select all in this room** / **Clear all in this room** within a selected zone to update its room-associated lights and switches. Other-area selections remain untouched. Nothing is actuated and observation is not started by these buttons.
+
+## Stored PDF downloads (0.19+)
+Home Assistant installs the pinned ReportLab and Python bidi requirements from PyPI when loading this integration. The packaged DejaVu fonts include their license. A backend update requires one HA restart; PDF generation afterward needs no restart. Generation is on demand and writes only to the integration's private PDF cache under `.storage/shabbat_flow_pdfs`. No public `www` PDF directory is used.
+
+Use **Reports → Generate saved PDF**, wait for Ready, then Download/Open or Share / Save to Files. The latter depends on browser/Companion App support. Unchanged reports reuse their stored file; changed JSON/feedback regenerates it. Browser Print remains an alternative.

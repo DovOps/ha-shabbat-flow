@@ -293,6 +293,8 @@ class PdfView(BaseView):
             if payload.get('op') in ('status','download') and set(payload)=={'op','key'}:
                 return self.response(await store.fetch(payload['key'],payload['op']=='download'))
             raise ValueError('pdf_invalid')
+        except OSError:
+            return self.response({'error':'pdf_unavailable'},503)
         except (ValueError,TypeError,KeyError,PlanError) as exc:
             code=str(exc) if str(exc).startswith('pdf_') else 'pdf_invalid'
             return self.response({'error':code},409 if code=='pdf_stale' else 400)

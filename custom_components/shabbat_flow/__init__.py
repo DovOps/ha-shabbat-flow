@@ -37,7 +37,8 @@ async def async_setup_entry(hass, entry):
         await data["observer"].load()
     from .pdf_store import PdfStore
     data["pdf"] = PdfStore(hass)
-    await data["pdf"].tidy()
+    try: await data["pdf"].tidy()
+    except OSError: pass  # PDF cache failure must not disable planning/observation.
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])

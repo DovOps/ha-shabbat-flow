@@ -83,3 +83,17 @@ def test_hebrew_temperature_units_and_parentheses():
     assert '(°C)' in visual and '23 °C' in visual
     assert ')C°(' not in visual
     assert get_display('בדיקה (חדר)',base_dir='R').startswith('(רדח)')
+
+
+@pytest.mark.asyncio
+async def test_pdf_cache_io_failure_does_not_disable_integration(host,monkeypatch):
+    from unittest.mock import AsyncMock
+    from custom_components.shabbat_flow import async_setup_entry,async_unload_entry
+    hass,entry=host
+    await async_unload_entry(hass,entry)
+    monkeypatch.setattr(PdfStore,'tidy',AsyncMock(side_effect=OSError('cache inaccessible')))
+    assert await async_setup_entry(hass,entry)
+    assert hass.data['shabbat_flow']['observer'].error is None
+    monkeypatch.setattr(hass.data['shabbat_flow']['pdf'],'start',AsyncMock(side_effect=OSError('cache inaccessible')))
+    result=await PdfView(hass).post(Request(json.dumps({'op':'generate'}).encode()))
+    assert result.status==503 and decoded(result)['error']=='pdf_unavailable'

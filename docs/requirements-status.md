@@ -80,3 +80,5 @@ Feature 016 stored PDF downloads: specified/planned, not implemented. Private HA
 
 ## 0.19.0 — lazy stored PDFs
 Feature 016 implemented and locally tested. PDFs are generated on demand from JSON, stored privately and reused while unchanged. Admin-authenticated download/open/share flow replaces reliance on mobile print; original browser print remains available. Rendering runs separately from observation; no device control. Supersedes the dependency-pending status above. See checkpoint 025; deployment/phone acceptance are recorded separately.
+
+0.19.0 deployed: retained observation PDFs generated and downloaded in both languages through authenticated HA. Source stores preserved, no controls activated. Desktop download passed; mobile Open/Share awaits user acceptance.
