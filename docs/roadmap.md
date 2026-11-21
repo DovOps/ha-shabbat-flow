@@ -89,3 +89,5 @@ Brochure gallery now includes 0.16.4 home activity and room-readiness examples i
 PDF performance first step: print-only Arial/Tahoma preference implemented and bilingual embedding inspected. Next: install in a separately authorized upgrade, export a full report and compare phone rendering. Gradient/chart optimization remains a separate potential follow-up, not part of this change.
 
 PDF font deployment: authorized static-only patch installed on 0.16.4 with seven-file checksum parity and backups; no HA restart or observation interruption. Supersedes the not-installed font note above. Browser cache marker added; phone performance comparison remains pending.
+
+Next planning extension: feature 014. Deliver fixed meal/activity/service lighting controls first, independent fan/outlet previews next, then temperature-policy shadow replay and feedback classification. Keep first-live fixed-device qualification under feature 010 separate from conditional comfort and appliance execution. Do not turn an exceptional early meal into a global timing change. All new feature-014 requirements are specified, not implemented/deployed.

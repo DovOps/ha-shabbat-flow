@@ -154,3 +154,6 @@ Feature 012 clarification: explicit opt-in study notifications may call allowlis
 - EX-NFR-023: No automation/device writes. Names/icons are presentation metadata. Grouping/filtering do not change planner events or grant ownership. Test mixed triggers, excluded sync, relevant unresolved, weekday eligibility, 23:00 timers, continuous-calendar transitions/conditions, friendly naming, grouping and PDF omissions. Maintain EN/HE and backward-compatible rendering of saved overlays.
 
 Main-page discovery: UI-FR-010/UI-NFR-004 in feature 009 requires a read-only summary of persisted scheduled/observing plan runs, separate from browser drafts and climate studies. Display observer errors as unavailable; a saved plan never implies activation. No changes to execution scope.
+
+## Future conditional comfort and independent loads
+Feature 014 specifies temperature-gated HVAC, independent fans and outlet appliances. These are not silently included in the first live increment. Conditional evaluation requires an extended approved-intent/recovery contract; fans need capability qualification and appliances remain excluded until their load-specific behavior and replay semantics are reviewed. Preview or shadow support never implies live eligibility.
