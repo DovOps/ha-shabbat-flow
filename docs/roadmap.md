@@ -95,3 +95,5 @@ Next planning extension: feature 014. Deliver fixed meal/activity/service lighti
 
 ## 0.17.0 — flexible activities and comfort shadow policies
 Feature 014 planning/observation stages implemented: explicit meal durations and cleanup, independent room playtime/recreation, per-load exclusions/replacement, service-light presets and calendar offsets, bathroom daylight suitability, fan/outlet track-only mappings, temperature-policy shadow sampling, and classified feedback in EN/HE HTML/PDF summaries. Existing saved plans retain their original schedules until edited. No live adapters or device calls added. Feature 010 qualification, provider freshness/manual holds, hardware resume tests and full mobile/PDF acceptance remain pending. Supersedes feature 014's specified-only status above. See `specs/014-flexible-activity-comfort/verification.md` and checkpoint 023 for actual test/deployment evidence.
+
+0.17.0 deployment verified: 55 packaged files, three retained stores, one backend restart, saved-plan reopening and meal-preset preview. Device control remains unarmed; household acceptance and execution qualification are pending. See checkpoint 023.

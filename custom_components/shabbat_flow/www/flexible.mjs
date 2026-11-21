@@ -16,7 +16,7 @@ export function renderFlexible({bundle,segment,node,lang,changed,render,inventor
  const f=()=>bundle.plan.flex??=emptyFlex();const zone=bundle.plan.snapshot.timezone;
  const select=(key,value,opts,fn)=>{const l=node('label',undefined,'field'),s=node('select');l.append(node('span',t(key)));for(const [v,text]of opts){const o=node('option',text);o.value=v;s.append(o);}s.value=value;s.onchange=()=>{fn(s.value);changed();};l.append(s);return l;};
  const num=(key,value,fn,min=0,max=100)=>{const l=node('label',undefined,'field'),i=node('input');i.type='number';i.step='.1';i.min=min;i.max=max;i.value=value;i.oninput=()=>{fn(Number(i.value));changed();};l.append(node('span',t(key)),i);return l;};
- const duration=(key,value,fn,min=0,max=720)=>{const l=node('label',undefined,'field'),i=node('input');offsetControl(i,value,min,max,v=>{fn(v);changed();},t('window_error'),changed);l.append(node('span',t(key)),i);return l;};
+ const duration=(key,value,fn,min=0,max=720)=>{const l=node('label',undefined,'field'),i=node('input');l.append(node('span',t(key)),i);offsetControl(i,value,min,max,v=>{fn(v);changed();},t('window_error'),changed);return l;};
  const check=(text,value,fn)=>{const l=node('label',undefined,'toggle'),i=node('input');i.type='checkbox';i.checked=value;i.onchange=()=>{fn(i.checked);changed();};l.append(i,node('span',text));return l;};
  const btn=(key,fn)=>{const b=node('button',t(key));b.type='button';b.onclick=fn;return b;};
  const details=(key)=>{const d=node('details');d.append(node('summary',t(key)));return d;};

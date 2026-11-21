@@ -15,3 +15,5 @@ Planning and shadow-observation implementation, not live-control qualification.
 Final automated checks: 91 Python core tests, 60 JavaScript tests, 113 HA tests on each of HA 2026.8.2 and 2026.11.2. HA test dependency deprecation warnings remain. Local browser checks cover meal preset selection, new activity setup and English/Hebrew rendering. No hardware control test was performed.
 
 Remaining acceptance: user household mapping review, extended mobile/native PDF review, sensor measurement freshness, manual-hold/ownership/recovery execution contracts and provider-specific native resume. Conditional/fan/appliance control remains unavailable. Shadow samples are counterfactual intent under observed inputs, not a causal prediction of indoor temperature after hypothetical switching.
+
+Authorized HA deployment: 55-file parity, saved-store preservation and live meal-preset preview verified. No plan saved over, study started or device control activated during verification.
