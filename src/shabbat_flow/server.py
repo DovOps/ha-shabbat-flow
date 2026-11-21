@@ -12,6 +12,8 @@ WEB = Path(__file__).parent / 'web'
 MAX_BODY = 128 * 1024
 STATIC = {'/':('index.html','text/html'),'/app.mjs':('app.mjs','text/javascript'),'/model.mjs':('model.mjs','text/javascript'),'/style.css':('style.css','text/css')}
 
+for name in ('reports.html','reports.mjs','review-ui.mjs','navigation.mjs','observation.html','observation.mjs'):
+    STATIC['/'+name]=(name,'text/html' if name.endswith('.html') else 'text/javascript')
 STATIC['/flexible.mjs']=('flexible.mjs','text/javascript')
 STATIC['/ha-icons.mjs']=('ha-icons.mjs','text/javascript')
 STATIC['/time-input.mjs']=('time-input.mjs','text/javascript')

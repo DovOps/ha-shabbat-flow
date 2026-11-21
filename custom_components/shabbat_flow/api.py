@@ -242,6 +242,10 @@ class ObserveView(BaseView):
             payload = await read_body(request)
             observer = self.hass.data[DOMAIN]['observer']
             op = payload.get('op')
+            if op=='reports' and set(payload)=={'op'}:
+                return self.response(observer.reports())
+            if op=='review' and set(payload)=={'op','id','revision','value'} and isinstance(payload['id'],str):
+                return self.response(await observer.review(payload['id'],payload['revision'],payload['value']))
             if op=='dependencies' and set(payload)=={'op'}:
                 from .dependencies import discover
                 return self.response(discover(self.hass))
@@ -274,4 +278,4 @@ class ObserveView(BaseView):
             return self.response({'error':exc.code},400)
         except (ValueError,TypeError,KeyError,UnicodeDecodeError,RecursionError) as exc:
             code=str(exc) if str(exc).startswith('observe_') else 'invalid_request'
-            return self.response({'error':code},409 if code=='observe_conflict' else 400)
+            return self.response({'error':code},409 if code in ('observe_conflict','observe_review_conflict') else 400)

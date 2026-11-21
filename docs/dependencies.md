@@ -70,3 +70,5 @@ The website lockfile overrides vulnerable transitive versions with tinypool 2.2.
 Existing-automation issur forecasting uses the already accepted Jewish Calendar registry and saved provider-sourced continuous snapshot. Local inspection of HA's `issur_melacha_in_effect` adapter and its hdate implementation confirms candle-lighting/final-Havdalah boundaries remain continuous across adjacent observance days. No new calendar package or runtime control is added. Predictions remain conditional on saved anchors; current sensor state alone is never projected into the future.
 
 0.16.2 retains HA’s own icon renderer in its owning same-origin document and copies/caches its SVG output for iframe display. No third-party icon dependency, CDN or service is added. Render waits are bounded; unavailable graphics retain labeled fallbacks.
+
+0.18.0 Reports and owner reviews reuse authenticated admin HTTP, existing observer atomic storage, standard-library projections and native browser printing. No new package, provider, AI service or device call. Website additions use the existing Docusaurus/Pages workflow.

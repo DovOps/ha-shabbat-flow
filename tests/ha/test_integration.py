@@ -1282,3 +1282,51 @@ async def test_comfort_shadow_records_inputs_without_actuation(host):
     assert run['comfort']['decisions'][-1]['intent']=='unknown'
     c['release']='existing';collect(hass,run,now+timedelta(hours=2),False)
     assert run['comfort']['decisions'][-1]['reason']=='external_release'
+
+@pytest.mark.asyncio
+async def test_report_review_atomic_revision_clear_restart_no_commands(host,monkeypatch):
+    from custom_components.shabbat_flow.observe import Observer,DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    from custom_components.shabbat_flow.api import ObserveView
+    hass,_=host;bundle,_=observation_bundle(hass);observer=hass.data[DOMAIN]['observer']
+    monkeypatch.setattr(type(hass.services),'async_call',AsyncMock(side_effect=AssertionError('no services')))
+    run=await observer.start(bundle,DEFAULT_POLICY,'review-test-001','actor',now=instant(bundle['plan']['snapshot']['preparation_start']))
+    value={'overall':4,'lighting':None,'climate':'na','period_type':'exceptional','worked':'Comfortable','differed':'Short meal','next_change':'Review meal duration','destination':'settings','decision':'proposed'}
+    saved=await observer.review(run['id'],0,value);assert saved['revision']==1
+    with pytest.raises(ValueError,match='observe_review_conflict'):await observer.review(run['id'],0,value)
+    value['destination']='app';await observer.review(run['id'],1,value)
+    export=observer.export(run['id']);assert export['run']['bundle']==bundle
+    assert len(export['review']['history'])==1 and 'actor' not in export['run']
+    listing=observer.reports();assert listing['runs'][0]['reviewed'] and 'study_sources' not in listing and 'bundle' not in listing['runs'][0]
+    observer.close();restored=Observer(hass);await restored.load();assert not restored.error
+    assert restored.export(run['id'])['review']['value']['destination']=='app'
+    await restored.review(run['id'],2,None);cleared=restored.export(run['id'])['review'];assert cleared['value'] is None and cleared['history']==[] and cleared['revision']==3
+    view=ObserveView(hass)
+    with pytest.raises(web.HTTPForbidden):await view.post(Request(json.dumps({'op':'reports'}).encode(),admin=False))
+    assert (await view.post(Request(json.dumps({'op':'review','id':run['id'],'revision':0,'value':value}).encode()))).status==400 # closed original store
+    hass.services.async_call.assert_not_called();restored.close()
+
+@pytest.mark.asyncio
+async def test_review_write_failure_preserves_memory(host,monkeypatch):
+    from custom_components.shabbat_flow.observe import DEFAULT_POLICY
+    from custom_components.shabbat_flow.ownership import instant
+    hass,_=host;bundle,_=observation_bundle(hass);observer=hass.data[DOMAIN]['observer']
+    run=await observer.start(bundle,DEFAULT_POLICY,'review-test-002','actor',now=instant(bundle['plan']['snapshot']['preparation_start']))
+    def fail(*args):raise OSError('fixture')
+    monkeypatch.setattr('custom_components.shabbat_flow.observe.atomic_save',fail)
+    with pytest.raises(ValueError,match='observe_store'):await observer.review(run['id'],0,None)
+    assert observer.export(run['id'])['review']['revision']==0
+
+def test_performance_denominators_and_review_validation():
+    from copy import deepcopy
+    from custom_components.shabbat_flow.reports import performance,validate_review
+    run={'status':'completed','bundle':{'config':{'loads':{'a':{'physical_id':'p','display':{'room':'r'}},'alias':{'physical_id':'p','display':{'room':'r'}}},'rooms':{'r':{'en':'Example','he':'דוגמה'}}}},'summary':{'p':{'matched_seconds':60,'mismatched_seconds':60,'unknown_seconds':120,'unplanned_seconds':60}},'event_checks':{}}
+    before=deepcopy(run);p=performance(run);assert run==before
+    assert p['totals']['agreement_percent']==50 and p['totals']['assessed_percent']==40 and p['rooms'][0]['devices']==1
+    run['summary']['p']={'unknown_seconds':600};assert performance(run)['totals']['agreement_percent'] is None
+    run['kind']='climate_study';run['summary']['p']={'matched_seconds':600};assert performance(run)['totals']['agreement_percent'] is None
+    run['status']='stopped';assert performance(run)['partial']
+    good={'overall':None,'lighting':'na','climate':5,'period_type':'ordinary','worked':'','differed':'','next_change':'','destination':'app','decision':'proposed'}
+    assert validate_review(good)==good
+    for bad in [{**good,'overall':True},{**good,'worked':'x'*2001},{**good,'decision':'activate'},{**good,'identity':'someone'}]:
+        with pytest.raises(ValueError):validate_review(bad)

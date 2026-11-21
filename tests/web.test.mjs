@@ -645,3 +645,17 @@ test('activity day copy remaps meal bindings and preserves anchor offsets',async
  assert.equal(+new Date(effectiveMealEnd(copied,nextMeal))-+new Date(nextMeal.start),120*60000);
  assert.equal(chosen.plan.flex.windows.length,1);
 });
+test('report filters, bilingual review fields and private export boundary',async()=>{
+ const {reviewWords,blankReview,filterReports,reviewBundle}=await import('../src/shabbat_flow/web/review-ui.mjs');
+ assert.deepEqual(Object.keys(reviewWords.en).sort(),Object.keys(reviewWords.he).sort());
+ const a={id:'a',start:'2027-01-01T10:00:00Z',kind:'plan',status:'completed',reviewed:false},b={...a,id:'b',start:'2027-01-02T10:00:00Z',kind:'climate_study',reviewed:true};
+ assert.deepEqual(filterReports([a,b],{}).map(r=>r.id),['b','a']);assert.deepEqual(filterReports([a,b],{type:'plan',review:'needs_review'}),[a]);
+ const review=blankReview();assert.equal(review.overall,null);assert.equal(review.decision,'proposed');
+ const out=reviewBundle({run:{id:'a',snapshot_hash:'hash',start:a.start,end:b.start,bundle:{plan:{snapshot:{timezone:'UTC'}}},actor:'private'},review:{value:review},performance:{}});
+ assert.equal(out.run_id,'a');assert.equal(out.device_commands_sent,0);assert.ok(!JSON.stringify(out).includes('private'));assert.ok(!('bundle' in out));
+});
+test('planner has one top action per command and no duplicate export IDs',()=>{
+ const html=fs.readFileSync(new URL('../src/shabbat_flow/web/period.html',import.meta.url),'utf8');
+ for(const id of ['preview','save','export','export-pdf','load','delete','reset'])assert.equal([...html.matchAll(new RegExp('id="'+id+'"','g'))].length,1);
+ assert.ok(html.indexOf('id="plan-commands"')<html.indexOf('id="period-form"'));assert.ok(html.includes('id="workflow-note"'));
+});
