@@ -1,15 +1,17 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Shabbat Flow</title><link rel="stylesheet" href="./style.css?v=print-font-1"><script type="module" src="/period.mjs"></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Shabbat Flow</title><link rel="stylesheet" href="./style.css?v=print-font-1"><script type="module" src="/period.mjs"></script><script type="module" src="./navigation.mjs"></script></head>
 <body>
 <header class="topbar"><a href="/" class="brand" aria-label="Shabbat Flow"><img class="brand-logo" src="/logo.png" alt="Shabbat Flow" width="2172" height="724"></a><label class="language"><span data-i18n="language"></span><select id="language"><option value="en">English</option><option value="he">עברית</option></select></label></header>
 <main>
-<section class="intro"><div><span class="badge" data-i18n="preview_badge"></span><h1 data-i18n="tagline"></h1><p data-i18n="period_notice"></p></div></section>
-<p><a href="/" data-i18n="original_preview"></a></p>
+<section class="intro planner-intro"><div><span class="badge" data-i18n="preview_badge"></span><h1 id="planner-title"></h1><p data-i18n="period_notice"></p></div></section>
+
 <p id="status" role="status" aria-live="polite"></p>
+<section class="workflow-guide"><h2 id="workflow-title"></h2><p id="workflow-help"></p><p id="workflow-note" class="hint"></p><p id="workflow-state" role="status"></p></section>
+<div class="toolbar command-bar" id="plan-commands"><button id="preview" class="primary" data-i18n="preview"></button><button id="save" data-i18n="save"></button><button id="observe-jump"></button><details class="command-menu"><summary id="export-menu"></summary><button id="export-pdf" disabled data-i18n="export_pdf"></button><button id="export" disabled data-i18n="export"></button><p data-i18n="export_notice" class="hint"></p></details><details class="command-menu"><summary id="more-menu"></summary><button id="load" data-i18n="load"></button><button id="delete" data-i18n="delete"></button><button id="reset" data-i18n="reset"></button></details></div>
 <div id="period-form"></div>
-<div class="toolbar"><button id="preview" class="primary" data-i18n="preview"></button><button id="save" data-i18n="save"></button><button id="load" data-i18n="load"></button><button id="delete" data-i18n="delete"></button><button id="reset" data-i18n="reset"></button></div>
-<section class="card schedule"><h2 data-i18n="timeline"></h2><p data-i18n="period_limits" class="hint"></p><div id="timeline"></div><button id="export-pdf" disabled data-i18n="export_pdf"></button><p data-i18n="pdf_help" class="hint"></p><button id="export" disabled data-i18n="export"></button><p data-i18n="export_notice" class="hint"></p></section>
+
+<section id="schedule-preview" class="card schedule" tabindex="-1"><h2 data-i18n="timeline"></h2><p data-i18n="period_limits" class="hint"></p><div id="timeline"></div><p data-i18n="pdf_help" class="hint"></p></section>
 <section id="observe-panel" class="card" hidden></section>
 </main>
 <article id="print-report" aria-hidden="true"></article>

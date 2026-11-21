@@ -1,6 +1,8 @@
 """Loopback-only fictional gallery fixture. Never connects to Home Assistant."""
 import argparse
 import json
+import importlib.util
+from copy import deepcopy
 from datetime import datetime, timezone
 from shabbat_flow.server import Handler, ThreadingHTTPServer, ROOT, WEB
 
@@ -24,11 +26,23 @@ example_runs = [
     {'id': 'a'*32, 'kind': 'plan', 'status': 'scheduled', 'start': '2027-01-08T15:30:00+02:00', 'end': '2027-01-09T18:00:00+02:00', 'timezone': 'Asia/Jerusalem'},
     {'id': 'b'*32, 'kind': 'climate_study', 'status': 'observing', 'start': '2027-01-08T09:00:00+02:00', 'end': '2027-01-09T09:00:00+02:00', 'timezone': 'Asia/Jerusalem'},
 ]
+# Minimal, explicitly fictional report data for gallery and review UX checks.
+spec=importlib.util.spec_from_file_location('sf_report_fixture',ROOT/'custom_components/shabbat_flow/reports.py')
+report_model=importlib.util.module_from_spec(spec);spec.loader.exec_module(report_model)
+report_run={'id':'c'*32,'kind':'plan','mode':'observe','status':'completed','start':'2027-01-08T14:20:00Z','end':'2027-01-09T15:30:00Z','snapshot_hash':'fictional-plan-revision','bundle':{'config':{'rooms':{'room_a':{'en':'Room A','he':'חדר א׳'}},'loads':{'main':{'physical_id':'p','display':{'room':'room_a'}}}},'plan':{'snapshot':{'timezone':'Asia/Jerusalem'}}},'summary':{'p':{'matched_seconds':42000,'mismatched_seconds':1800,'unknown_seconds':600,'unplanned_seconds':300}},'mapping':{'p':{'entity_id':'light.example'}},'preview':{'events':[]},'event_checks':{'one':{'outcome':'matched'},'two':{'outcome':'mismatched'}},'gaps':[]}
+report_review={'revision':0,'value':None,'history':[]}
+def report_fixture():return {'run':deepcopy(report_run),'performance':report_model.performance(report_run),'review':deepcopy(report_review),'mode':'observe','device_commands_sent':0}
 class GalleryHandler(Handler):
     def do_POST(self):
         if not self.permitted(): return
         if self.path=='/api/v2/observe':
             body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))))
+            if body.get('op')=='reports':
+                self.reply(200,{'runs':[{'id':report_run['id'],'kind':'plan','status':'completed','start':report_run['start'],'end':report_run['end'],'timezone':'Asia/Jerusalem','reviewed':report_review['value'] is not None,'performance':report_model.performance(report_run)['totals']},*example_runs]});return
+            if body.get('op')=='export' and body.get('id')==report_run['id']:self.reply(200,report_fixture());return
+            if body.get('op')=='review' and body.get('id')==report_run['id']:
+                if body['revision']!=report_review['revision']:self.reply(409,{'error':'observe_review_conflict'});return
+                report_review.update(value=body['value'],revision=report_review['revision']+1,updated_at='2027-01-10T12:00:00Z');self.reply(200,report_review);return
             if body.get('op')=='dependencies': self.reply(200,{'dependencies':dependencies});return
             if body.get('op')=='sms_get':
                 self.reply(200,{'settings':{'enabled':False,'push_enabled':False,'climate':True,'plan':True,'started':True,'stopped':True,'completed':True,'report_link':True,'reminder_enabled':False,'reminder_offsets':[180,60,30],'sender':'','push_service':'','recipient':'','language':'en'},'capability':{'available':True,'push_available':True,'report_url_available':True,'reminder_available':True,'senders':[],'push_services':[]},'events':[]});return

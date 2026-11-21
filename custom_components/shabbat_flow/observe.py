@@ -60,6 +60,11 @@ def read_store(path):
             raise ValueError('observe_store')
         if run['status'] not in ACTIVE | {'completed','stopped'}: raise ValueError('observe_store')
         if not isinstance(run['mapping'],dict) or len(run['mapping']) > (200 if run.get('kind')=='climate_study' else 100): raise ValueError('observe_store')
+        from .reports import validate_review
+        if run.get('review') is not None: validate_review(run['review'])
+        if type(run.get('review_revision',0)) is not int or run.get('review_revision',0)<0: raise ValueError('observe_store')
+        if not isinstance(run.get('review_history',[]),list) or len(run.get('review_history',[]))>10: raise ValueError('observe_store')
+        for prior in run.get('review_history',[]): validate_review(prior['value'])
         policy(run['policy']); instant(run['start']); instant(run['end']); instant(run['last_sample'])
         if run.get('kind')=='climate_study':
             from .study import valid_saved
@@ -322,13 +327,42 @@ class Observer:
             await self.commit(candidate)
         return self.export(rid)
 
+    async def review(self, rid, revision, value):
+        from .reports import validate_review, review_state
+        if type(revision) is not int or revision < 0: raise ValueError('observe_review_invalid')
+        if value is not None: value=validate_review(value)
+        async with self.lock:
+            if self.error or self.closed: raise ValueError('observe_store')
+            candidate=deepcopy(self.data)
+            if rid not in candidate['runs']: raise ValueError('observe_missing')
+            run=candidate['runs'][rid]
+            if run.get('review_revision',0)!=revision: raise ValueError('observe_review_conflict')
+            history=run.setdefault('review_history',[])
+            if value is None: history.clear()
+            elif run.get('review') is not None:
+                history.append({'revision':run.get('review_revision',0),'updated_at':run.get('review_updated_at'),'value':run['review']})
+                del history[:-10]
+            run.update(review=value,review_revision=revision+1,review_updated_at=datetime.now(timezone.utc).isoformat())
+            await self.commit(candidate)
+            return review_state(run)
+
+    def reports(self):
+        from .reports import performance
+        return {'mode':'observe','error':self.error,'retention_days':90,'max_runs':20,'runs':[
+            {k:r[k] for k in ('id','status','start','end','snapshot_hash')} |
+            {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone'],
+             'reviewed':r.get('review') is not None,'review_revision':r.get('review_revision',0),
+             'performance':performance(r)['totals']}
+            for r in sorted(self.data['runs'].values(),key=lambda r:r['start'],reverse=True)]}
+
     def listing(self):
         from .study import sources
         return {'study_sources':sources(self.hass),'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
 
     def export(self,rid):
         if rid not in self.data['runs']: raise ValueError('observe_missing')
+        from .reports import performance, review_state
         run=deepcopy(self.data['runs'][rid]); run.pop('actor',None); run.pop('request_id',None)
         return {'schema_version':1,'collection_error':self.error,'sample_seconds':60,'mode':'observe','device_commands_sent':0,
                 'limitations':['sampled_not_exact_history','no_occupancy_inference','preserve_settings_baseline_may_be_unknown','unmanaged_forecast_not_guaranteed','thermal_reports_not_verified_room_temperatures','weather_report_not_local_outdoor_sensor','state_update_time_not_measurement_time','no_automatic_thermostat_calibration'],
-                'run':run}
+                'performance':performance(run),'review':review_state(run),'run':run}

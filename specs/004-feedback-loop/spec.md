@@ -1,6 +1,6 @@
 # Feature specification: post-observance feedback and improvement
 
-Status: specified; not implemented. This feature does not require a chat protocol or AI service.
+Status: partially implemented. Feature 015 supplies an owner review linked to an observation, optional ratings, classifications, revision history and exports. Full multi-person, comparable-cohort trends and automatic proposal workflows remain specified, not implemented. This feature does not require a chat protocol or AI service.
 
 ## User scenarios
 After an observance, household members record how well the plan worked. An owner reviews ratings alongside the approved plan and available observations, then chooses changes for a future plan. The workflow covers every day of a multi-day period, with an optional whole-period summary.

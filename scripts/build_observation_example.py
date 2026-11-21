@@ -3,6 +3,8 @@ import base64
 from datetime import datetime, timedelta, timezone
 import json
 import math
+import re
+from functools import lru_cache
 import sys
 from pathlib import Path
 
@@ -50,7 +52,12 @@ if study_mode:
     for frame in series:
         frame['references']={'climate.study':{'current_temperature':{'celsius':frame['climates']['climate.study']['current_temperature']['celsius']-1.2}}}
 labels=json.loads((ROOT/'src/shabbat_flow/web/period-i18n.json').read_text())
-renderer=(ROOT/'src/shabbat_flow/web/thermal-report.mjs').read_text().replace('export function','function')
+@lru_cache(None)
+def bundled_module(name):
+    source=(ROOT/'src/shabbat_flow/web'/name).read_text()
+    source=re.sub(r"from ['\"]\./([^'\"]+)['\"]",lambda m:"from '"+bundled_module(m.group(1))+"'",source)
+    return 'data:text/javascript;base64,'+base64.b64encode(source.encode()).decode()
+renderer="import {renderObservationPrint} from '"+bundled_module('thermal-report.mjs')+"';"
 css=(ROOT/'src/shabbat_flow/web/style.css').read_text()
 logo=base64.b64encode((ROOT/'assets/logo.png').read_bytes()).decode()
 html='''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ShabbatFlow - fictional observation summary</title><style>'''+css+'''

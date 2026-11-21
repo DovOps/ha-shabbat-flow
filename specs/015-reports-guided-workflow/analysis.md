@@ -1,0 +1,2 @@
+# Analysis
+The observer already retains immutable snapshots, sampled agreement counters, thermal samples and completed/stopped runs. Reuse those records rather than another scheduler or database. A report can be generated for every retained run without a new automatic study or a misleading execution score. Store review metadata beside (never inside) the frozen bundle so the snapshot digest remains stable. Reuse browser PDF printing and existing authenticated HA transport. No dependency or third-party design adoption.

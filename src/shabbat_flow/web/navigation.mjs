@@ -1,0 +1,3 @@
+import {reviewWords} from './review-ui.mjs';
+function update(){const language=document.documentElement.lang==='he'?'he':'en';for(const nav of document.querySelectorAll('.app-nav')){let a=nav.querySelector('[data-reports-link]');if(!a){a=document.createElement('a');a.href='./reports.html';a.dataset.reportsLink='';const settings=nav.querySelector('a[href="./settings.html"]');nav.insertBefore(a,settings);}a.textContent='▤ '+reviewWords[language].reports;if(location.pathname.endsWith('/reports.html')||location.pathname.endsWith('/observation.html'))a.setAttribute('aria-current','page');}}
+update();new MutationObserver(update).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});

@@ -122,3 +122,24 @@ input[type=time]{font:inherit;width:100%;min-height:44px;padding:10px;border:1px
 #activity-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
 #activity-overview>h2,#activity-overview>p{grid-column:1/-1;margin-block:.25rem}
 @media(max-width:700px){#activity-overview{grid-template-columns:1fr}}
+
+/* Guided actions and reports: logical layout supports English and Hebrew. */
+.command-bar{position:sticky;top:0;z-index:20;background:#f4f9fc;border:1px solid #b6cedd;border-radius:12px;padding:.65rem;display:flex;gap:.55rem;flex-wrap:wrap;align-items:center;box-shadow:0 3px 12px #16354912}
+.command-bar button,.command-menu summary,.command-link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
+.command-link{padding:.6rem .85rem;border:1px solid #a7c2d0;border-radius:9px;text-decoration:none;font-weight:600;background:white;color:#183a50}
+.command-menu{position:relative;margin:0}.command-menu summary{cursor:pointer;padding:.55rem .85rem;border:1px solid #a7c2d0;border-radius:9px;background:white}.command-menu[open]{flex-basis:100%;padding:.6rem;border:1px solid #a7c2d0;border-radius:9px}.command-menu button{margin:.3rem}
+.workflow-guide{margin-block:1rem}.workflow-guide h2{font-size:1.15rem;margin-bottom:.3rem}.workflow-guide p{margin-block:.35rem}.optional-activities>section{border:0;padding:.6rem 0;box-shadow:none;margin:0}
+#schedule-preview,#observe-panel,#review-editor{scroll-margin-top:130px}.observation-start{margin-block:1rem}.observation-manage{border-block-start:1px solid #cedee8;padding-block-start:1rem;margin-block-start:1rem}.observation-manage>button{margin:.3rem}
+.report-filters,.review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;align-items:end}.report-card .state{display:inline-block;margin-inline-end:.5rem}.report-card h2{margin-top:0}.report-card .toolbar{margin-bottom:0}.report-table-scroll{overflow:auto}.performance-summary{border:1px solid #c9dce8;border-radius:10px;padding:1rem;margin-block:1rem}.report-controls{max-width:1100px;margin:auto}#review-editor textarea{width:100%;box-sizing:border-box}#review-editor label{display:block;margin-block:.6rem}
+@media(max-width:600px){.command-bar{padding:.4rem;gap:.35rem}.command-bar>button{flex:1 1 auto;font-size:.9rem}.command-menu summary{font-size:.9rem}.report-card{padding:1rem}.workflow-guide{font-size:.95rem}}
+@media print{.command-bar,.report-controls,.workflow-guide,.report-filters,.app-nav,#review-editor{display:none!important}.performance-summary{break-inside:avoid;box-shadow:none}.report-table-scroll{overflow:visible}}
+
+.observation-page #print-report{display:block;max-width:1100px;margin:auto;padding:20px}.observation-page #print-report>.brand-logo{width:280px}.observation-page #print-report>p{overflow-wrap:anywhere}
+
+[hidden]{display:none!important}
+
+.planner-intro{padding:1rem 1.2rem;margin-block:.5rem;background:#f4f9fc}.planner-intro h1{font-size:1.65rem;margin-block:.4rem}.planner-intro p{margin-block:.4rem}.command-bar{max-height:55vh;overflow:auto}
+
+.report-top-commands{max-width:1100px;margin:1rem auto}.review-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#review-editor textarea{font:inherit}@media(max-width:700px){.review-grid{grid-template-columns:1fr}.report-top-commands{margin:.5rem}}
+.review-grid label>span,.report-filters label>span{display:block;margin-block-end:.35rem}.review-grid select,.report-filters select{width:100%}
+@media screen{.observation-page #print-report table{width:100%;border-collapse:collapse}.observation-page #print-report td,.observation-page #print-report th{padding:.65rem;text-align:start;border-bottom:1px solid #cfdee7}.observation-page #print-report th{background:#edf4f7}.observation-page #print-report table{margin-block:1rem}}

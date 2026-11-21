@@ -142,3 +142,18 @@ In the dated planner, open **Activities, fans and comfort**. Existing saved choi
 - **Feedback:** classify exceptional periods, intended new behavior, configuration differences, comfort issues or missing evidence. Notes travel with the saved/exported plan; they do not automatically alter future plans.
 
 Save a new dated plan and inspect the full preview before starting observation. This release does not enable live control.
+
+
+## Reports and the review loop
+
+The planner keeps Preview, Save draft, Observe setup and Export in its top command bar. Extra activities and advanced settings are collapsed. **Save draft** saves in this browser; it does not start observation. **Observe** freezes a separate copy in HA and records the chosen period without controlling devices.
+
+Open **Reports**, next to Settings, for all retained plan observations and climate studies. Filter by study type, status or missing reviews; open a report or export PDF/JSON directly. A performance summary is available for every recorded period, automatically when it completes. A stopped/running study is partial. A period without observation has no invented report.
+
+State agreement compares assessed device-minutes, not automation execution success or occupancy. Unknown and unplanned minutes remain separate. Room breakdowns help identify which area deserves review; thermal evidence and existing-automation context remain in the report. Climate-only studies have no plan-agreement score.
+
+After the period, rate overall fit, lighting and HVAC comfort, then record what worked, what differed and one next adjustment. Mark the period ordinary, exceptional or uncertain. Route the improvement to **My settings / future plan** or **Application / requirements**, and track it as proposed, applied to future settings, deferred or dismissed. Marking it applied is your report; it does not change settings in HA.
+
+Save the review explicitly. Updates use revision checks so another tab cannot silently overwrite a newer review. Up to ten previous versions remain visible; Clear review removes its ratings, notes and history without deleting the observation. Reviews inherit the study’s retention: up to 20 runs and 90 days after completion. Export important records before they expire.
+
+Full JSON, PDF and review-bundle exports include saved feedback. Use a review bundle with your chosen analysis tool or coding agent to discuss improvements. It contains private household details: remove or generalize these before copying into a public issue or requirement. Nothing is submitted to GitHub or applied automatically. Multi-person feedback, comparable-period trends and automatic proposals remain future work.

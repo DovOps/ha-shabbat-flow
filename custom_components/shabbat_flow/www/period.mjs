@@ -1,3 +1,4 @@
+import {reviewWords} from './review-ui.mjs';
 import {renderFlexible,renderFlexibleSummary,effectiveMealEnd} from './flexible.mjs';
 import {formatOffset,offsetControl} from './time-input.mjs';
 import {itemIcon,loadIcons} from './ha-icons.mjs';
@@ -19,7 +20,7 @@ const t=key=>translate(catalogs,lang(),key);
 function node(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
 function message(key,error=false){lastMessage={key,error};$('status').textContent=t(key);$('status').className=error?'error':'';}
 function error(error){const key='error_'+error.message;message(Object.hasOwn(catalogs[lang()],key)?key:'error_internal',true);}
-function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('export-pdf').disabled=true;$('print-report').replaceChildren();$('timeline').replaceChildren();message('period_dirty');}
+function changed(){pendingCopy=null;revision++;result=null;$('export').disabled=true;$('export-pdf').disabled=true;$('print-report').replaceChildren();$('timeline').replaceChildren();message('period_dirty');workflow();}
 function button(key,fn){const n=node('button',t(key));n.type='button';n.addEventListener('click',fn);return n;}
 function field(key,value,fn,options,sourceRole){
   const label=node('label',undefined,'field');label.append(node('span',t(key)));
@@ -88,10 +89,16 @@ function dayLabel(segment,index){
   catch{return `${t('period_day')} ${index+1}`;}
 }
 function openAdvanced(){const details=$('advanced-setup');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});details.querySelector('summary').focus();}
+function workflow(){
+ const words=reviewWords[lang()],ready=!!result?.complete;$('planner-title').textContent=words.plan_title;
+ for(const [id,key]of [['workflow-title','next'],['workflow-help','guide'],['workflow-note','draft_note'],['more-menu','more'],['export-menu','exports']])$(id).textContent=words[key];
+ $('workflow-state').textContent=words[ready?'ready':'dirty'];$('observe-jump').textContent='◉ '+words.observe;$('observe-jump').hidden=!householdMode;
+ for(const [id,icon]of [['preview','▤'],['save','✓'],['export-pdf','▧'],['export','⇩']]){const b=$(id);b.textContent=icon+' '+t(b.dataset.i18n);}
+}
 function render(){
   document.documentElement.lang=lang();document.documentElement.dir=localeMetadata[lang()].direction;$('language').value=lang();
   document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(householdMode&&n.dataset.i18n==='period_notice'?'household_notice':n.dataset.i18n));
-  if(lastMessage)message(lastMessage.key,lastMessage.error);
+  workflow();if(lastMessage)message(lastMessage.key,lastMessage.error);
   const root=$('period-form');root.replaceChildren();
   const segments=bundle.plan.snapshot.segments;
   if(!segments.some(v=>v.id===activeDay))activeDay=segments[0].id;
@@ -126,7 +133,7 @@ function render(){
     review.append(button('apply_copy',()=>{const candidate=pendingCopy.candidate;candidate.plan.language=lang();applyChange(candidate);}),button('cancel_copy',()=>{pendingCopy=null;render();}));main.append(review);
   }
   root.append(main);
-  root.append(renderFlexible({bundle,segment,node,lang,changed,render,inventory:flexInventory}));
+  const extra=node('details',undefined,'card optional-activities');extra.append(node('summary',reviewWords[lang()].optional),renderFlexible({bundle,segment,node,lang,changed,render,inventory:flexInventory}));
   for(const purpose of ['sleeping','recreation']){
     const panel=section(purpose),tiles=node('div',undefined,'room-tiles');
     for(const [room,label] of Object.entries(bundle.config.rooms)){
@@ -174,7 +181,7 @@ function render(){
     const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);if(meal.kind==='afternoon'){tile.append(node('p',t(segment.id===bundle.plan.snapshot.segments.at(-1).id?'afternoon_help':'afternoon_manual'),'hint'));const groups=node('details');groups.append(node('summary',t('meal_rooms')));const candidates=[...new Set(bundle.plan.meals.filter(m=>m.kind==='daytime').flatMap(m=>m.groups))];for(const id of candidates){const label=node('label',undefined,'toggle');label.append(node('span',bundle.config.groups[id].label[lang()]));const input=node('input');input.type='checkbox';input.checked=meal.groups.includes(id);input.addEventListener('change',()=>{meal.groups=input.checked?[...meal.groups,id]:meal.groups.filter(v=>v!==id);changed();});label.append(input);groups.append(label);}tile.append(groups,button('remove_item',()=>remove(bundle.plan.meals,meal)));}mealTiles.append(tile);
   }
   if(segment.kind==='shabbat'&&!meals.some(m=>m.kind==='afternoon'))mealPanel.append(button('add_afternoon',()=>applyChange(afternoonActivity(bundle,segment.id))));
-  mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel);
+  mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel,extra);
   const timing=node('details',undefined,'card');timing.append(node('summary',t('family_timing')),node('p',t('timing_scope'),'hint'));
   const visited=new Set();
   for(const use of dayUses.filter(v=>v.purpose==='sleeping'&&v.control==='planner')){
@@ -242,7 +249,7 @@ function renderAdvanced(root){
   }));root.append(advanced);
 }
 function renderTimeline(){
-  const root=$('timeline');root.replaceChildren();if(!result)return;
+  workflow();const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
   for(const warning of result.warnings??[]){const text=node('p',t(warning.code),'hint');text.append(node('bdi',' · '+(bundle.config.groups[warning.group]?.label[lang()]??warning.group)));root.append(text);}
   root.append(renderFlexibleSummary({bundle,result,node,lang}));
@@ -277,12 +284,13 @@ async function boot(){
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(new URLSearchParams(location.search).get('saved')==='1'?localStorage.getItem(draftKey):sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
     $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{observationPrint=data;printReport();window.print();}});});
-    $('preview').addEventListener('click',preview);
+    $('preview').addEventListener('click',async()=>{await preview();if(result){$('schedule-preview').focus({preventScroll:true});$('schedule-preview').scrollIntoView({block:'start',behavior:'smooth'});}});
     window.addEventListener('beforeprint',printReport);
     window.addEventListener('afterprint',()=>{observationPrint=null;});
     $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;observationPrint=null;printReport();window.print();});
     $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(draftKey,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
     $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(draftKey));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
+    $('observe-jump').onclick=()=>{const target=$('observe-panel');target.scrollIntoView({block:'start',behavior:'smooth'});target.querySelector('button')?.focus();};
     $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(draftKey);message('deleted');}catch(e){error(e);}});
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});

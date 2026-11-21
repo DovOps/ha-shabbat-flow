@@ -47,3 +47,5 @@ The gallery page uses actual interface captures with fictional data only. See `w
 
 ## Current public deployment
 Live at https://dovops.io/ha-shabbat-flow/ with Hebrew at /ha-shabbat-flow/he/. The project inherits the account's custom domain. Pages uses GitHub Actions and PAGES_ENABLED=true; merges to main now publish automatically. Keep the project baseUrl and do not add a conflicting project CNAME. Initial public deployment and route verification are recorded in checkpoint 019.
+
+0.18.0 gallery additions: reports-en/he.png and review-en/he.png were captured from the real UI through the loopback-only `scripts/gallery_preview.py` fixture. The report IDs, dates, Room A, sample agreement totals and cleanup note are fictional. No HA household export was used. Brochure copy and both setup guides explain Reports, the owner-review loop and observe-only limits.
