@@ -159,7 +159,7 @@
     "apply_suggestions": "Apply suggested room uses",
     "all_room_entities": "Show all devices for this room (ignore labels)",
     "all_bathrooms": "Show all bathroom areas (ignore labels)",
-    "filter_help": "Selected devices always remain visible. Lighting matches labels on the entity or its device, not the area. To find an unassigned or misplaced device, enable all areas as well. HVAC is not label-filtered.",
+    "filter_help": "Selected devices always remain visible. Lighting and fans match labels on the entity or its device, not the area. To find an unassigned or misplaced device, enable all areas as well. HVAC is not label-filtered.",
     "bathroom_filter_help": "With a bathroom label selected, this list shows areas containing matching lights or switches. Select an area, then review its lights. For unassigned lights, choose an area with Show all and use devices from all areas.",
     "bathroom_lighting": "Bathroom lighting policy",
     "bathroom_lighting_help": "Bathroom lighting can follow linked rooms or home availability. Daylight breaks are independent from night switching.",
@@ -322,7 +322,10 @@
     "daylight_unknown": "Not assessed",
     "daylight_suitable": "Sufficient natural daylight",
     "daylight_unsuitable": "No suitable daylight",
-    "daylight_suitability_help": "Record this explicitly; daylight breaks are not inferred from room names. Existing timing remains unchanged until you edit the policy."
+    "daylight_suitability_help": "Record this explicitly; daylight breaks are not inferred from room names. Existing timing remains unchanged until you edit the policy.",
+    "fans": "Fans",
+    "label_fans": "Fans label (optional)",
+    "fans_help": "Optional: select the fan controls for this room. Native fans and fan power switches are supported. No label is required; an optional Fans label narrows the list. New plans include these assignments. Choose operating windows separately under Activities, fans and comfort. Preview only; no speed changes or device control."
   },
   "he": {
     "language": "שפה",
@@ -484,7 +487,7 @@
     "apply_suggestions": "החלת השימושים המוצעים לחדר",
     "all_room_entities": "הצגת כל ההתקנים בחדר (ללא סינון תוויות)",
     "all_bathrooms": "הצגת כל האזורים לבחירת חדר רחצה (ללא סינון תוויות)",
-    "filter_help": "התקנים שנבחרו תמיד נשארים גלויים. התאורה מסוננת לפי תוויות הישות או ההתקן שלה, לא לפי תווית האזור. כדי למצוא התקן ללא אזור או באזור שגוי, אפשרו גם הצגה מכל האזורים. מיזוג וחימום אינם מסוננים לפי תוויות.",
+    "filter_help": "התקנים שנבחרו תמיד נשארים גלויים. התאורה והמאווררים מסוננים לפי תוויות הישות או ההתקן שלה, לא לפי תווית האזור. כדי למצוא התקן ללא אזור או באזור שגוי, אפשרו גם הצגה מכל האזורים. מיזוג וחימום אינם מסוננים לפי תוויות.",
     "bathroom_filter_help": "כשנבחרה תווית חדר רחצה, הרשימה מציגה אזורים המכילים תאורה או מתגים תואמים. בחרו אזור ואז בדקו את התאורה שלו. לתאורה ללא אזור, בחרו אזור באמצעות הצגת הכול והשתמשו בהתקנים מכל האזורים.",
     "bathroom_lighting": "מדיניות תאורת חדר הרחצה",
     "bathroom_lighting_help": "תאורת חדר הרחצה יכולה לפעול לפי חדרים מקושרים או שהייה בבית. הפסקת אור יום נפרדת מהחלפת לילה.",
@@ -647,6 +650,9 @@
     "daylight_unknown": "טרם נבדק",
     "daylight_suitable": "מספיק אור יום טבעי",
     "daylight_unsuitable": "אין מספיק אור יום",
-    "daylight_suitability_help": "יש להגדיר במפורש; אין הסקת אור יום משם החדר. הזמנים הקיימים אינם משתנים עד לעריכת המדיניות."
+    "daylight_suitability_help": "יש להגדיר במפורש; אין הסקת אור יום משם החדר. הזמנים הקיימים אינם משתנים עד לעריכת המדיניות.",
+    "fans": "מאווררים",
+    "label_fans": "תווית מאווררים (רשות)",
+    "fans_help": "לבחירה: סמנו את בקרי המאווררים בחדר. ניתן לבחור ישויות מאוורר ומתגי חשמל של מאווררים. אין חובה בתווית; תווית מאווררים מצמצמת את הרשימה. השיוכים ייכללו בתוכניות חדשות. בחרו זמני פעולה בנפרד תחת פעילויות, מאווררים ונוחות. תצוגה בלבד; ללא שינוי מהירות או שליטה במכשירים."
   }
 }

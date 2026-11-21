@@ -674,3 +674,17 @@ test('temperature units stay LTR within Hebrew text',async()=>{
  assert.ok(value.includes('\u200e23 °C\u200e'));
  assert.equal(isolateTemperatureText(value),value);
 });
+
+
+test('permanent fan candidates use optional entity/device labels without assigning devices',()=>{
+ const inventory={entities:[{id:'f',domain:'fan',area_id:'bed',labels:['fans']},{id:'s',domain:'switch',area_id:'bed',device_labels:['fans']},{id:'plain',domain:'switch',area_id:'bed'},{id:'light',domain:'light',area_id:'bed',labels:['fans']},{id:'elsewhere',domain:'fan',area_id:'other'},{id:'selected',domain:'switch',area_id:'other'}]};
+ const room={roles:{fans:['selected']}};
+ const filters={...emptyLabelFilters(),fans:'fans'};
+ const ids=(options)=>roleCandidates(inventory,room,'bed','fans',filters,options).map(e=>e.id);
+ assert.deepEqual(ids(),['f','s','selected']);
+ assert.deepEqual(ids({allRoom:true}),['f','s','plain','selected']);
+ assert.ok(ids({allRoom:true,allAreas:true}).includes('elsewhere'));
+ assert.deepEqual(room.roles.fans,['selected']);
+ assert.ok(roleCandidates(inventory,{roles:{}},'bed','fans',emptyLabelFilters()).some(e=>e.id==='plain'));
+ assert.deepEqual(ids({}),['f','s','selected']);
+});

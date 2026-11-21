@@ -11,13 +11,14 @@ entities=[]
 rooms={}
 for aid,name,kind in areas:
     roles={}
-    for role,domain,label in [('main_lights','light','Main / ראשי'),('night_lights','light','Night / לילה'),('hvac','climate','HVAC / מיזוג')]:
+    for role,domain,label in [('main_lights','light','Main / ראשי'),('night_lights','light','Night / לילה'),('hvac','climate','HVAC / מיזוג'),('fans','fan','Ceiling fan / מאוורר תקרה')]:
+        if role=='fans' and kind!='bedroom':roles[role]=[];continue
         if kind=='bathroom' and role=='hvac':roles[role]=[];continue
         eid=f'{domain}.{aid}_{role}'
         roles[role]=[eid]
         entities.append(dict(id=eid,entity_id=eid,name=label,domain=domain,area_id=aid,available=True,disabled=False,labels=[role],capabilities={'hvac_modes':['off','heat','cool'],'fan_modes':['auto']}))
     rooms[aid]={'enabled':True,'setup':{'status':'ready','area_type':{'bedroom':'room','common_area':'common'}.get(kind,kind),'service':kind!='bedroom','home':kind=='bathroom','bathroom_timing':{'bathroom':'use_window'}},'purposes':['sleeping'] if kind=='bedroom' else [],'roles':roles,'shared_areas':['bathroom'] if kind=='bedroom' else [],'hvac':{'mode':'none','temperature':None,'fan_mode':None,'lead_minutes':60}}
-fixture={'observed_at':datetime.now(timezone.utc).isoformat(),'issues':[],'inventory':{'revision':'fictional','timezone':'Asia/Jerusalem','areas':[{'id':a,'name':n,'labels':[k],'floor_id':'floor'} for a,n,k in areas],'floors':[{'id':'floor','name':'Example floor / קומת הדגמה'}],'labels':[{'id':v,'name':v} for v in ['main_lights','night_lights','bedroom','common_area','bathroom']],'entities':entities},'settings':{'revision':1,'rooms':rooms,'label_filters':{'main_lights':'main_lights','night_lights':'night_lights','bathroom':'main_lights'},'post_shutoff':False}}
+fixture={'observed_at':datetime.now(timezone.utc).isoformat(),'issues':[],'inventory':{'revision':'fictional','timezone':'Asia/Jerusalem','areas':[{'id':a,'name':n,'labels':[k],'floor_id':'floor'} for a,n,k in areas],'floors':[{'id':'floor','name':'Example floor / קומת הדגמה'}],'labels':[{'id':v,'name':v} for v in ['main_lights','night_lights','fans','bedroom','common_area','bathroom']],'entities':entities},'settings':{'revision':1,'rooms':rooms,'label_filters':{'main_lights':'main_lights','night_lights':'night_lights','bathroom':'main_lights'},'post_shutoff':False}}
 # Public screenshots and performance checks use only fictional capabilities/devices.
 dependencies=[{'id':i,'requirement':r,'hint':i,'ready':True,'detected':True,'status':'ready'} for i,r in [('core','required'),('areas','required_for_rooms'),('calendar','preferred'),('twilio','optional'),('push','optional'),('external_url','optional'),('climate','required_for_climate'),('weather','optional'),('temperature','optional'),('labels','optional'),('automations','optional'),('issur','optional')]]
 study_sources={'climates':[{'entity_id':f'climate.zone_{i}','name':f'Zone {i}','area_id':f'area_{i}','area_name':f'Room {i}'} for i in range(100)],'lights':[{'entity_id':f'switch.signal_{i}','name':f'Signal {i}','area_id':f'area_{i%100}'} for i in range(2000)],'references':[],'weather':[]}
