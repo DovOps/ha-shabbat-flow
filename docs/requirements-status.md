@@ -73,3 +73,5 @@ Feature 014 planning/observation stages implemented: explicit meal durations and
 
 ## 0.18.0 — Reports and guided planning
 Feature 015 implements top planner commands, collapsed optional controls, Reports archive, deterministic sampled agreement summaries and persisted owner reviews in EN/HE. Reports are available for every recorded period; no automatic observation or device control is started. Review text/ratings inherit 20-run/90-day retention; writes use atomic persistence and revision checks. HTML/PDF/JSON include reviews. Feature 004 remains partial: multi-person feedback, comparable trends and automatic proposal application are future work. Deployment and validation evidence: checkpoint 024.
+
+0.18.0 deployed and live-read validated: retained archive, completed report and saved setup available after one restart; device control remains off. See checkpoint 024.

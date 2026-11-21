@@ -9,3 +9,5 @@
 Not live-validated: physical-device execution, causal impact of proposed changes, multi-person feedback, automatic trend/proposal workflow. Full mobile native print dialog/device acceptance remains a user check. No production study starts or feedback writes are needed to verify installation.
 
 - Brochure: both locales built; 156 pages and 7,072 relative links/assets passed. Four EN/HE gallery screenshots use fictional fixtures.
+
+Deployment verified: 60 packaged files installed with a component/storage backup and unchanged hashes for all three saved stores. One HA restart loaded 0.18.0. The Reports archive listed retained observations and climate studies; a completed observation rendered room summaries and its review form. Saved room setup remained available. No study was started, no production review written and no device control activated.

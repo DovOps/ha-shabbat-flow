@@ -5,3 +5,5 @@ Implements Feature 015: compact Reports archive, top labeled planner commands, o
 Verification: 91 core, 62 JavaScript and 116 HA tests on each supported version passed. Generated asset parity and repository hygiene passed. Local EN/HE report/review and planner checks used fictional fixtures; review persistence, conflicts, clearing, storage failures and zero actuation have automated coverage. Deployment evidence follows installation. Brochure/user-guide changes use fictional data only.
 
 Website: both locales built; 156 pages and 7,072 relative links/assets validated. Four new fictional Reports/review screenshots. Package SHA-256: `9e40a5c688c244f76c8f8102ac97fbd37d8dbfcd7a194b847190d4240b09e93a`.
+
+Deployment verified: 60 packaged files installed with a component/storage backup and unchanged hashes for all three saved stores. One HA restart loaded 0.18.0. The Reports archive listed retained observations and climate studies; a completed observation rendered room summaries and its review form. Saved room setup remained available. No study was started, no production review written and no device control activated.
