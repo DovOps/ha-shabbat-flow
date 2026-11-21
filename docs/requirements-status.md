@@ -76,9 +76,11 @@ Feature 015 implements top planner commands, collapsed optional controls, Report
 
 0.18.0 deployed and live-read validated: retained archive, completed report and saved setup available after one restart; device control remains off. See checkpoint 024.
 
-Feature 016 stored PDF downloads: specified/planned, not implemented. Private HA disk storage and authenticated mobile downloads replace dependence on native mobile printing. Renderer package choice awaits owner review; see specs/016-stored-pdf-downloads.
+Feature 016 stored PDF downloads: implemented and deployed after owner approval of the renderer dependencies; see specs/016-stored-pdf-downloads.
 
 ## 0.19.0 — lazy stored PDFs
 Feature 016 implemented and locally tested. PDFs are generated on demand from JSON, stored privately and reused while unchanged. Admin-authenticated download/open/share flow replaces reliance on mobile print; original browser print remains available. Rendering runs separately from observation; no device control. Supersedes the dependency-pending status above. See checkpoint 025; deployment/phone acceptance are recorded separately.
 
 0.19.0 deployed: retained observation PDFs generated and downloaded in both languages through authenticated HA. Source stores preserved, no controls activated. Desktop download passed; mobile Open/Share awaits user acceptance.
+
+0.19.1 deployment verified: the final 66-file patch preserved all three saved stores, then a second backend restart loaded the versioned 0.19.1 UI. A retained completed report generated successfully and exposed Download, Open and Share commands. No observation or device control was activated. Both supported-version test suites and branch CI passed. Real phone acceptance remains pending.
