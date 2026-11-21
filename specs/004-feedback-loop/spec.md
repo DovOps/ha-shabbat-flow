@@ -36,3 +36,5 @@ After an observance, household members record how well the plan worked. An owner
 
 ## Acceptance cases
 A three-day period supports per-day and overall feedback without losing scope. Two conflicting room-temperature reports remain visible. A recorder gap yields unknown rather than failure. A one-off gathering is excluded from an ordinary-weekend comparison by explicit classification. An accepted adjustment changes only a future draft; its predecessor remains intact. Unanswered ratings do not become zero. The full feedback flow works without an AI service and in both default languages.
+
+Feature 014 AC-FR-014 extends classification of deviations: intentionally new behavior and exceptional periods must remain distinct from unwanted mismatches. Reported fan-assisted comfort is separate from measured fan runtime. Household evidence stays local; generalized requirements alone enter the repository.
