@@ -114,3 +114,5 @@ Feature 016 implemented and locally tested. PDFs are generated on demand from JS
 
 ## 0.19.2 — permanent room fan assignments
 Feature 017 adds optional room Fans mappings and configurable entity/device label filtering. New dated plans inherit fan loads; explicit activity windows define their timing, separately from HVAC. Migration leaves old setups unselected and old plans untouched. Native fan and switch domains supported; preview/observation only. See checkpoint 026 for verification and deployment status.
+
+0.19.2 installed and live-read verified after one restart. Existing saved setups preserved; Fans selector available with no automatic assignments. See checkpoint 026.

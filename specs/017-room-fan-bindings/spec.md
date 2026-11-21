@@ -1,6 +1,6 @@
 # Feature 017 — permanent room fan assignments
 
-Status: implemented; local verification in checkpoint 026. Deployment recorded separately.
+Status: implemented, tested and deployed; local and live-read verification in checkpoint 026. Owner fan selections remain explicit.
 
 ## Functional requirements
 - FAN-FR-001: Room setup provides an optional Fans role separate from lights and HVAC. Accept native fan entities and switch-controlled fans; no automatic selection or inferred ownership. Rooms without fans require no configuration.
