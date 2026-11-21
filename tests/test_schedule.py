@@ -14,6 +14,16 @@ class ScheduleTests(unittest.TestCase):
         self.bundle = json.loads((ROOT / 'examples/period-preview.json').read_text())
         self.config, self.plan = self.bundle['config'], self.bundle['plan']
 
+    def test_away_unset_meals_are_irrelevant(self):
+        for a in self.plan['availability']:a['state']='away'
+        self.plan['room_uses']=[];self.plan['groups']=[];self.plan['naps']=[]
+        for meal in self.plan['meals']:meal['choice']='unset'
+        result=compile_schedule(self.config,self.plan)
+        self.assertFalse(any(i['code'] in ('meal_unset','meals_missing') for i in result['issues']))
+        self.plan['meals']=[]
+        result=compile_schedule(self.config,self.plan)
+        self.assertFalse(any(i['code']=='meals_missing' for i in result['issues']))
+
     def nap(self, start='2027-01-08T14:00:00+02:00', end='2027-01-08T16:00:00+02:00'):
         return {'id':'nap_1','room':'room_a','profile':'room_a_standard','segment':'day_1',
                 'start':start,'end':end,'lead_minutes':60,'bathroom_targets':[]}

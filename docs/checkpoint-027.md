@@ -1,0 +1,7 @@
+# Checkpoint 027 — Away defaults and scheduled lighting pilot (0.20.0)
+
+Selecting Nobody home marks meals Away and hides irrelevant choices. Returning Home requires fresh meal decisions. Existing room conflicts remain visible. The separate Schedule and observe flow reviews a frozen subset, requires weekday verification notes, approves, then explicitly arms before the preparation deadline. Matching states get no command. Known automation writers block inclusion, including reactive sources excluded from the display forecast. Unknown sources require a specific no-access rationale. No existing automation is modified.
+
+Binary light/switch lighting roles only. HVAC, fans and appliances are visibly excluded; this is not full Feature 010 completion. Durable write-ahead intents, context-qualified state confirmation, corruption/write-failure blocking, bounded deadlines and optional correction support a conservative pilot. A browser is unnecessary once armed. Approval, Save and Preview never start devices. Observation evidence is linked to execution and exports.
+
+Verification: 92 core, 66 JavaScript, 140 HA tests on both supported versions; EN/HE fictional review UI and generated PDF smoke checks. Website both locales builds/checks; no new dependency. See Feature 018 verification for coverage and limits. Installation pending; no household plans armed and no production device qualification performed.

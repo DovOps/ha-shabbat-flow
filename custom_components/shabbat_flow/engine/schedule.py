@@ -284,6 +284,14 @@ def compile_schedule(config, plan):
             if other['room'] == use['room'] and other['control'] == 'existing' and parse_instant(other['start'],calendar['zone']) < parse_instant(use['hvac_end'],calendar['zone']) and parse_instant(use['start'],calendar['zone']) < parse_instant(other['end'],calendar['zone']):
                 issues.append({'code':'room_overlap','room':use['room'],'uses':sorted([use['id'],other['id']])})
     bounded_list(plan['meals'], 100)
+    def fully_away(start,end):
+        cursor=start
+        for a,b,state in sorted(availability):
+            if b<=cursor:continue
+            if a>cursor or state!='away':return False
+            cursor=b
+            if cursor>=end:return True
+        return False
     meal_segments, seen = set(), set()
     for meal in plan['meals']:
         keys(meal, {'id', 'segment', 'kind', 'choice', 'start', 'end', 'groups'})
@@ -296,9 +304,11 @@ def compile_schedule(config, plan):
         meal_segments.add(meal['segment'])
         if home:
             at_home(start, end)
-        elif meal['choice'] == 'unset':
+        elif meal['choice'] == 'unset' and not fully_away(start,end):
             issues.append({'code': 'meal_unset', 'id': meal['id']})
     for segment in sorted(set(calendar['segments']) - meal_segments):
+        seg=calendar['segments'][segment]
+        if fully_away(seg['start'],seg['end']): continue
         issues.append({'code': 'meals_missing', 'id': segment})
     bounded_list(plan['groups'], 100)
     seen = set()

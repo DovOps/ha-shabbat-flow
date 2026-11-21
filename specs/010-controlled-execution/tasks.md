@@ -44,3 +44,6 @@ O009 rollout follow-up: 0.13.0 installed and live observe/weather controls verif
 - [x] X042 Friendly grouped existing-automation events, device icons and expandable IDs.
 - [x] X043 Collapsed diagnostics and concise PDF summaries.
 - [x] X044 Verify forecast, renderer, print and package behavior; production installation separate.
+
+## Partial implementation cross-reference
+Feature 018 delivers a separately specified binary-lighting pilot: review/approve/arm/disarm, conservative writer blocking, durable dispatch ledger, context-qualified confirmation, linked observation and optional two-correction recovery. This covers portions of E003–E006/E008/E009; those tasks remain open for full Feature 010 scope (HVAC, handoffs, retry/workload qualification and live acceptance).

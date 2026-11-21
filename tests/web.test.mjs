@@ -63,7 +63,8 @@ test('day-level home choice preserves other days and selected room/meal intent',
   const before=structuredClone(period),next=setDayHome(period,'day_2','away');
   assert.deepEqual(period,before);
   assert.deepEqual(next.plan.room_uses,period.plan.room_uses);
-  assert.deepEqual(next.plan.meals,period.plan.meals);
+  assert.deepEqual(next.plan.meals.filter(m=>m.segment!=='day_2'),period.plan.meals.filter(m=>m.segment!=='day_2'));
+  assert.ok(next.plan.meals.filter(m=>m.segment==='day_2').every(m=>m.choice==='away'||m.choice==='none'));
   assert.deepEqual(next.plan.snapshot.segments.map(s=>dayHomeState(next.plan,s)),['home','away','home']);
   assert.equal(next.plan.availability[0].start,period.plan.snapshot.preparation_start);
   assert.equal(next.plan.availability.at(-1).end,period.plan.snapshot.end);
@@ -614,7 +615,7 @@ test('home overview renders concurrent run links and distinguishes API failure f
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const el=(tag,text)=>({tag,text,dataset:{},children:[],append(...items){this.children.push(...items);},replaceChildren(...items){this.children=[...items];}}),root=el('section');
  const run=(id,kind,status)=>({id,kind,status,start:'2027-01-08T16:00:00+02:00',end:'2027-01-09T18:00:00+02:00',timezone:'Asia/Jerusalem'});
- const context={el,$:()=>root,t:k=>k,language:'en',activitySummary,activityError:false,activityData:{runs:[run('a'.repeat(32),'plan','scheduled'),run('b'.repeat(32),'climate_study','observing')]},localStorage:{getItem:()=>null}};
+ const context={executionWords,el,$:()=>root,t:k=>k,language:'en',activitySummary,activityError:false,activityData:{runs:[run('a'.repeat(32),'plan','scheduled'),run('b'.repeat(32),'climate_study','observing')]},localStorage:{getItem:()=>null}};
  runInNewContext(source.slice(source.indexOf('function renderActivity('),source.indexOf('async function refreshActivity(')),context);
  const all=()=>{const walk=n=>[n,...n.children.flatMap(walk)];return walk(root);};
  context.renderActivity();assert.ok(all().some(n=>n.text==='activity_scheduled'));assert.ok(all().some(n=>n.text==='activity_observing'));
@@ -687,4 +688,16 @@ test('permanent fan candidates use optional entity/device labels without assigni
  assert.deepEqual(room.roles.fans,['selected']);
  assert.ok(roleCandidates(inventory,{roles:{}},'bed','fans',emptyLabelFilters()).some(e=>e.id==='plain'));
  assert.deepEqual(ids({}),['f','s','selected']);
+});
+
+const {normalizeAwayMeals}=await import('../src/shabbat_flow/web/period-model.mjs');
+const {executionWords}=await import('../src/shabbat_flow/web/execution.mjs');
+test('away defaults meals and returning home asks fresh choices',()=>{
+ const away=setDayHome(period,'day_1','away');
+ assert.ok(away.plan.meals.filter(m=>m.segment==='day_1').every(m=>m.choice==='away'||m.choice==='none'));
+ const home=setDayHome(away,'day_1','home');assert.ok(home.plan.meals.filter(m=>m.segment==='day_1').every(m=>m.choice==='unset'||m.choice==='none'));
+ for(const m of away.plan.meals.filter(m=>m.segment==='day_1'))m.choice='unset';
+ const before=structuredClone(away),normalized=normalizeAwayMeals(away);assert.deepEqual(away,before);
+ assert.ok(normalized.plan.meals.filter(m=>m.segment==='day_1').every(m=>m.choice==='away'||m.choice==='none'));
+ assert.deepEqual(Object.keys(executionWords.en).sort(),Object.keys(executionWords.he).sort());
 });

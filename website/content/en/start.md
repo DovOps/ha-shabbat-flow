@@ -1,6 +1,6 @@
 # Make the house part of the plan
 
-Shabbat Flow is an **independent Home Assistant custom integration** for preparing Shabbat and Yom Tov schedules, observing real household device activity, and refining future plans. The current release provides planning and observation; it does **not execute lighting or HVAC schedules**. Official HA verification and HACS inclusion have not been established.
+Shabbat Flow is an **independent Home Assistant custom integration** for preparing Shabbat and Yom Tov schedules, observing real household device activity, and refining future plans. The release provides planning, observation and a separately armed lighting pilot. HVAC execution remains unavailable. Official HA verification and HACS inclusion have not been established.
 
 ## Install the preview
 
@@ -44,3 +44,6 @@ Use the green **Open planner with my rooms** button at the top or bottom of hous
 **Plans and studies** shows the saved plan in this browser separately from scheduled/active plan observations and climate studies in HA. A saved draft is not activated device control. Report links open the corresponding run; empty states and unavailable status are distinct.
 
 Selecting rooms in use, naps or meals at home sets the simple day-level **Someone home** choice automatically. Custom partial-day availability is preserved for review. Removing a selection does not automatically mark everyone away.
+
+## Optional lighting control pilot
+After preview, open **Schedule and observe**. Review the exact dates and device subset, record weekday On/Off verification, approve, then schedule explicitly. Only reviewed lighting controls can run; HVAC, fans and appliances remain excluded. Existing automation conflicts block control. Devices already in the required state receive no command. Save and Preview do not activate anything. Nobody home automatically makes meals Away; all-away plans cannot arm. Check the execution status and linked report afterwards. This is a limited pilot requiring device qualification, not full-house live validation.

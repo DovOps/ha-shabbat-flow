@@ -1,3 +1,4 @@
+import {dayHomeState} from './period-model.mjs';
 import {zonedISO,localDateTimeValue,localDateTimeCandidates,restClockTime,markDayHomeFromUse} from './period-model.mjs';
 import {offsetControl} from './time-input.mjs';
 import {itemIcon} from './ha-icons.mjs';
@@ -22,11 +23,11 @@ export function renderFlexible({bundle,segment,node,lang,changed,render,inventor
  const details=(key)=>{const d=node('details');d.append(node('summary',t(key)));return d;};
  const rooms=Object.entries(bundle.config.rooms).map(([k,v])=>[k,v[lang()]]);
  const meals=details('meal');meals.append(node('p',t('meal_help'),'hint'));
- for(const m of bundle.plan.meals.filter(m=>m.segment===segment.id&&m.kind!=='afternoon')){
+ for(const m of bundle.plan.meals.filter(m=>m.segment===segment.id&&m.kind!=='afternoon'&&dayHomeState(bundle.plan,segment)!=='away')){
   const d=node('div',undefined,'period-item');d.append(node('h3',m.kind==='evening'?(lang()==='he'?'ארוחת ערב':'Dinner'):(lang()==='he'?'ארוחת צהריים':'Lunch')));
   const entry=bundle.plan.flex?.meals.find(x=>x.id===m.id);d.append(select('meal',entry?.preset??'custom',['custom','early','family','hosting'].map(x=>[x,t(x)]),v=>{bundle.plan=mealPreset(bundle,m.id,v).plan;render();}));
   if(entry){d.append(duration('duration',entry.duration,v=>entry.duration=v,15,600),duration('cleanup',entry.cleanup,v=>entry.cleanup=v,0,240));const end=zonedISO(+new Date(m.start)+(entry.duration+entry.cleanup)*60000,zone);d.append(node('p',localDateTimeValue(m.start,zone)+' → '+localDateTimeValue(end,zone),'hint'));}meals.append(d);
- }root.append(meals);
+ }if(dayHomeState(bundle.plan,segment)!=='away')root.append(meals);
  const time=(w,key)=>{
   const box=node('div'),saved=w.timing?.[key],mode=saved?.anchor??'clock';
   box.append(select(key,mode,[['clock',t('clock')],['candle_lighting',t('candles')],['sunrise',t('sunrise')],...(segment.sunset?[['sunset',t('sunset')]]:[]),...(key==='end'?[['end',t('period_end')]]:[])],v=>{if(v==='clock'){if(w.timing)delete w.timing[key];}else{(w.timing??={})[key]={anchor:v,offset_minutes:0};w[key]=segment[v];}render();}));

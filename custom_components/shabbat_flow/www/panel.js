@@ -1,4 +1,6 @@
 const routes=new Map([
+  ['GET /api/v2/execution','shabbat_flow/execution'],
+  ['POST /api/v2/execution','shabbat_flow/execution'],
   ['POST /api/v2/pdf','shabbat_flow/pdf'],
   ['GET /api/v2/observe','shabbat_flow/observe'],
   ['POST /api/v2/observe','shabbat_flow/observe'],

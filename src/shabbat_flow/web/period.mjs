@@ -1,3 +1,4 @@
+import {setupExecution,executionWords} from './execution.mjs';
 import {savedPdf,pdfWords} from './pdf-download.mjs';
 import {reviewWords} from './review-ui.mjs';
 import {renderFlexible,renderFlexibleSummary,effectiveMealEnd} from './flexible.mjs';
@@ -94,6 +95,7 @@ function workflow(){
  $('native-print').textContent=pdfWords[lang()].print;$('native-print').disabled=!result?.complete;
  const words=reviewWords[lang()],ready=!!result?.complete;$('planner-title').textContent=words.plan_title;
  for(const [id,key]of [['workflow-title','next'],['workflow-help','guide'],['workflow-note','draft_note'],['more-menu','more'],['export-menu','exports']])$(id).textContent=words[key];
+ $('execution-jump').hidden=!householdMode;$('execution-jump').textContent=executionWords[lang()].arm;
  $('workflow-state').textContent=words[ready?'ready':'dirty'];$('observe-jump').textContent='◉ '+words.observe;$('observe-jump').hidden=!householdMode;
  for(const [id,icon]of [['preview','▤'],['save','✓'],['export-pdf','▧'],['export','⇩']]){const b=$(id);b.textContent=icon+' '+t(b.dataset.i18n);}
 }
@@ -176,14 +178,15 @@ function render(){
     }napsPanel.append(row);
   }root.append(napsPanel);
   const mealPanel=section('meals_title'),mealTiles=node('div',undefined,'room-tiles');
-  for(const meal of meals){
+  for(const meal of state==='away'?[]:meals){
     const tile=node('div',undefined,'room-tile');tile.append(node('h3',catalogs[lang()]['meal_'+meal.kind]??meal.kind),
       field('meal_choice',meal.choice,v=>applyChange(setMealChoice(bundle,meal.id,v)),options(meal.kind==='afternoon'?['none','hosting']:['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(effectiveMealEnd(bundle,meal))}`,'hint'));
     tile.append(node('p',`${t('meal_rooms')}: ${meal.groups.map(id=>bundle.config.groups[id]?.label[lang()]??id).join(', ')||t('meal_rooms_none')}`,'hint'));
     const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);if(meal.kind==='afternoon'){tile.append(node('p',t(segment.id===bundle.plan.snapshot.segments.at(-1).id?'afternoon_help':'afternoon_manual'),'hint'));const groups=node('details');groups.append(node('summary',t('meal_rooms')));const candidates=[...new Set(bundle.plan.meals.filter(m=>m.kind==='daytime').flatMap(m=>m.groups))];for(const id of candidates){const label=node('label',undefined,'toggle');label.append(node('span',bundle.config.groups[id].label[lang()]));const input=node('input');input.type='checkbox';input.checked=meal.groups.includes(id);input.addEventListener('change',()=>{meal.groups=input.checked?[...meal.groups,id]:meal.groups.filter(v=>v!==id);changed();});label.append(input);groups.append(label);}tile.append(groups,button('remove_item',()=>remove(bundle.plan.meals,meal)));}mealTiles.append(tile);
   }
-  if(segment.kind==='shabbat'&&!meals.some(m=>m.kind==='afternoon'))mealPanel.append(button('add_afternoon',()=>applyChange(afternoonActivity(bundle,segment.id))));
-  mealPanel.append(mealTiles);if(!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel,extra);
+  if(state!=='away'&&segment.kind==='shabbat'&&!meals.some(m=>m.kind==='afternoon'))mealPanel.append(button('add_afternoon',()=>applyChange(afternoonActivity(bundle,segment.id))));
+  if(state==='away')mealPanel.append(node('p',t('meals_away_auto'),'hint'));
+  mealPanel.append(mealTiles);if(state!=='away'&&!meals.length)mealPanel.append(node('p',t('issue_meals_missing'),'inline-issue'),button('review_custom',openAdvanced));root.append(mealPanel,extra);
   const timing=node('details',undefined,'card');timing.append(node('summary',t('family_timing')),node('p',t('timing_scope'),'hint'));
   const visited=new Set();
   for(const use of dayUses.filter(v=>v.purpose==='sleeping'&&v.control==='planner')){
@@ -285,20 +288,21 @@ async function boot(){
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(new URLSearchParams(location.search).get('saved')==='1'?localStorage.getItem(draftKey):sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
-    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});});
+    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode){setupExecution({root:$('execution-panel'),getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang});}if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});});
     $('preview').addEventListener('click',async()=>{await preview();if(result){$('schedule-preview').focus({preventScroll:true});$('schedule-preview').scrollIntoView({block:'start',behavior:'smooth'});}});
     window.addEventListener('beforeprint',printReport);
     window.addEventListener('afterprint',()=>{observationPrint=null;});
     $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;if(householdMode)savedPdf({kind:'preview',bundle:structuredClone(bundle)},lang());else{observationPrint=null;printReport();window.print();}});
     $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(draftKey,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
     $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(draftKey));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
+    $('execution-jump').onclick=()=>{$('execution-panel').scrollIntoView({block:'start',behavior:'smooth'});$('execution-panel').querySelector('button')?.focus();};
     $('observe-jump').onclick=()=>{const target=$('observe-panel');target.scrollIntoView({block:'start',behavior:'smooth'});target.querySelector('button')?.focus();};
     $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(draftKey);message('deleted');}catch(e){error(e);}});
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     if(householdMode){try{const r=await fetch('/api/v2/household');if(r.ok)flexInventory=(await r.json()).inventory;}catch{}}
     render();
-    if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});
+    if(householdMode){setupExecution({root:$('execution-panel'),getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang});}if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});
   }catch(e){$('status').textContent='Unable to load preview. / לא ניתן לטעון תצוגה מקדימה.';}
 }
 boot();

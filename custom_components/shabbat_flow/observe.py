@@ -360,12 +360,15 @@ class Observer:
 
     def listing(self):
         from .study import sources
-        return {'study_sources':sources(self.hass),'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
+        return {'execution':self.hass.data['shabbat_flow']['executor'].listing() if self.hass.data.get('shabbat_flow',{}).get('executor') else None,'study_sources':sources(self.hass),'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
 
     def export(self,rid):
         if rid not in self.data['runs']: raise ValueError('observe_missing')
         from .reports import performance, review_state
         run=deepcopy(self.data['runs'][rid]); run.pop('actor',None); run.pop('request_id',None)
-        return {'schema_version':1,'collection_error':self.error,'sample_seconds':60,'mode':'observe','device_commands_sent':0,
+        executor=self.hass.data.get('shabbat_flow',{}).get('executor')
+        execution=executor.for_observation(rid) if executor else None
+        sent=sum(a.get('status') not in ('already_correct','superseded','not_dispatched') and 'context_id' in a for a in execution['ledger'].values()) if execution else 0
+        return {'execution':execution,'schema_version':1,'collection_error':self.error,'sample_seconds':60,'mode':'control_and_observe' if execution else 'observe','device_commands_sent':None if execution else 0,'dispatch_attempts':sent,
                 'limitations':['sampled_not_exact_history','no_occupancy_inference','preserve_settings_baseline_may_be_unknown','unmanaged_forecast_not_guaranteed','thermal_reports_not_verified_room_temperatures','weather_report_not_local_outdoor_sensor','state_update_time_not_measurement_time','no_automatic_thermostat_calibration'],
                 'performance':performance(run),'review':review_state(run),'run':run}

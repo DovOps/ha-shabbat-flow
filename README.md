@@ -7,7 +7,7 @@ Multilingual by design, with **English and Hebrew supported by default**, includ
 
 [מדריך התחלה בעברית](README.he.md) · [Checkpoint review](docs/checkpoint-001.md) · [Verification evidence](specs/001-preview-planner/verification.md)
 
-**Current package: Shabbat Flow 0.16.1 — planning, observation and optional notifications.** Observe-only runs and a bounded read-only existing-automation overlay are packaged; no actuation is available. [Installation and limitations](docs/installation.md). The HA sample guides room-by-room setup with reusable bathroom links and current HVAC snapshots, synchronizes areas and devices, stores reviewed room mappings locally in HA, and automatically reads the next Shabbat/Yom Tov dates and daily zmanim from Jewish Calendar; it has no device control, schedule execution or automatic zmanim calculation. Only fictional sample configuration is included. The full product scope is in [the roadmap](docs/roadmap.md).
+**Current package: Shabbat Flow 0.20.0 — planning, observation and an explicitly armed lighting pilot.** Review a complete plan, qualify individual lighting controls, approve a subset and separately schedule it. Saving and previewing never control devices. Matching states are left unchanged. HVAC, fans and appliance execution remain unqualified and excluded. [Installation and limitations](docs/installation.md).
 
 ## Try the preview
 

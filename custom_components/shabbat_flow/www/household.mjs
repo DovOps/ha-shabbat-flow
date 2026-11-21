@@ -1,3 +1,4 @@
+import {executionWords} from './execution.mjs';
 import {activitySummary} from './activity-model.mjs';
 import {offsetControl} from './time-input.mjs';
 import {haIcon} from './ha-icons.mjs';
@@ -75,7 +76,7 @@ function renderActivity(){
  const root=$('activity-overview');
  let raw=null,storageError=false;try{raw=localStorage.getItem('shabbat-flow-household-draft-v2');}catch{storageError=true;}
  const summary=activitySummary(activityError?null:activityData,raw,Date.now());
- const signature=JSON.stringify([language,summary,activityError,activityData?.error,!!activityData,storageError]);
+ const signature=JSON.stringify([language,summary,activityError,activityData?.error,activityData?.execution,!!activityData,storageError]);
  if(root.dataset.signature===signature)return;root.dataset.signature=signature;root.replaceChildren(el('h2',t('activity_title')));
  const date=(value,zone)=>new Intl.DateTimeFormat(language,{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
  const card=(title)=>{const box=el('div',undefined,'activity-tile');box.append(el('h3',t(title)));root.append(box);return box;};
@@ -97,7 +98,12 @@ function renderActivity(){
   if(target){const a=el('a',t('activity_reports'));a.href='./observation.html?run='+encodeURIComponent(target.id);box.append(a);}
   if(kind==='climate_study'){const a=el('a',t('nav_study'));a.href='./study.html';box.append(el('p'),a);}
  }
- root.append(el('p',t('activity_observe_only'),'hint'));
+ const execution=activityData?.execution,words=executionWords[language],control=el('div',undefined,'activity-tile');control.append(el('h3',words.status));
+ if(execution?.error)control.append(el('p',words[execution.error]??execution.error,'error'));
+ const active=execution?.runs?.filter(r=>['approved','armed','running','blocked'].includes(r.status))??[];
+ if(!active.length)control.append(el('p',words.none));
+ for(const r of active){control.append(el('p',words[r.status]),el('p',date(r.start,r.timezone)+' — '+date(r.end,r.timezone)));const link=el('a',words.status);link.href='./period.html?household=1&saved=1#execution-panel';control.append(link);}
+ root.append(control);
 }
 async function refreshActivity(){
  if(activityLoading)return;activityLoading=true;

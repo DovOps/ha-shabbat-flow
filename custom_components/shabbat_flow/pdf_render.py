@@ -131,7 +131,11 @@ def render_pdf(data,lang,kind):
     run=data.get('run');bundle=run['bundle'] if run else data['bundle'];plan=bundle['plan'];config=bundle.get('config',{});snapshot=plan['snapshot'];zone=ZoneInfo(snapshot['timezone']);fmt=lambda v:datetime.fromisoformat(v.replace('Z','+00:00')).astimezone(zone).strftime('%d/%m/%Y %H:%M')
     start=run['start'] if run else snapshot['preparation_start'];end=run['end'] if run else snapshot['end'];a,b=stamp(start),stamp(end)
     image=Image(str(ROOT/'www/logo.png'),width=210,height=210*100/320,kind='proportional');image.hAlign='RIGHT' if lang=='he' else 'LEFT';story.append(image);story.append(Spacer(1,12));title(t('preview') if not run else t('climate' if run.get('kind')=='climate_study' else 'report'))
-    text(f'{fmt(start)} — {fmt(end)} · {snapshot["timezone"]}');text(t('generated')+': '+datetime.now(zone).strftime('%d/%m/%Y %H:%M'));text(t('notice') if run else t('report_preview'))
+    text(f'{fmt(start)} — {fmt(end)} · {snapshot["timezone"]}');text(t('generated')+': '+datetime.now(zone).strftime('%d/%m/%Y %H:%M'));text(('Control and observation — see execution ledger; state agreement is not proof of command success.' if lang=='en' else 'ביצוע ומעקב — עיינו ביומן הביצוע; התאמת מצב אינה הוכחה להצלחת פקודה.') if data.get('execution') else t('notice') if run else t('report_preview'))
+    if data.get('execution'):
+        execution=data['execution'];title('Execution ledger' if lang=='en' else 'יומן ביצוע')
+        text(execution['status']+' · '+execution['id'])
+        table([t('device'),t('action'),t('time'),'Outcome' if lang=='en' else 'תוצאה'],[[execution['mapping'].get(v['physical_id'],{}).get('entity_id',v['physical_id']),t(v.get('wanted','unknown')),fmt(v['at']),v['status']] for v in execution['ledger'].values()])
     if run:
         text(run['id']+' · '+run.get('snapshot_hash',''),7)
         if run['status']!='completed':text(t('partial'),11,True)

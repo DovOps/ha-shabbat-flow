@@ -6,7 +6,7 @@ export function parsePeriodDraft(raw){
   if(!value||Array.isArray(value)||Object.keys(value).sort().join(',')!=='config,plan'||
      value.config?.schema_version!==2||value.plan?.schema_version!==2||
      !localeMetadata[value.plan.language])throw new Error('bad_draft');
-  return value; // Full validation uses the same server compiler before replacement.
+  return normalizeAwayMeals(value); // Full validation uses the same server compiler before replacement.
 }
 export function availableProfiles(config,room,purpose){
   return Object.entries(config.profiles).filter(([,p])=>p.room===room&&p.purpose===purpose);
@@ -54,7 +54,12 @@ export function setDayHome(bundle,segmentId,state){
     if(b>end)items.push({...item,start:bounds.end});
   }
   items.push({id:'replacement',...bounds,state});items.sort((a,b)=>new Date(a.start)-new Date(b.start));
-  plan.availability=items.map((v,i)=>({...v,id:`availability_${i+1}`}));return next;
+  plan.availability=items.map((v,i)=>({...v,id:`availability_${i+1}`}));
+  for(const meal of plan.meals.filter(m=>m.segment===segmentId)){
+    if(state==='away')meal.choice=meal.kind==='afternoon'?'none':'away';
+    else if(state==='home'&&dayHomeState(bundle.plan,segment)==='away'&&meal.choice==='away')meal.choice='unset';
+  }
+  return next;
 }
 // Explicit household selections imply the simple day-level home default. Preserve
 // advanced partial-day availability for deliberate review rather than erasing it.
@@ -168,4 +173,11 @@ export function afternoonActivity(bundle,segmentId){
  if(seg.kind!=='shabbat'||next.plan.meals.some(m=>m.segment===segmentId&&m.kind==='afternoon'))return next;
  const final=seg.id===next.plan.snapshot.segments.at(-1).id,zone=next.plan.snapshot.timezone;
  next.plan.meals.push({id:nextId('afternoon',next.plan.meals),segment:segmentId,kind:'afternoon',choice:'none',start:final?zonedISO(+new Date(seg.end)-150*60000,zone):'',end:final?seg.end:'',groups:[...new Set(next.plan.meals.filter(m=>m.segment===segmentId&&m.kind==='daytime').flatMap(m=>m.groups))]});return next;
+}
+
+export function normalizeAwayMeals(bundle){
+ const next=structuredClone(bundle);
+ for(const segment of next.plan.snapshot?.segments??[])if(dayHomeState(next.plan,segment)==='away')
+  for(const meal of next.plan.meals.filter(m=>m.segment===segment.id&&m.choice==='unset'))meal.choice=meal.kind==='afternoon'?'none':'away';
+ return next;
 }

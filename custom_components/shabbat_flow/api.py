@@ -298,3 +298,31 @@ class PdfView(BaseView):
         except (ValueError,TypeError,KeyError,PlanError) as exc:
             code=str(exc) if str(exc).startswith('pdf_') else 'pdf_invalid'
             return self.response({'error':code},409 if code=='pdf_stale' else 400)
+
+
+class ExecutionView(BaseView):
+    url='/api/shabbat_flow/execution'
+    name='api:shabbat_flow:execution'
+
+    async def get(self,request):
+        self.check(request)
+        return self.response(self.hass.data[DOMAIN]['executor'].listing())
+
+    async def post(self,request):
+        self.check(request)
+        try:
+            p=await read_body(request);ex=self.hass.data[DOMAIN]['executor'];op=p.get('op')
+            if op=='export' and set(p)=={'op','id'} and isinstance(p['id'],str):
+                if p['id'] not in ex.data['runs']:raise ValueError('execute_missing')
+                return self.response(ex.public(ex.data['runs'][p['id']]))
+            if op=='review' and set(p)=={'op','bundle'}:return self.response(await ex.review(p['bundle']))
+            if op=='approve' and set(p)=={'op','bundle','included','review_digest','qualifications','attestations','recovery','request_id','acknowledge_exclusions'}:
+                return self.response(await ex.approve(p['bundle'],p['included'],p['review_digest'],p['qualifications'],p['attestations'],p['recovery'],p['request_id'],getattr(request['hass_user'],'id',None),acknowledge_exclusions=p['acknowledge_exclusions']))
+            if op=='arm' and set(p)=={'op','id','revision','approval_digest'} and isinstance(p['id'],str) and type(p['revision']) is int:
+                return self.response(await ex.arm(p['id'],p['revision'],p['approval_digest']))
+            if op=='disarm' and set(p)=={'op','id','revision'} and isinstance(p['id'],str) and type(p['revision']) is int:
+                return self.response(await ex.disarm(p['id'],p['revision']))
+            raise ValueError('execute_invalid')
+        except (ValueError,TypeError,KeyError,PlanError) as exc:
+            code=str(exc) if str(exc).startswith('execute_') else 'execute_invalid'
+            return self.response({'error':code},409 if code in ('execute_stale','execute_overlap') else 400)

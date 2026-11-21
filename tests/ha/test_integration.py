@@ -60,12 +60,12 @@ async def test_real_panel_lifecycle(host):
     version=json.loads((Path(__file__).resolve().parents[2]/'custom_components/shabbat_flow/manifest.json').read_text())['version']
     assert panel.config['_panel_custom']['module_url']==f'/shabbat_flow_static/{version}/panel.js?v={version}'
     assert hass.http.async_register_static_paths.await_count == 1
-    assert hass.http.register_view.call_count == 9
+    assert hass.http.register_view.call_count == 10
     await async_unload_entry(hass, entry)
     assert 'shabbat-flow' not in hass.data[frontend.DATA_PANELS]
     with pytest.raises(web.HTTPServiceUnavailable): await SampleView(hass).get(Request())
     await async_setup_entry(hass, entry)
-    assert hass.http.register_view.call_count == 9  # Routes are not registered twice on reload.
+    assert hass.http.register_view.call_count == 10  # Routes are not registered twice on reload.
     assert hass.http.async_register_static_paths.await_count == 1
 
 

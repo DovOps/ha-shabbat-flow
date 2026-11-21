@@ -1,6 +1,6 @@
 # Installable preview 0.9.0
 
-This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. It cannot control devices, activate automations or run schedules. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
+This experimental custom integration adds an **admin-only** ShabbatFlow sidebar panel. It previews schedules and optionally reads calendar entities. Preview and observation do not control devices. A separately approved and armed lighting pilot can execute reviewed binary lighting actions; HVAC, fans and appliances remain excluded. The installed entry point reads your HA areas and devices. The separate demo remains fictional. It is not yet a family-access or production scheduling release.
 
 ## Install
 
@@ -45,7 +45,7 @@ Inventory refreshes every 15 seconds while visible, on focus and on manual refre
 
 Include at most 20 areas and map at most 100 loads. Sleeping and recreation are independent purposes. Shared bathrooms must be included and mapped explicitly. When HVAC scheduling is enabled, mode, temperature and fan mode must match supported device capabilities; no settings are guessed. Devices without supported fan-mode metadata are not supported by this preview yet. Generated timing profiles are starting examples to review, not household recommendations.
 
-Room mappings persist in HA across restarts. Weekly workspace choices remain browser snapshots; later registry changes do not silently rewrite them. Automatic mode reads the complete next observance, including one to three consecutive days, from the Jewish Calendar daily/yearly calendars. Missing calendar entities or events block automatic creation with guidance. Manual mode is under Advanced settings and starts a single supplied segment. Nothing executes.
+Room mappings persist in HA across restarts. Weekly workspace choices remain browser snapshots; later registry changes do not silently rewrite them. Automatic mode reads the complete next observance, including one to three consecutive days, from the Jewish Calendar daily/yearly calendars. Missing calendar entities or events block automatic creation with guidance. Manual mode is under Advanced settings and starts a single supplied segment. Workspace creation does not execute anything.
 
 Upgrade an existing entry by replacing the package and restarting; do not add a duplicate integration. Static asset paths include the release version to avoid mixed cached files. Back up the integration directory and ShabbatFlow storage before upgrades. Removal of the config entry does not erase household storage automatically.
 
@@ -116,7 +116,7 @@ Deployment verification: 0.11.0 was installed with an on-host backup, archive SH
 
 ## Observe mode and unmanaged forecasts (0.12.1)
 
-After a complete household preview, **Observe this plan — no device control** offers Start observing, saved runs, Stop, a summary table and Download plan + observation summary. Starting stores a server-compiled snapshot; it is separate from future approval/arming. You may close the browser. It samples once a minute and resumes after HA restart, marking the gap unknown. Initial and sampled device readings remain private in HA. Exports include household mappings and actual observed states; review before sharing. No device, automation or Recorder setting is changed.
+After a complete household preview, **Observe this plan — no device control** offers Start observing, saved runs, Stop, a summary table and Download plan + observation summary. Starting stores a server-compiled snapshot; it is separate from lighting approval/arming. You may close the browser. It samples once a minute and resumes after HA restart, marking the gap unknown. Initial and sampled device readings remain private in HA. Exports include household mappings and actual observed states; review before sharing. No device, automation or Recorder setting is changed.
 
 Report-only recovery checks default to five minutes after boot and every 30 minutes; they can be disabled or configured (boot 1–60, repeat 5–1440 minutes) for the selected active run. They never correct device states in this release. Downloaded JSON includes the original plan, expected events, unmanaged forecast, per-event sampled outcomes, observed changes, power/settings comparison totals, gaps and collection status. Before the first planned state, comparison is unplanned; unavailable/restart gaps are unknown. One-minute sampling cannot identify every brief task-lighting episode. For exact retrospective transitions, compare Recorder history separately while retained.
 
@@ -166,3 +166,10 @@ In 0.14.1 (packaged, not yet deployed), use **Select all in this room** / **Clea
 Home Assistant installs the pinned ReportLab and Python bidi requirements from PyPI when loading this integration. The packaged DejaVu fonts include their license. A backend update requires one HA restart; PDF generation afterward needs no restart. Generation is on demand and writes only to the integration's private PDF cache under `.storage/shabbat_flow_pdfs`. No public `www` PDF directory is used.
 
 Use **Reports → Generate saved PDF**, wait for Ready, then Download/Open or Share / Save to Files. The latter depends on browser/Companion App support. Unchanged reports reuse their stored file; changed JSON/feedback regenerates it. Browser Print remains an alternative.
+
+## 0.20.0 lighting pilot
+Preview → Review devices for control → verify each exact light/switch On and Off on a weekday → approve a selected subset → explicitly Schedule and observe before the displayed deadline. Save/Preview/upgrade never arms a run. All-away plans cannot arm. Approval freezes the dates and device mapping; editing a draft never changes an approved run. Review exclusions before scheduling: HVAC, fans and appliances cannot execute in this pilot. Existing writers block inclusion; dynamic source attestations require a specific reason the source cannot access that device. The display forecast is not an ownership audit.
+
+At due time, read state first: matching state is recorded without a command; known mismatch gets explicit On/Off; unavailable or stale evidence blocks that device. No initial blanket On or final blanket Off is invented. Disarm prevents future actions and leaves states unchanged; an already in-flight service may finish. Observation remains linked for evidence. Service acknowledgment is not proof: context-matching observed state qualifies a change for optional recovery; unattributed matching state is reported as uncertain and cannot establish recovery ownership.
+
+Optional correction defaults off. After restart, wait five minutes (configurable); missed actions beyond 120 seconds block rather than replay. Corrections apply only to confirmed changes, at default 30-minute intervals (minimum five), maximum twice per load/run. Explicit user override, changed sources/registry identity, unavailable state, expiry or disarm stops correction. No live device acceptance was performed during development. Check execution status for blocked resources; automatic failure push alerts remain future work.

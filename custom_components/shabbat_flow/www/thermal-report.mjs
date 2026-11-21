@@ -1,3 +1,4 @@
+import {executionWords} from './execution.mjs';
 export const isolateTemperatureText=value=>value.replace(/\u200e?(\(°[CF]\)|(?:-?\d+(?:\.\d+)?\s*)?°[CF])\u200e?/g,(_,unit)=>'\u200e'+unit+'\u200e');
 import {renderPerformance,renderReviewSummary} from './review-ui.mjs';
 import {renderFlexibleSummary,words as flexWords} from './flexible.mjs';
@@ -152,6 +153,6 @@ export function renderObservationPrint({report,data,node,t,lang,logo}){
  const plainNode=node;node=(tag,text,cls)=>plainNode(tag,typeof text==='string'?isolateTemperatureText(text):text,cls);
  report.replaceChildren();if(logo){const img=logo.cloneNode(true);img.className='brand-logo';report.append(img);}
  const zone=data.run.bundle?.plan?.snapshot?.timezone??'UTC';const time=value=>new Intl.DateTimeFormat(lang(),{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
- report.append(node('h1',t(data.run.kind==='climate_study'?'study_report_title':'observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t(data.run.kind==='climate_study'?'study_id':'observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t(data.run.kind==='climate_study'?'study_collect_hint':'observe_hint'),'report-notice'),renderPerformance(data,{node,lang}),renderReviewSummary(data,{node,lang}),renderObservationTotals(data,{node,t,lang}),renderThermalReport(data,{node,t,lang}),renderComfort(data,{node,lang}));
+ report.append(node('h1',t(data.run.kind==='climate_study'?'study_report_title':'observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t(data.run.kind==='climate_study'?'study_id':'observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',data.execution?executionWords[lang()].control_notice:t(data.run.kind==='climate_study'?'study_collect_hint':'observe_hint'),'report-notice'),renderPerformance(data,{node,lang}),renderReviewSummary(data,{node,lang}),renderObservationTotals(data,{node,t,lang}),renderThermalReport(data,{node,t,lang}),renderComfort(data,{node,lang}));
  if(data.run.preview?.flex)report.append(renderFlexibleSummary({bundle:data.run.bundle,result:data.run.preview,node,lang}));
 }

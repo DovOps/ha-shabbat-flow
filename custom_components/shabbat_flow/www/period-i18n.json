@@ -413,7 +413,8 @@
     "home_custom_help": "Custom home/away windows are preserved. Review them in Advanced settings when adding room use or meals at home.",
     "error_activity_sleep_conflict": "Playtime overlaps sleeping. Adjust the window or explicitly allow the overlap.",
     "error_gated_needs_replacement": "Replace the selected HVAC plan demands before using temperature gating, then define every desired HVAC window.",
-    "error_conditional_overlap": "Conditional windows overlap for the same HVAC unit. Combine them or adjust the times."
+    "error_conditional_overlap": "Conditional windows overlap for the same HVAC unit. Combine them or adjust the times.",
+    "meals_away_auto": "Nobody home: meals are Away and afternoon hosting is off. Set Someone home to plan meals here."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -829,6 +830,7 @@
     "home_custom_help": "חלונות הזמן המותאמים של שהייה בבית או מחוץ לו נשמרים. בדקו אותם בהגדרות המתקדמות כשמוסיפים שימוש בחדר או ארוחה בבית.",
     "error_activity_sleep_conflict": "זמן המשחק חופף לשינה. יש להתאים שעות או לאשר חפיפה במפורש.",
     "error_gated_needs_replacement": "יש להחליף את דרישות המיזוג הקיימות לפני בחירת תנאי טמפרטורה ולהגדיר את כל החלונות הרצויים.",
-    "error_conditional_overlap": "חלונות מותנים חופפים לאותה יחידת מיזוג. יש לאחד או להתאים שעות."
+    "error_conditional_overlap": "חלונות מותנים חופפים לאותה יחידת מיזוג. יש לאחד או להתאים שעות.",
+    "meals_away_auto": "אף אחד לא בבית: הארוחות מחוץ לבית ואירוח אחר הצהריים כבוי. בחרו שיש מישהו בבית כדי לתכנן ארוחות."
   }
 }

@@ -1,0 +1,2 @@
+# Analysis
+Reuse the pure compiler and separate observe collector. Execution is never a Preview side effect. Conservative known-writer blocking and explicit unknown-source attestations precede a binary-only pilot. No HVAC command is implemented until native resume semantics are verified. User authorized implementation/deployment, not arming the current draft or controlling the upcoming away period. No personal dates or room names enter public fixtures.

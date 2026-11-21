@@ -1,4 +1,4 @@
-"""Home Assistant host for a non-executing ShabbatFlow sample."""
+"""Home Assistant host: planning, observation and explicitly armed lighting pilot."""
 import json
 from asyncio import Lock
 from homeassistant.helpers.storage import Store
@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView
 
 ROOT = Path(__file__).parent
 
@@ -35,6 +35,10 @@ async def async_setup_entry(hass, entry):
     if "observer" not in data or data["observer"].closed:
         data["observer"] = Observer(hass)
         await data["observer"].load()
+    from .execution import Executor
+    if 'executor' not in data or data['executor'].closed:
+        data['executor']=Executor(hass)
+        await data['executor'].load()
     from .pdf_store import PdfStore
     data["pdf"] = PdfStore(hass)
     try: await data["pdf"].tidy()
@@ -42,7 +46,7 @@ async def async_setup_entry(hass, entry):
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry
@@ -65,6 +69,8 @@ async def async_options_updated(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
+    executor=hass.data.get(DOMAIN,{}).get('executor')
+    if executor:await executor.close()
     observer = hass.data.get(DOMAIN, {}).get("observer")
     if observer: observer.close()
     pdf=hass.data.get(DOMAIN,{}).get("pdf")
