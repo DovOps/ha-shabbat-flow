@@ -1,6 +1,7 @@
 """Repository hygiene gate; a human content review is still required."""
 from pathlib import Path
 import re
+import hashlib
 import subprocess
 import sys
 
@@ -18,6 +19,10 @@ for name in files:
     if not name:continue
     path=ROOT/name
     if name.startswith(('.specify/scripts/','.specify/templates/','docs/vendor/')):continue
+    approved_fonts={'custom_components/shabbat_flow/fonts/DejaVuSans.ttf': '7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954', 'custom_components/shabbat_flow/fonts/DejaVuSans-Bold.ttf': 'e6476c1b80502924294eed40894c5b18e06c181444ca953e5334262df9c27724'}
+    if name in approved_fonts:
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=approved_fonts[name]:failures.append((name,"font provenance mismatch"))
+        continue
     if path.suffix in ('.png','.webp','.jpg'):continue
     try:text=path.read_text()
     except UnicodeDecodeError:

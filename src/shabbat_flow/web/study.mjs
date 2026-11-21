@@ -1,3 +1,4 @@
+import {savedPdf} from './pdf-download.mjs';
 import {itemIcon,loadIcons} from './ha-icons.mjs';
 import {request as fetch} from './transport.mjs';
 import {setupObservation} from './observe.mjs';
@@ -44,7 +45,7 @@ function draw(){
   }}drawZone();root.append(card);
  }
  if(!sources.climates.length)root.append(node('p',t('observe_thermal_empty')));
- setupObservation({root:$('observe-panel'),fetch,node,t,lang,uiState:observeState,study:()=>structuredClone(selection),onPrint:data=>{printData=data;print();window.print();}});
+ setupObservation({root:$('observe-panel'),fetch,node,t,lang,uiState:observeState,study:()=>structuredClone(selection),onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});
 }
 window.addEventListener('beforeprint',print);
 async function init(){try{await loadIcons();const [c,s]=await Promise.all([fetch('/api/v2/i18n'),fetch('/api/v2/observe')]);if(!c.ok||!s.ok)throw Error();catalogs=await c.json();const listing=await s.json();sources=listing.study_sources;draw();$('language').onchange=()=>{language=$('language').value;draw();};}catch{$('error').textContent='Unable to load climate studies. Open this page inside Home Assistant. / לא ניתן לטעון מחקרי אקלים. יש לפתוח מתוך Home Assistant.';}}

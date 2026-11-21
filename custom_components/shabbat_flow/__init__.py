@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView
 
 ROOT = Path(__file__).parent
 
@@ -35,10 +35,13 @@ async def async_setup_entry(hass, entry):
     if "observer" not in data or data["observer"].closed:
         data["observer"] = Observer(hass)
         await data["observer"].load()
+    from .pdf_store import PdfStore
+    data["pdf"] = PdfStore(hass)
+    await data["pdf"].tidy()
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry
@@ -63,6 +66,8 @@ async def async_options_updated(hass, entry):
 async def async_unload_entry(hass, entry):
     observer = hass.data.get(DOMAIN, {}).get("observer")
     if observer: observer.close()
+    pdf=hass.data.get(DOMAIN,{}).get("pdf")
+    if pdf: await pdf.close()
     notifications=hass.data.get(DOMAIN,{}).get('notifications')
     if notifications:notifications.close()
     frontend.async_remove_panel(hass, PANEL)

@@ -659,3 +659,18 @@ test('planner has one top action per command and no duplicate export IDs',()=>{
  for(const id of ['preview','save','export','export-pdf','load','delete','reset'])assert.equal([...html.matchAll(new RegExp('id="'+id+'"','g'))].length,1);
  assert.ok(html.indexOf('id="plan-commands"')<html.indexOf('id="period-form"'));assert.ok(html.includes('id="workflow-note"'));
 });
+
+test('stored PDF commands have complete default language catalogs',async()=>{
+ const {pdfWords}=await import('../src/shabbat_flow/web/pdf-download.mjs');
+ assert.deepEqual(Object.keys(pdfWords.en).sort(),Object.keys(pdfWords.he).sort());
+ for(const language of ['en','he'])for(const key of ['generate','working','ready','download','open','share','error','stale','print'])assert.ok(pdfWords[language][key]);
+});
+
+
+test('temperature units stay LTR within Hebrew text',async()=>{
+ const {isolateTemperatureText}=await import('../src/shabbat_flow/web/thermal-report.mjs');
+ const value=isolateTemperatureText('טמפרטורה (°C): 23 °C');
+ assert.ok(value.includes('\u200e(°C)\u200e'));
+ assert.ok(value.includes('\u200e23 °C\u200e'));
+ assert.equal(isolateTemperatureText(value),value);
+});

@@ -1,3 +1,4 @@
+import {savedPdf,pdfWords} from './pdf-download.mjs';
 import {reviewWords} from './review-ui.mjs';
 import {renderFlexible,renderFlexibleSummary,effectiveMealEnd} from './flexible.mjs';
 import {formatOffset,offsetControl} from './time-input.mjs';
@@ -90,6 +91,7 @@ function dayLabel(segment,index){
 }
 function openAdvanced(){const details=$('advanced-setup');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});details.querySelector('summary').focus();}
 function workflow(){
+ $('native-print').textContent=pdfWords[lang()].print;$('native-print').disabled=!result?.complete;
  const words=reviewWords[lang()],ready=!!result?.complete;$('planner-title').textContent=words.plan_title;
  for(const [id,key]of [['workflow-title','next'],['workflow-help','guide'],['workflow-note','draft_note'],['more-menu','more'],['export-menu','exports']])$(id).textContent=words[key];
  $('workflow-state').textContent=words[ready?'ready':'dirty'];$('observe-jump').textContent='◉ '+words.observe;$('observe-jump').hidden=!householdMode;
@@ -283,11 +285,11 @@ async function boot(){
     const responses=await Promise.all([fetch('/api/v2/example'),fetch('/api/v2/i18n'),fetch('/api/v2/calendar')]);
     if(responses.some(r=>!r.ok))throw new Error('load_failed');
     [bundle,catalogs,calendarData]=await Promise.all(responses.map(r=>r.json()));if(householdMode)bundle=parsePeriodDraft(new URLSearchParams(location.search).get('saved')==='1'?localStorage.getItem(draftKey):sessionStorage.getItem('shabbat-flow-household-workspace'));initial=structuredClone(bundle);
-    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{observationPrint=data;printReport();window.print();}});});
+    $('language').addEventListener('change',()=>{bundle.plan.language=$('language').value;revision++;render();if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});});
     $('preview').addEventListener('click',async()=>{await preview();if(result){$('schedule-preview').focus({preventScroll:true});$('schedule-preview').scrollIntoView({block:'start',behavior:'smooth'});}});
     window.addEventListener('beforeprint',printReport);
     window.addEventListener('afterprint',()=>{observationPrint=null;});
-    $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;observationPrint=null;printReport();window.print();});
+    $('export-pdf').addEventListener('click',()=>{if(!result?.complete)return;if(householdMode)savedPdf({kind:'preview',bundle:structuredClone(bundle)},lang());else{observationPrint=null;printReport();window.print();}});
     $('save').addEventListener('click',async()=>{const token=revision;try{const candidate=structuredClone(bundle);await validate(candidate);if(token!==revision)return;localStorage.setItem(draftKey,JSON.stringify(candidate));message('saved');}catch(e){if(token===revision)error(e);}});
     $('load').addEventListener('click',async()=>{const token=revision;try{const candidate=parsePeriodDraft(localStorage.getItem(draftKey));await validate(candidate);if(token!==revision)return;bundle=candidate;changed();render();message('loaded');}catch(e){if(token===revision)error(e);}});
     $('observe-jump').onclick=()=>{const target=$('observe-panel');target.scrollIntoView({block:'start',behavior:'smooth'});target.querySelector('button')?.focus();};
@@ -296,7 +298,9 @@ async function boot(){
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     if(householdMode){try{const r=await fetch('/api/v2/household');if(r.ok)flexInventory=(await r.json()).inventory;}catch{}}
     render();
-    if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{observationPrint=data;printReport();window.print();}});
+    if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});
   }catch(e){$('status').textContent='Unable to load preview. / לא ניתן לטעון תצוגה מקדימה.';}
 }
 boot();
+
+$('native-print').onclick=()=>{if(result?.complete){observationPrint=null;printReport();window.print();}};

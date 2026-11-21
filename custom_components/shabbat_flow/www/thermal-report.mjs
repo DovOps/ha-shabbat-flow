@@ -1,3 +1,4 @@
+export const isolateTemperatureText=value=>value.replace(/\u200e?(\(°[CF]\)|(?:-?\d+(?:\.\d+)?\s*)?°[CF])\u200e?/g,(_,unit)=>'\u200e'+unit+'\u200e');
 import {renderPerformance,renderReviewSummary} from './review-ui.mjs';
 import {renderFlexibleSummary,words as flexWords} from './flexible.mjs';
 // Reported point samples, not continuous room temperature or compressor runtime.
@@ -55,6 +56,7 @@ export function lineSegments(points,key){
  if(current.length)paths.push(current);return paths;
 }
 export function renderThermalReport(data,{node,t,lang}){
+ const plainNode=node;node=(tag,text,cls)=>plainNode(tag,typeof text==='string'?isolateTemperatureText(text):text,cls);
  const root=node('section',undefined,'thermal-report'),model=thermalModel(data);
  root.append(node('h2',t('observe_thermal_title')),node('p',t('observe_thermal_chart_hint'),'hint'));
  if(!model){root.append(node('p',t('observe_thermal_legacy')));return root;}
@@ -147,6 +149,7 @@ function renderComfort(data,{node,lang}){
  for(const d of data.run.comfort.decisions??[]){const c=data.run.preview.flex.conditions.find(c=>c.id===d.id),load=data.run.bundle.config.loads[c?.load],row=node('tr');for(const v of [new Date(d.at).toLocaleString(he?'he-IL':'en-GB',{timeZone:data.run.bundle.plan.snapshot.timezone}),load?.label[lang()]??d.source,d.temperature===null?'—':d.temperature+' °'+d.unit,he?({on:'הפעלה',off:'כיבוי',unknown:'לא ידוע'}[d.intent]):d.intent,reasonLabels[d.reason]??d.reason])row.append(node('td',String(v)));table.append(row);}root.append(table);return root;
 }
 export function renderObservationPrint({report,data,node,t,lang,logo}){
+ const plainNode=node;node=(tag,text,cls)=>plainNode(tag,typeof text==='string'?isolateTemperatureText(text):text,cls);
  report.replaceChildren();if(logo){const img=logo.cloneNode(true);img.className='brand-logo';report.append(img);}
  const zone=data.run.bundle?.plan?.snapshot?.timezone??'UTC';const time=value=>new Intl.DateTimeFormat(lang(),{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
  report.append(node('h1',t(data.run.kind==='climate_study'?'study_report_title':'observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t(data.run.kind==='climate_study'?'study_id':'observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t(data.run.kind==='climate_study'?'study_collect_hint':'observe_hint'),'report-notice'),renderPerformance(data,{node,lang}),renderReviewSummary(data,{node,lang}),renderObservationTotals(data,{node,t,lang}),renderThermalReport(data,{node,t,lang}),renderComfort(data,{node,lang}));

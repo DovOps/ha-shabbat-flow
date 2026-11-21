@@ -279,3 +279,20 @@ class ObserveView(BaseView):
         except (ValueError,TypeError,KeyError,UnicodeDecodeError,RecursionError) as exc:
             code=str(exc) if str(exc).startswith('observe_') else 'invalid_request'
             return self.response({'error':code},409 if code in ('observe_conflict','observe_review_conflict') else 400)
+
+
+class PdfView(BaseView):
+    url='/api/shabbat_flow/pdf'
+    name='api:shabbat_flow:pdf'
+
+    async def post(self,request):
+        self.check(request)
+        try:
+            payload=await read_body(request);store=self.hass.data[DOMAIN]['pdf']
+            if payload.get('op')=='generate':return self.response(await store.start(payload),202)
+            if payload.get('op') in ('status','download') and set(payload)=={'op','key'}:
+                return self.response(await store.fetch(payload['key'],payload['op']=='download'))
+            raise ValueError('pdf_invalid')
+        except (ValueError,TypeError,KeyError,PlanError) as exc:
+            code=str(exc) if str(exc).startswith('pdf_') else 'pdf_invalid'
+            return self.response({'error':code},409 if code=='pdf_stale' else 400)
