@@ -1,3 +1,4 @@
+import {effectiveMealEnd} from './flexible.mjs';
 import {formatOffset} from './time-input.mjs';
 export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,timeline,logo}){
   report.replaceChildren();
@@ -11,7 +12,7 @@ export function renderPrintReport({report,bundle,result,t,lang,dayLabel,node,tim
     if(segment.calendar_details?.length)section.append(node('p',segment.calendar_details.join(' · '),'calendar-details'));
     section.append(node('p',`${t('candle_lighting')}: ${date(segment.candle_lighting)} · ${t('sunrise_anchor')}: ${date(segment.sunrise)}`));
     section.append(node('h3',t('meals_title')));
-    for(const meal of bundle.plan.meals.filter(m=>m.segment===segment.id))section.append(node('p',`${t('meal_'+meal.kind)}: ${t(meal.choice)} · ${date(meal.start)} — ${date(meal.end)}`));
+    for(const meal of bundle.plan.meals.filter(m=>m.segment===segment.id))section.append(node('p',`${t('meal_'+meal.kind)}: ${t(meal.choice)} · ${date(meal.start)} — ${date(effectiveMealEnd(bundle,meal))}`));
     const uses=bundle.plan.room_uses.filter(u=>u.segment===segment.id);
     if(uses.length){section.append(node('h3',t('report_uses')));for(const use of uses)section.append(node('p',`${bundle.config.rooms[use.room]?.[lang()]??use.room} · ${t(use.purpose)} · ${date(use.start)} — ${date(use.end)}`));}
     for(const use of uses.filter(u=>u.hvac_end))section.append(node('p',`${bundle.config.rooms[use.room]?.[lang()]??use.room} · ${t('wake_time')}: ${date(use.hvac_end)}`));

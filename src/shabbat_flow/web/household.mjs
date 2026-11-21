@@ -192,6 +192,7 @@ function drawPhases(card,aid){
  card.append(section);
 }
 function drawBathroomLighting(card,aid){
+ const ds=setup(draft[aid]);card.append(select(t('daylight_suitability'),ds.daylight_suitability??'unknown',['unknown','suitable','unsuitable'].map(v=>[v,t('daylight_'+v)]),v=>{mutate(aid,()=>ds.daylight_suitability=v);renderRooms();}),el('p',t('daylight_suitability_help'),'hint'));
  const s=setup(draft[aid]),policy=s.lighting??{mode:'always',off_after_sunrise:180,on_before_sunset:120,night_enabled:false,night_after_candles:360,morning_after_sunrise:0};
  const change=(key,value)=>{mutate(aid,()=>s.lighting={...policy,[key]:value});renderRooms();};
  card.append(el('h3',t(isBathroom(draft[aid])?'bathroom_lighting':'area_lighting')),el('p',t('area_lighting_help'),'hint'));

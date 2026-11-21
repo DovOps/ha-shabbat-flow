@@ -11,11 +11,11 @@ TARGET = ROOT / 'custom_components/shabbat_flow'
 
 def generated():
     files = {}
-    for name in ('compiler.py', 'planning.py', 'schedule.py'):
+    for name in ('compiler.py', 'planning.py', 'schedule.py', 'flexible.py'):
         files['engine/'+name] = (ROOT/'src/shabbat_flow'/name).read_bytes()
     files['engine/__init__.py'] = b'"""Generated pure planner engine; edit src/shabbat_flow instead."""\n'
     web = ROOT/'src/shabbat_flow/web'
-    for name in ('activity-model.mjs','time-input.mjs','ha-icons.mjs','settings.html','settings.mjs','observation.html','observation.mjs','notifications.mjs','study.html','study.mjs','period.mjs','thermal-report.mjs','observe.mjs','hvac-map.mjs','lighting-map.mjs','period-report.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json','household.mjs','household-model.mjs','household-i18n.json','tips.html'):
+    for name in ('flexible.mjs','activity-model.mjs','time-input.mjs','ha-icons.mjs','settings.html','settings.mjs','observation.html','observation.mjs','notifications.mjs','study.html','study.mjs','period.mjs','thermal-report.mjs','observe.mjs','hvac-map.mjs','lighting-map.mjs','period-report.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json','household.mjs','household-model.mjs','household-i18n.json','tips.html'):
         files['www/'+name] = (web/name).read_bytes()
     html = (web/'period.html').read_text()
     for name in ('style.css','period.mjs','logo.png'):
@@ -58,7 +58,7 @@ def archive():
     output = ROOT/'dist'/f'shabbat-flow-{version}.zip'
     output.parent.mkdir(exist_ok=True)
     # Exact source allowlist plus generated assets: no logs/private/temp files.
-    names = set(generated()) | {'__init__.py','api.py','observe.py','notifications.py','reminders.py','dependencies.py','study.py','thermal.py','ownership.py','upcoming.py','household.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
+    names = set(generated()) | {'comfort.py','__init__.py','api.py','observe.py','notifications.py','reminders.py','dependencies.py','study.py','thermal.py','ownership.py','upcoming.py','household.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
     with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(names):
             info = zipfile.ZipInfo('custom_components/shabbat_flow/'+name, date_time=(2026,1,1,0,0,0))

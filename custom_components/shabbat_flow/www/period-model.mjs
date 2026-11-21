@@ -123,6 +123,14 @@ export function copyPreviousDay(bundle,targetId){
       plan[field].push(copy);
     }
   }
+  if(plan.flex){
+    const f=plan.flex,sourceWindows=f.windows.filter(w=>w.segment===source.id);
+    f.windows=f.windows.filter(w=>w.segment!==targetId);
+    for(const w of sourceWindows){const copy={...structuredClone(w),id:nextId('activity',f.windows),segment:targetId,start:shiftWallDays(w.start,days,zone),end:shiftWallDays(w.end,days,zone)};
+      if(w.meal){const original=bundle.plan.meals.find(m=>m.id===w.meal),targetMeal=plan.meals.find(m=>m.segment===targetId&&m.kind===original?.kind);if(!targetMeal)continue;copy.meal=targetMeal.id;}f.windows.push(copy);}
+    f.meals=f.meals.filter(m=>plan.meals.some(x=>x.id===m.id));
+    for(const setting of bundle.plan.flex.meals){const original=bundle.plan.meals.find(m=>m.id===setting.id);if(original?.segment!==source.id)continue;const targetMeal=plan.meals.find(m=>m.segment===targetId&&m.kind===original.kind);if(targetMeal){f.meals=f.meals.filter(m=>m.id!==targetMeal.id);f.meals.push({...setting,id:targetMeal.id});}}
+  }
   next=setDayHome(next,targetId,state);return next;
 }
 

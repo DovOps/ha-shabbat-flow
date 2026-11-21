@@ -1,3 +1,4 @@
+import {renderFlexibleSummary,words as flexWords} from './flexible.mjs';
 // Reported point samples, not continuous room temperature or compressor runtime.
 export function thermalModel(data){
  const run=data?.run,thermal=run?.thermal;
@@ -136,8 +137,17 @@ export function renderObservationTotals(data,{node,t,lang=()=> 'en'}){
  if(data.collection_error)root.append(node('p',t('observe_error'),'error'));
  return root;
 }
+function renderComfort(data,{node,lang}){
+ const root=node('section'),he=lang()==='he';
+ if(!data.run.comfort)return root;
+ root.append(node('h2',he?'החלטות מיזוג במעקב בלבד':'HVAC shadow decisions'),node('p',he?'אין שליטה במכשירים. טריות מדידת החיישן לא אומתה; אין אישור להפעלה.':'No device control. Sensor measurement freshness is unverified; these decisions are not activation clearance.','hint'));
+ const table=node('table'),head=node('tr');for(const label of he?['שעה','חדר / יחידה','טמפרטורה','כוונה','סיבה']:['Time','Room / unit','Temperature','Intent','Reason'])head.append(node('th',label));table.append(head);
+ const reasonLabels={external_release:he?'סיום בשליטה חיצונית':'Release left to existing control',threshold:he?'סף טמפרטורה':'Temperature threshold',minimum_dwell:he?'משך מזערי':'Minimum dwell',outside_window:he?'מחוץ לחלון':'Outside window',missing_evidence:he?'חסר מידע':'Missing evidence',activity_gate_off:he?'סימני פעילות כבויים':'Activity signals off',planner_signal_dependency:he?'תלות בסימן בשליטת המתכנן':'Planner-controlled signal',clock_rollback:he?'שעון נסוג':'Clock rollback'};
+ for(const d of data.run.comfort.decisions??[]){const c=data.run.preview.flex.conditions.find(c=>c.id===d.id),load=data.run.bundle.config.loads[c?.load],row=node('tr');for(const v of [new Date(d.at).toLocaleString(he?'he-IL':'en-GB',{timeZone:data.run.bundle.plan.snapshot.timezone}),load?.label[lang()]??d.source,d.temperature===null?'—':d.temperature+' °'+d.unit,he?({on:'הפעלה',off:'כיבוי',unknown:'לא ידוע'}[d.intent]):d.intent,reasonLabels[d.reason]??d.reason])row.append(node('td',String(v)));table.append(row);}root.append(table);return root;
+}
 export function renderObservationPrint({report,data,node,t,lang,logo}){
  report.replaceChildren();if(logo){const img=logo.cloneNode(true);img.className='brand-logo';report.append(img);}
  const zone=data.run.bundle?.plan?.snapshot?.timezone??'UTC';const time=value=>new Intl.DateTimeFormat(lang(),{timeZone:zone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
- report.append(node('h1',t(data.run.kind==='climate_study'?'study_report_title':'observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t(data.run.kind==='climate_study'?'study_id':'observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t(data.run.kind==='climate_study'?'study_collect_hint':'observe_hint'),'report-notice'),renderObservationTotals(data,{node,t,lang}),renderThermalReport(data,{node,t,lang}));
+ report.append(node('h1',t(data.run.kind==='climate_study'?'study_report_title':'observe_report_title')),node('p',`${time(data.run.start)} — ${time(data.run.end)} · ${zone}`),node('p',`${t(data.run.kind==='climate_study'?'study_id':'observe_run_id')}: ${data.run.id} · ${data.run.snapshot_hash}`),node('p',t(data.run.kind==='climate_study'?'study_collect_hint':'observe_hint'),'report-notice'),renderObservationTotals(data,{node,t,lang}),renderThermalReport(data,{node,t,lang}),renderComfort(data,{node,lang}));
+ if(data.run.preview?.flex)report.append(renderFlexibleSummary({bundle:data.run.bundle,result:data.run.preview,node,lang}));
 }

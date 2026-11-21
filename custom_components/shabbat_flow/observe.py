@@ -13,6 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
 from .engine.schedule import compile_schedule, digest
 from .household import internal_id
+from .comfort import collect as comfort_collect
 from .thermal import initialize as thermal_initialize, collect as thermal_collect, weather_sources
 from .ownership import instant, forecast_ha, ownership_report
 
@@ -73,7 +74,7 @@ def resolve_mapping(hass, bundle):
     mapping, unresolved = {}, []
     for physical in sorted({load['physical_id'] for load in bundle['config']['loads'].values()}):
         entity = known.get(physical)
-        if not entity or entity.domain not in ('light','switch','climate'):
+        if not entity or entity.domain not in ('light','switch','climate','fan'):
             unresolved.append(physical); continue
         mapping[physical] = {'entity_id':entity.entity_id, 'registry_id':entity.id, 'platform':entity.platform}
     return mapping, unresolved
@@ -257,6 +258,7 @@ class Observer:
                 changed = True
                 thermal_collect(self.hass,run,now,rid in self.resumed)
                 gap = rid in self.resumed or not run['last_states'] or (now-left).total_seconds()>90
+                comfort_collect(self.hass,run,now,gap)
                 accumulate(run,left,right,gap)
                 if gap and right>left and len(run['gaps'])<1000: run['gaps'].append({'start':left.isoformat(),'end':right.isoformat(),'reason':'restart_or_collection_gap'})
                 states = {p:reading(self.hass,t) for p,t in run['mapping'].items()}

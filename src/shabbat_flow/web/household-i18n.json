@@ -317,7 +317,12 @@
     "activity_observe_only": "Observation only: no device control is active. Status refreshes while this page is visible.",
     "room_short_ready": "Ready",
     "room_short_draft": "Draft",
-    "room_short_blocked": "Needs attention"
+    "room_short_blocked": "Needs attention",
+    "daylight_suitability": "Bathroom natural daylight",
+    "daylight_unknown": "Not assessed",
+    "daylight_suitable": "Sufficient natural daylight",
+    "daylight_unsuitable": "No suitable daylight",
+    "daylight_suitability_help": "Record this explicitly; daylight breaks are not inferred from room names. Existing timing remains unchanged until you edit the policy."
   },
   "he": {
     "language": "שפה",
@@ -637,6 +642,11 @@
     "activity_observe_only": "תצפית בלבד: אין שליטה פעילה במכשירים. המצב מתרענן כאשר הדף מוצג.",
     "room_short_ready": "מוכן",
     "room_short_draft": "טיוטה",
-    "room_short_blocked": "נדרשת בדיקה"
+    "room_short_blocked": "נדרשת בדיקה",
+    "daylight_suitability": "אור יום טבעי בחדר הרחצה",
+    "daylight_unknown": "טרם נבדק",
+    "daylight_suitable": "מספיק אור יום טבעי",
+    "daylight_unsuitable": "אין מספיק אור יום",
+    "daylight_suitability_help": "יש להגדיר במפורש; אין הסקת אור יום משם החדר. הזמנים הקיימים אינם משתנים עד לעריכת המדיניות."
   }
 }
