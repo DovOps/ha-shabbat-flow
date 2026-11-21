@@ -1,11 +1,11 @@
 // Label filters only guide explicit selection; they never assign schedule targets.
-export const labelRoles=['bathroom','main_lights','night_lights','bedroom','common_area','bathroom_area','hallway_area'];
+export const labelRoles=['bathroom','main_lights','night_lights','bedroom','common_area','bathroom_area','hallway_area','fans'];
 export const emptyLabelFilters=()=>Object.fromEntries(labelRoles.map(role=>[role,null]));
 export const entityMatchesLabel=(entity,id)=>!id||[...(entity.labels??[]),...(entity.device_labels??[])].includes(id);
 export function roleCandidates(inventory,room,area,role,filters,{allRoom=false,allAreas=false}={}){
- const selected=room.roles[role];
+ const selected=room.roles[role]??[];
  const label=role==='hvac'?null:role==='main_lights'&&isBathroom(room)?(filters.bathroom??filters.main_lights):filters[role];
- return inventory.entities.filter(e=>(role==='hvac'?e.domain==='climate':['light','switch'].includes(e.domain))&&
+ return inventory.entities.filter(e=>(role==='hvac'?e.domain==='climate':(role==='fans'?['fan','switch']:['light','switch']).includes(e.domain))&&
   (selected.includes(e.id)||((allAreas||e.area_id===area)&&(allRoom||entityMatchesLabel(e,label)))));
 }
 export function bathroomCandidates(inventory,area,linked,filters,all=false){
@@ -31,7 +31,7 @@ export function roomProblems(r,rooms){
   if(phase.morning&&phase.morning_end!==null&&phase.morning_end<=phase.morning_start)errors.push('phase_morning_bounds');
   if(phase.night==='after_use'&&!r.purposes.includes('recreation')&&!phase.evening_meal)errors.push('phase_needs_recreation');
   if((phase.night!=='none'||phase.morning)&&s.lighting?.night_enabled)errors.push('phase_bathroom_conflict');
-  if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!r.shared_areas.length)errors.push('needs_roles');
+  if(!r.roles.main_lights.length&&!r.roles.night_lights.length&&!(r.roles.hvac.length&&r.hvac.mode!=='none')&&!(r.roles.fans??[]).length&&!r.shared_areas.length)errors.push('needs_roles');
   if(r.hvac.mode!=='none'&&!r.roles.hvac.length)errors.push('needs_hvac_device');
   if(r.hvac.mode!=='none'&&!r.purposes.length&&!mealHvac(r,'evening')&&!mealHvac(r,'daytime'))errors.push('needs_hvac_use');
   if(s.lighting?.night_enabled&&(!r.roles.main_lights.length||!r.roles.night_lights.length))errors.push('bathroom_night_needs_lights');

@@ -162,3 +162,8 @@ Full JSON, PDF and review-bundle exports include saved feedback. Use a review bu
 In Home Assistant, **Generate saved PDF** creates a real file on the HA host. Wait for the ready message, then choose **Download PDF**, **Open PDF**, or **Share / Save to Files** if supported by your phone. It does not require the Companion App to open a print dialog. Browser Print remains available on the report.
 
 Files stay private behind administrator authentication. Reports include the saved feedback, not unsaved form edits. Generate again after evidence or feedback changes. Retained report files follow report expiry; preview files expire after 24 hours. The cache is capped at 40 files / 64 MiB, so older files may need regeneration. Nothing changes your devices. Phone opening/sharing behavior still depends on the Companion App and operating system.
+
+## Permanent room fans
+In **House setup → Edit room → Fans**, select the native fan entities or switches powering fans. Leave the list empty in rooms without fans. Assign the controls to the correct HA area; optionally label those entities or devices **Fans** and select that label under **Use HA labels to simplify setup**. Labels only filter candidates and never select devices. Show all devices for the room when needed.
+
+Save the house setup. New dated plans carry these fan assignments into **Activities, fans and comfort**: add an independent fan activity window, select the room and fan, and choose start/end and release behavior. Fan assignments alone do not create a schedule. Existing dated plans remain unchanged; use their device import or create a new plan. Fan timing is independent of A/C and does not change speed or oscillation. This remains preview/observation-only.

@@ -8,7 +8,7 @@ let activityData=null,activityError=false,activityLoading=false;
 let postShutoff=false,saveError=null,staleSettings=false;
 let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
-const defaults=()=>({enabled:false,setup:{status:'draft',service:false,home:false,bathroom_timing:{}},purposes:[],roles:{main_lights:[],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
+const defaults=()=>({enabled:false,setup:{status:'draft',service:false,home:false,bathroom_timing:{}},purposes:[],roles:{main_lights:[],night_lights:[],hvac:[],fans:[]},shared_areas:[],hvac:{mode:'none',temperature:null,fan_mode:null,lead_minutes:60}});
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 function status(key){const problem=!['dirty','saved','inventory_reviewed'].includes(key);$('status').className=problem?'room-feedback blocked':'';$('status').textContent=(problem?'⚠ ':'')+t(key);}
 function changed(){dirty=true;saveError=null;status('dirty');updateRoomFeedback();}
@@ -121,13 +121,13 @@ function updateRoomFeedback(){
 }
 
 function drawRole(host,aid,role){
- const room=draft[aid],selected=room.roles[role],field=el('fieldset');field.append(el('legend',t(role)));
+ const room=draft[aid],selected=room.roles[role]??=[],field=el('fieldset');field.append(el('legend',t(role)));
  const candidates=roleCandidates(data.inventory,room,aid,role,labelFilters,{allRoom,allAreas:showAll});
  if(!candidates.length)field.append(el('p',t('none_found'),'hint'));
  for(const e of candidates){
   const owner=Object.entries(draft).find(([a,r])=>r.enabled&&Object.entries(r.roles).some(([key,ids])=>ids.includes(e.id)&&(a!==aid||key!==role)));
   const box=checkbox(`${e.name} · ${e.entity_id} · ${t(e.disabled?'disabled':e.available?'available':'unavailable')}`,selected.includes(e.id),v=>{mutate(aid,()=>room.roles[role]=v?[...room.roles[role],e.id]:room.roles[role].filter(x=>x!==e.id));renderRooms();});
-  box.querySelector('span').prepend(haIcon(e.icon,e.domain==='climate'?'mdi:thermostat':'mdi:lightbulb-outline'));box.dataset.entityId=e.id;box.querySelector('input').id='role-'+role+'-'+e.id;box.querySelector('input').disabled=!selected.includes(e.id)&&(e.disabled||!!owner);
+  box.querySelector('span').prepend(haIcon(e.icon,e.domain==='climate'?'mdi:thermostat':role==='fans'?'mdi:fan':'mdi:lightbulb-outline'));box.dataset.entityId=e.id;box.querySelector('input').id='role-'+role+'-'+e.id;box.querySelector('input').disabled=!selected.includes(e.id)&&(e.disabled||!!owner);
   field.append(box);if(owner)field.append(el('small',`${t('assigned_to')}: ${roomName(owner[0])}`,'hint'));
  }
  for(const id of selected.filter(id=>!data.inventory.entities.some(e=>e.id===id)))field.append(checkbox(`${t('missing_choice')} · ${id}`,true,()=>{mutate(aid,()=>room.roles[role]=room.roles[role].filter(x=>x!==id));renderRooms();}));
@@ -230,7 +230,7 @@ function renderRooms(){
   card.append(select(t('area_type'),areaType(r),['room','common','bathroom','hallway',...(areaType(r)==='legacy'?['legacy']:[])].map(k=>[k,t('area_type_'+k)]),v=>{mutate(aid,()=>draft[aid]=classifyRoom(r,v));phaseOpen=true;renderRooms();}),el('p',t('area_type_help'),'hint'));
   const advanced=el('details');advanced.append(el('summary',t('profile_details')),el('p',t('profile_help')));card.append(advanced);
   card.append(viewToggle('all_room_entities',allRoom,v=>allRoom=v),viewToggle('all_entities',showAll,v=>showAll=v),el('p',t('filter_help'),'hint'));
-  drawRole(card,aid,'main_lights');drawRole(card,aid,'night_lights');drawHvac(card,aid);drawPhases(card,aid);
+  drawRole(card,aid,'main_lights');drawRole(card,aid,'night_lights');drawRole(card,aid,'fans');card.append(el('p',t('fans_help'),'hint'));drawHvac(card,aid);drawPhases(card,aid);
   drawBathroomLighting(card,aid);
   if(r.purposes.includes('sleeping')){
    const rest=el('details');rest.id='rest-controls';rest.open=restOpen;rest.append(el('summary',t('rest_defaults')),el('p',t('rest_defaults_help'),'hint'));
@@ -263,7 +263,7 @@ function renderRooms(){
   const ids=selectedRooms(),ready=ids.filter(id=>setup(draft[id]).status==='ready');root.append(el('p',`${ready.length} / ${ids.length} ${t('rooms_ready')}`),el('p',t('summary_help')));
   for(const id of ids){const r=draft[id],s=setup(r),card=el('section',undefined,'card');card.append(el('h3',roomName(id)),feedbackBox(id),el('p',[...r.purposes.map(t),t('area_type_'+areaType(r))].join(' · ')));
    card.querySelector('h3').prepend(haIcon(data.inventory.areas.find(a=>a.id===id)?.icon));
-   for(const role of ['main_lights','night_lights','hvac'])if(r.roles[role].length){const row=el('p',t(role)+': ');for(const rid of r.roles[role]){const e=data.inventory.entities.find(e=>e.id===rid);const name=el('span',e?.name??rid);name.prepend(haIcon(e?.icon,role==='hvac'?'mdi:thermostat':'mdi:lightbulb-outline'));row.append(name,document.createTextNode(' '));}card.append(row);}
+   for(const role of ['main_lights','night_lights','fans','hvac'])if(r.roles[role]?.length){const row=el('p',t(role)+': ');for(const rid of r.roles[role]){const e=data.inventory.entities.find(e=>e.id===rid);const name=el('span',e?.name??rid);name.prepend(haIcon(e?.icon,role==='hvac'?'mdi:thermostat':role==='fans'?'mdi:fan':'mdi:lightbulb-outline'));row.append(name,document.createTextNode(' '));}card.append(row);}
    card.append(el('p',`${t('hvac')}: ${t(r.hvac.mode)}${r.hvac.mode==='none'?'':r.hvac.mode==='preserve'?` · ${r.hvac.lead_minutes} ${t('minutes_early')}`:` · ${r.hvac.temperature} · ${r.hvac.fan_mode} · ${r.hvac.lead_minutes} ${t('minutes_early')}`}`));
    const phase=phases(r);if(phase.constant_main)card.append(el('p',t('phase_constant_main')));for(const k of ['evening','daytime'])if(mealHvac(r,k))card.append(el('p',t('phase_'+k+'_hvac')));if(phase.night_release==='existing')card.append(el('p',t('phase_external_help'),'hint'));card.append(el('p',`${t('phase_title')}: ${t('phase_night_'+phase.night)}${phase.morning?' · '+t('phase_morning'):''}${phase.evening_meal?' · '+t('phase_evening_meal'):''}${phase.daytime_meal?' · '+t('phase_daytime_meal'):''}`));
    {const p=s.lighting;card.append(el('p',`${t(isBathroom(r)?'bathroom_lighting':'area_lighting')}: ${t('bathroom_'+(p?.mode??'always'))}${p?.night_enabled?' · '+t('bathroom_night_enabled'):''}`));}
@@ -356,7 +356,7 @@ function planProblems(){
  }
  }
  const rooms=Object.values(data.settings.rooms).filter(r=>r.enabled&&(r.setup?.status??'ready')==='ready'&&(r.purposes.length||r.setup?.home||phases(r).night==='home'||phases(r).morning||phases(r).evening_meal||phases(r).daytime_meal||mealHvac(r,'evening')||mealHvac(r,'daytime')||phases(r).constant_main||phases(r).night==='entertaining'));
- if(!dirty&&!rooms.some(r=>r.roles.main_lights.length||r.roles.night_lights.length||(r.roles.hvac.length&&r.hvac.mode!=='none')||r.shared_areas.some(a=>{const shared=data.settings.rooms[a];return shared?.enabled&&(shared.roles.main_lights.length||shared.roles.night_lights.length);})))problems.push('needs_roles');
+ if(!dirty&&!rooms.some(r=>r.roles.main_lights.length||r.roles.night_lights.length||r.roles.fans?.length||(r.roles.hvac.length&&r.hvac.mode!=='none')||r.shared_areas.some(a=>{const shared=data.settings.rooms[a];return shared?.enabled&&(shared.roles.main_lights.length||shared.roles.night_lights.length);})))problems.push('needs_roles');
  if(data.issues.length)problems.push('invalid_mapping');
  return problems;
 }

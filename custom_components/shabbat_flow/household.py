@@ -11,7 +11,7 @@ from .engine.compiler import PlanError, require
 from .engine.schedule import validate_configuration, validate_rest_defaults
 from .engine.planning import validate_calendar
 
-ROLES = ('main_lights', 'night_lights', 'hvac')
+ROLES = ('main_lights', 'night_lights', 'hvac', 'fans')
 DOMAINS = ('light', 'switch', 'climate', 'binary_sensor', 'sensor', 'automation', 'fan')
 
 
@@ -92,7 +92,7 @@ def migrate_settings(saved):
         for room in result['rooms'].values():
             has_lights = bool(room['roles']['main_lights'] or room['roles']['night_lights'])
             has_hvac = bool(room['roles']['hvac'] and room['hvac']['mode'] != 'none')
-            schedulable = has_lights or has_hvac or bool(room['shared_areas'])
+            schedulable = has_lights or has_hvac or bool(room['roles'].get('fans')) or bool(room['shared_areas'])
             room['setup'] = {'status': 'ready' if room['enabled'] and schedulable else 'draft',
                              'service': not bool(room['purposes']), 'home': False,
                              'bathroom_timing': {a: 'use_window' for a in room['shared_areas']}}
@@ -101,12 +101,14 @@ def migrate_settings(saved):
             if any(not ready(result['rooms'].get(a, {})) for a in room['shared_areas']):
                 room['setup']['status'] = 'draft'
         result['schema_version'] = 2
+    for room in result['rooms'].values():
+        room['roles'].setdefault('fans', [])
     result['label_filters'] = {**empty_label_filters(), **result.get('label_filters', {})}
     result.setdefault('post_shutoff', False)
     return result
 
 
-LABEL_ROLES = ('bathroom', 'main_lights', 'night_lights', 'bedroom', 'common_area', 'bathroom_area', 'hallway_area')
+LABEL_ROLES = ('bathroom', 'main_lights', 'night_lights', 'bedroom', 'common_area', 'bathroom_area', 'hallway_area', 'fans')
 
 
 def empty_label_filters():
@@ -114,7 +116,7 @@ def empty_label_filters():
 
 
 def validate_label_filters(value, inv, previous):
-    require(type(value) is dict and set(value) in (set(LABEL_ROLES), set(LABEL_ROLES) - {'bathroom_area', 'hallway_area'}), 'invalid_mapping')
+    require(type(value) is dict and set(LABEL_ROLES) - {'bathroom_area', 'hallway_area', 'fans'} <= set(value) <= set(LABEL_ROLES), 'invalid_mapping')
     value = {**empty_label_filters(), **previous, **value}
     known = {label['id'] for label in inv.get('labels', [])}
     for role, label_id in value.items():
@@ -191,7 +193,7 @@ def validate_settings(rooms, inv):
                 and all(p in ('sleeping', 'recreation') for p in room['purposes']))
         require(type(room['shared_areas']) is list and len(room['shared_areas']) <= 20
                 and all(isinstance(a, str) for a in room['shared_areas']))
-        require(type(room['roles']) is dict and set(room['roles']) == set(ROLES))
+        require(type(room['roles']) is dict and set(room['roles']) in (set(ROLES), set(ROLES) - {'fans'}))
         hvac = room['hvac']
         require(type(hvac) is dict and set(hvac) == {'mode', 'temperature', 'fan_mode', 'lead_minutes'})
         require(hvac['mode'] in ('none', 'preserve', 'profile', 'heat', 'cool'))
@@ -214,7 +216,7 @@ def validate_settings(rooms, inv):
                 require(all(a != aid and a in areas and ready(rooms.get(a, {})) for a in room['shared_areas']), 'missing_shared')
                 if setup:
                     require(bool(room['purposes']) or setup['service'], 'needs_purpose')
-                    require(bool(room['roles']['main_lights'] or room['roles']['night_lights'] or room['shared_areas']) or bool(room['roles']['hvac'] and hvac['mode'] != 'none'), 'needs_roles')
+                    require(bool(room['roles']['main_lights'] or room['roles']['night_lights'] or room['roles'].get('fans') or room['shared_areas']) or bool(room['roles']['hvac'] and hvac['mode'] != 'none'), 'needs_roles')
                     require(not is_bathroom(room) or bool(room['roles']['main_lights'] or room['roles']['night_lights']), 'needs_roles')
                     require(not setup['home'] or setup['service'], 'invalid_mapping')
                     require(not is_bathroom(room) or not room['shared_areas'], 'invalid_mapping')
@@ -228,7 +230,7 @@ def validate_settings(rooms, inv):
             for rid in ids:
                 e = entities.get(rid)
                 require(e is not None and not e['disabled'], 'invalid_mapping')
-                require(e['domain'] in (('climate',) if role == 'hvac' else ('light', 'switch')), 'invalid_mapping')
+                require(e['domain'] in (('climate',) if role == 'hvac' else ('fan', 'switch') if role == 'fans' else ('light', 'switch')), 'invalid_mapping')
                 # A load has one assigned room/role; shared dependencies reuse that assignment.
                 require(rid not in mapped, 'invalid_mapping'); mapped.add(rid)
                 bindings[rid] = binding(e)
@@ -311,7 +313,7 @@ def workspace(settings, inv, snapshot):
 
     def targets(aid, role):
         result = []
-        for rid in rooms[aid]['roles'][role]:
+        for rid in rooms[aid]['roles'].get(role, []):
             e = entities[rid]
             lid = internal_id('load_', rid)
             if role == 'hvac' and rooms[aid]['hvac']['mode'] == 'none':
@@ -319,13 +321,14 @@ def workspace(settings, inv, snapshot):
             power_only = role == 'hvac' and rooms[aid]['hvac']['mode'] == 'preserve'
             config['loads'][lid] = {'label': label(e['name']), 'physical_id': lid, 'owner': 'planner',
                                     'kind': 'hvac_power' if power_only else 'hvac' if role == 'hvac' else 'binary', 'capabilities': e['capabilities'] if role == 'hvac' and not power_only else {}}
-            config['loads'][lid]['display'] = {'room': internal_id('room_', aid), 'area_type': rooms[aid].get('setup', {}).get('area_type', 'legacy'), 'role': role}
+            config['loads'][lid]['display'] = {'room': internal_id('room_', aid), 'area_type': rooms[aid].get('setup', {}).get('area_type', 'legacy'), 'role': 'fan' if role == 'fans' else role}
             result.append(lid)
         return result
 
     for aid, room in sorted(rooms.items()):
         room_id = internal_id('room_', aid)
         config['rooms'][room_id] = label(areas[aid]['name'])
+        targets(aid, 'fans')  # Available to explicit activity windows; never scheduled implicitly.
         phase = room_phases(room)
         for purpose in room['purposes']:
             gid = internal_id('group_', aid + purpose)
@@ -469,7 +472,7 @@ def workspace(settings, inv, snapshot):
                 rule['active_windows'] = windows
                 rule['warnings'] = sorted(set(rule.get('warnings', []) + notices))
     # Explicit zero-target groups are valid, but compiler requires at least one mapped load.
-    require(bool(config['loads']) and (bool(config['groups'])), 'invalid_mapping')
+    require(bool(config['loads']), 'invalid_mapping')
     validate_configuration(config)
     plan = {'schema_version': 2, 'language': 'en', 'snapshot': deepcopy(snapshot),
             'availability': [{'id': 'home_1', 'start': snapshot['preparation_start'], 'end': snapshot['end'], 'state': 'unset'}],

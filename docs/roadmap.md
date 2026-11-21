@@ -111,3 +111,8 @@ Feature 016 implemented and locally tested. PDFs are generated on demand from JS
 0.19.0 deployed: retained observation PDFs generated and downloaded in both languages through authenticated HA. Source stores preserved, no controls activated. Desktop download passed; mobile Open/Share awaits user acceptance.
 
 0.19.1 deployment verified: the final 66-file patch preserved all three saved stores, then a second backend restart loaded the versioned 0.19.1 UI. A retained completed report generated successfully and exposed Download, Open and Share commands. No observation or device control was activated. Both supported-version test suites and branch CI passed. Real phone acceptance remains pending.
+
+## 0.19.2 — permanent room fan assignments
+Feature 017 adds optional room Fans mappings and configurable entity/device label filtering. New dated plans inherit fan loads; explicit activity windows define their timing, separately from HVAC. Migration leaves old setups unselected and old plans untouched. Native fan and switch domains supported; preview/observation only. See checkpoint 026 for verification and deployment status.
+
+0.19.2 installed and live-read verified after one restart. Existing saved setups preserved; Fans selector available with no automatic assignments. See checkpoint 026.

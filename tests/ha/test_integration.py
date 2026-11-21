@@ -383,7 +383,8 @@ async def test_wizard_draft_persists_through_integration_reload(host):
     assert response.status==200 and decoded(response)['settings']['rooms'][bed.id]==pending
     await async_unload_entry(hass,entry);hass.data[DOMAIN].pop('household')
     await async_setup_entry(hass,entry)
-    stored=hass.data[DOMAIN]['household'];assert stored['schema_version']==2 and stored['rooms'][bed.id]==pending
+    stored=hass.data[DOMAIN]['household'];assert stored['schema_version']==2
+    assert stored['rooms'][bed.id]=={**pending,'roles':{**pending['roles'],'fans':[]}}
     assert stored['revision']==1 and not issues(stored,inventory(hass))
 
 
@@ -1330,3 +1331,56 @@ def test_performance_denominators_and_review_validation():
     assert validate_review(good)==good
     for bad in [{**good,'overall':True},{**good,'worked':'x'*2001},{**good,'decision':'activate'},{**good,'identity':'someone'}]:
         with pytest.raises(ValueError):validate_review(bad)
+
+
+@pytest.mark.asyncio
+async def test_persistent_room_fans_snapshot_and_validation(host):
+    from custom_components.shabbat_flow.household import migrate_settings, validate_label_filters, empty_label_filters
+    hass,_=host;bed,bath,light,shared=fixtures(hass);reg=er.async_get(hass)
+    fan=reg.async_get_or_create('fan','test','fixture-fan',suggested_object_id='example_fan')
+    fan=reg.async_update_entity(fan.entity_id,area_id=bed.id)
+    hass.states.async_set(fan.entity_id,'off',{'friendly_name':'Example fan'})
+    inv=inventory(hass)
+    legacy={**empty_settings(),'rooms':{bed.id:room(['sleeping'],[light.id])}}
+    upgraded=migrate_settings(legacy)
+    assert upgraded['rooms'][bed.id]['roles']['fans']==[] and 'fans' not in legacy['rooms'][bed.id]['roles']
+    assert migrate_settings(upgraded)==upgraded
+    old_labels={k:v for k,v in empty_label_filters().items() if k!='fans'}
+    assert validate_label_filters(old_labels,inv,{})['fans'] is None
+    rooms=upgraded['rooms'];rooms[bed.id]['roles']['fans']=[fan.id,shared.id]
+    saved={**upgraded,'bindings':validate_settings(rooms,inv)}
+    snapshot=json.loads((ROOT/'examples/period-preview.json').read_text())['plan']['snapshot']
+    response=await HouseholdView(hass).post(Request(json.dumps({'revision':0,'inventory_revision':inv['revision'],'rooms':rooms}).encode()))
+    assert response.status==200
+    await async_unload_entry(hass,host[1]);hass.data[DOMAIN].pop('household')
+    await async_setup_entry(hass,host[1])
+    assert hass.data[DOMAIN]['household']['rooms'][bed.id]['roles']['fans']==[fan.id,shared.id]
+    before=deepcopy(saved);bundle=workspace(saved,inv,snapshot)
+    fid=internal_id('load_',fan.id)
+    assert saved==before
+    assert bundle['config']['loads'][fid]['display']['role']=='fan'
+    assert bundle['config']['loads'][fid]['display']['room']==internal_id('room_',bed.id)
+    assert bundle['config']['loads'][fid]['kind']=='binary'
+    assert not any(fid in r['targets'] for g in bundle['config']['groups'].values() for r in g['rules'])
+    from custom_components.shabbat_flow.engine.schedule import compile_schedule
+    bundle['plan']['availability'][0]['state']='home'
+    for meal in bundle['plan']['meals']: meal['choice']='none'
+    assert not any(e['physical_id']==fid for e in compile_schedule(**bundle)['events'])
+    bundle['plan']['flex']={'version':1,'windows':[{'id':'fan_window','room':internal_id('room_',bed.id),'segment':snapshot['segments'][0]['id'],'category':'fan','start':'2027-01-08T14:00:00+02:00','end':'2027-01-08T16:00:00+02:00','targets':[fid],'hvac':[],'policy':'none','comfort':{'mode':'cool','target':22,'tolerance':1,'hysteresis':0.5,'minimum_on':15,'minimum_off':10,'sensor':'','unit':'C','signals':[]},'release':'off','home_only':True,'sleep_conflict':'review','initial_state':'review','resume':'unknown'}],'meals':[],'overrides':[],'feedback':[]}
+    fan_events=[e for e in compile_schedule(**bundle)['events'] if e['physical_id']==fid]
+    assert len(fan_events)==2 and all(e['intent']=='track_only' for e in fan_events)
+    assert [e['action']['state'] for e in fan_events]==['on','off']
+    rooms[bed.id]['roles']['main_lights']=[]  # Fan-only bedroom is a valid setup.
+    validate_settings(rooms,inv)
+    fan_only=deepcopy(rooms);fan_only[bed.id]['purposes']=[];fan_only[bed.id]['setup'].update(service=True,area_type='common')
+    fan_bundle=workspace({**upgraded,'rooms':fan_only,'bindings':validate_settings(fan_only,inv)},inv,snapshot)
+    assert not fan_bundle['config']['groups'] and len(fan_bundle['config']['loads'])==2
+    rooms[bed.id]['roles']['main_lights']=[shared.id]
+    with pytest.raises(ValueError): validate_settings(rooms,inv)  # One role per load.
+    rooms[bed.id]['roles']['main_lights']=[]
+    rooms[bed.id]['roles']['fans']=[light.id]
+    with pytest.raises(ValueError): validate_settings(rooms,inv)  # Lights are not fan controls.
+    rooms[bed.id]['roles']['fans']=[fan.id]
+    saved={**upgraded,'bindings':validate_settings(rooms,inv)}
+    reg.async_update_entity(fan.entity_id,area_id=bath.id)
+    assert any(i['code']=='binding_changed' for i in issues(saved,inventory(hass)))
