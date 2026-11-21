@@ -1,6 +1,6 @@
 # Feature 018 — away defaults and scheduled lighting execution
 
-Status: specification and implementation in progress. Installation never arms a run.
+Status: implemented, tested and deployed as an unarmed lighting pilot (0.20.0). Actual-device qualification and household activation remain pending. Installation never arms a run.
 
 ## Functional requirements
 - GO-FR-001: Selecting Nobody home marks ordinary meals Away and afternoon hosting None for that observance segment, hides irrelevant meal controls and explains why. Selecting Home again requires fresh meal choices; do not restore hosting silently. Already-saved away drafts with unset meals must preview without meal prompts. Preserve dates, unrelated segments and existing observation snapshots. Conflicting room-use choices remain explicit review items.
