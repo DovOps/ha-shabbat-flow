@@ -157,3 +157,8 @@ After the period, rate overall fit, lighting and HVAC comfort, then record what 
 Save the review explicitly. Updates use revision checks so another tab cannot silently overwrite a newer review. Up to ten previous versions remain visible; Clear review removes its ratings, notes and history without deleting the observation. Reviews inherit the study’s retention: up to 20 runs and 90 days after completion. Export important records before they expire.
 
 Full JSON, PDF and review-bundle exports include saved feedback. Use a review bundle with your chosen analysis tool or coding agent to discuss improvements. It contains private household details: remove or generalize these before copying into a public issue or requirement. Nothing is submitted to GitHub or applied automatically. Multi-person feedback, comparable-period trends and automatic proposals remain future work.
+
+## Saved PDF downloads
+In Home Assistant, **Generate saved PDF** creates a real file on the HA host. Wait for the ready message, then choose **Download PDF**, **Open PDF**, or **Share / Save to Files** if supported by your phone. It does not require the Companion App to open a print dialog. Browser Print remains available on the report.
+
+Files stay private behind administrator authentication. Reports include the saved feedback, not unsaved form edits. Generate again after evidence or feedback changes. Retained report files follow report expiry; preview files expire after 24 hours. The cache is capped at 40 files / 64 MiB, so older files may need regeneration. Nothing changes your devices. Phone opening/sharing behavior still depends on the Companion App and operating system.

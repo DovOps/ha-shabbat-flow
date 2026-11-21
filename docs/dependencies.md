@@ -72,3 +72,11 @@ Existing-automation issur forecasting uses the already accepted Jewish Calendar 
 0.16.2 retains HA’s own icon renderer in its owning same-origin document and copies/caches its SVG output for iframe display. No third-party icon dependency, CDN or service is added. Render waits are bounded; unavailable graphics retain labeled fallbacks.
 
 0.18.0 Reports and owner reviews reuse authenticated admin HTTP, existing observer atomic storage, standard-library projections and native browser printing. No new package, provider, AI service or device call. Website additions use the existing Docusaurus/Pages workflow.
+
+## Feature 016 — proposed, not adopted
+ReportLab 5.1.0 with bidi/shaping extras is proposed for server-side stored PDF rendering (Pillow, charset-normalizer, rlbidi, uharfbuzz transitives). Alternative: headless Chromium with higher deployment cost. Current browser printing remains available but cannot satisfy mobile generation. Exact compatible transitive versions and Hebrew rendering must be verified before installation; owner decision pending. Sources: https://pypi.org/project/reportlab/5.1.0/ and https://docs.reportlab.com/rl-arabic/.
+
+## Feature 016 — approved implementation
+Owner approved ReportLab and Hebrew support dependencies. Uses `reportlab==5.1.0` and `python-bidi==0.6.12` from PyPI. ReportLab's `bidi` extra could not resolve: `rlbidi` is absent from the normal registry, so Unicode bidi ordering uses the approved-purpose python-bidi dependency instead; no extra index or HarfBuzz is needed for the default Hebrew/English text. ReportLab requires Pillow >=9 and charset-normalizer; test environment resolves Pillow 13.0.0 and charset-normalizer 3.5.2 (HA owns compatible transitive resolution).
+
+Embedded DejaVu Sans 2.37 regular/bold supports both default languages. Official release archive: https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.zip ; SHA-256 `7576310b219e04159d35ff61dd4a4ec4cdba4f35c00e002a136f00e96a908b0a`. Unmodified fonts and full Bitstream Vera/Arev license are in `custom_components/shabbat_flow/fonts/`. Rendering uses local assets only. No browser binary or cloud renderer is installed.

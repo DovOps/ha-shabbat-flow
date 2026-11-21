@@ -175,6 +175,9 @@ class Observer:
             self.error = 'observe_store'; raise ValueError('observe_store') from None
         previous=self.data
         self.data = candidate
+        pdf=self.hass.data.get("shabbat_flow",{}).get("pdf")
+        if pdf:
+            pdf.schedule_cleanup()
         notifications=self.hass.data.get('shabbat_flow',{}).get('notifications')
         if notifications:
             try: await notifications.record(previous,candidate)

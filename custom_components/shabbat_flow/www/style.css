@@ -143,3 +143,5 @@ input[type=time]{font:inherit;width:100%;min-height:44px;padding:10px;border:1px
 .report-top-commands{max-width:1100px;margin:1rem auto}.review-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#review-editor textarea{font:inherit}@media(max-width:700px){.review-grid{grid-template-columns:1fr}.report-top-commands{margin:.5rem}}
 .review-grid label>span,.report-filters label>span{display:block;margin-block-end:.35rem}.review-grid select,.report-filters select{width:100%}
 @media screen{.observation-page #print-report table{width:100%;border-collapse:collapse}.observation-page #print-report td,.observation-page #print-report th{padding:.65rem;text-align:start;border-bottom:1px solid #cfdee7}.observation-page #print-report th{background:#edf4f7}.observation-page #print-report table{margin-block:1rem}}
+
+.pdf-dialog{max-width:min(560px,94vw);border:1px solid var(--line);border-radius:14px;padding:24px;color:#173448}.pdf-dialog::backdrop{background:#17344866}.pdf-dialog a{padding:12px;display:inline-block}@media print{.pdf-dialog{display:none!important}}
