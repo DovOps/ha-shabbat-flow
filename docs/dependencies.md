@@ -72,3 +72,6 @@ Existing-automation issur forecasting uses the already accepted Jewish Calendar 
 0.16.2 retains HA’s own icon renderer in its owning same-origin document and copies/caches its SVG output for iframe display. No third-party icon dependency, CDN or service is added. Render waits are bounded; unavailable graphics retain labeled fallbacks.
 
 0.18.0 Reports and owner reviews reuse authenticated admin HTTP, existing observer atomic storage, standard-library projections and native browser printing. No new package, provider, AI service or device call. Website additions use the existing Docusaurus/Pages workflow.
+
+## Feature 016 — proposed, not adopted
+ReportLab 5.1.0 with bidi/shaping extras is proposed for server-side stored PDF rendering (Pillow, charset-normalizer, rlbidi, uharfbuzz transitives). Alternative: headless Chromium with higher deployment cost. Current browser printing remains available but cannot satisfy mobile generation. Exact compatible transitive versions and Hebrew rendering must be verified before installation; owner decision pending. Sources: https://pypi.org/project/reportlab/5.1.0/ and https://docs.reportlab.com/rl-arabic/.

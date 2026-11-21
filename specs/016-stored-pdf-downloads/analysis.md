@@ -1,0 +1,2 @@
+# Analysis
+The existing native-print path renders only inside a browser; saving a file on HA requires a renderer or an explicitly uploaded generated PDF. A separate server renderer avoids reliance on mobile print UI but introduces a package and a second layout implementation. Keep these limitations explicit. Authentication must remain enforced; public static placement is not an acceptable shortcut. Device control is unrelated and stays disabled.
