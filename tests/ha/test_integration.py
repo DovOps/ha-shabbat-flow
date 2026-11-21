@@ -1262,3 +1262,23 @@ async def test_study_builtin_temperature_without_comparison_sensor(host):
     assert sample['climates'][zone.entity_id]['target_temperature']['celsius']==24
     assert sample['climates'][zone.entity_id]['mode']=='off'
     assert not sample.get('references')
+
+@pytest.mark.asyncio
+async def test_comfort_shadow_records_inputs_without_actuation(host):
+    from custom_components.shabbat_flow.comfort import collect
+    from datetime import datetime, timezone, timedelta
+    hass,_=host
+    now=datetime(2027,1,8,12,tzinfo=timezone.utc)
+    hass.states.async_set('climate.shadow_test','off',{'current_temperature':25,'temperature':22})
+    p={'mode':'cool','target':22,'tolerance':1,'hysteresis':.5,'minimum_on':15,'minimum_off':10,'sensor':'','unit':'C','signals':[]}
+    c={'id':'c','physical_id':'p','start':(now-timedelta(hours=1)).isoformat(),'end':(now+timedelta(hours=1)).isoformat(),'policy':p,'release':'off'}
+    run={'preview':{'events':[],'flex':{'conditions':[c]}},'mapping':{'p':{'entity_id':'climate.shadow_test'}}}
+    collect(hass,run,now,False)
+    decision=run['comfort']['decisions'][0]
+    assert decision['intent']=='on' and decision['actuated'] is False
+    assert decision['freshness']=='unverified'
+    assert hass.states.get('climate.shadow_test').state=='off'
+    collect(hass,run,now+timedelta(minutes=1),True)
+    assert run['comfort']['decisions'][-1]['intent']=='unknown'
+    c['release']='existing';collect(hass,run,now+timedelta(hours=2),False)
+    assert run['comfort']['decisions'][-1]['reason']=='external_release'

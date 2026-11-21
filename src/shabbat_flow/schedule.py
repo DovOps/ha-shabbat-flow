@@ -93,7 +93,7 @@ def validate_configuration(config):
             keys(display, {'room', 'area_type', 'role'})
             require(display['room'] in config['rooms'], 'invalid_mapping')
             choice(display['area_type'], ('room', 'common', 'bathroom', 'hallway', 'legacy'))
-            choice(display['role'], ('main_lights', 'night_lights', 'hvac'))
+            choice(display['role'], ('main_lights', 'night_lights', 'hvac', 'fan', 'appliance'))
         labels(load['label'])
         identifier(load['physical_id'])
         identifier(load['owner'])
@@ -175,6 +175,13 @@ def interval(item, calendar):
 
 
 def compile_schedule(config, plan):
+    if 'flex' in plan:
+        from .flexible import expand
+        expanded_config, expanded_plan, metadata = expand(config, plan)
+        result = compile_schedule(expanded_config, expanded_plan)
+        result['flex'] = metadata
+        result['digest'] = digest({'base': result['digest'], 'flex': metadata['extension_digest']})
+        return result
     validate_configuration(config)
     keys(plan, {'schema_version', 'language', 'snapshot', 'availability', 'room_uses', 'meals', 'groups'} | ({'naps'} if 'naps' in plan else set()))
     require(type(plan['schema_version']) is int and plan['schema_version'] == 2)

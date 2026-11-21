@@ -12,7 +12,7 @@ from .engine.schedule import validate_configuration, validate_rest_defaults
 from .engine.planning import validate_calendar
 
 ROLES = ('main_lights', 'night_lights', 'hvac')
-DOMAINS = ('light', 'switch', 'climate', 'binary_sensor', 'sensor', 'automation')
+DOMAINS = ('light', 'switch', 'climate', 'binary_sensor', 'sensor', 'automation', 'fan')
 
 
 def digest(value):
@@ -162,7 +162,8 @@ def validate_settings(rooms, inv):
         require(set(room) == {'enabled', 'purposes', 'roles', 'shared_areas', 'hvac'} | ({'setup'} if 'setup' in room else set()))
         setup = room.get('setup')
         if setup is not None:
-            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()) | ({'area_type'} if 'area_type' in setup else set()) | ({'rest_defaults'} if 'rest_defaults' in setup else set()))
+            require(type(setup) is dict and set(setup) == {'status', 'service', 'home', 'bathroom_timing'} | ({'lighting'} if 'lighting' in setup else set()) | ({'phases'} if 'phases' in setup else set()) | ({'area_type'} if 'area_type' in setup else set()) | ({'rest_defaults'} if 'rest_defaults' in setup else set()) | ({'daylight_suitability'} if 'daylight_suitability' in setup else set()))
+            require(setup.get('daylight_suitability','unknown') in ('unknown','suitable','unsuitable'))
             if 'rest_defaults' in setup: validate_rest_defaults(setup['rest_defaults'])
             require(setup.get('area_type', 'legacy') in ('legacy', 'room', 'common', 'bathroom', 'hallway'))
             require('area_type' not in setup or setup['area_type'] == 'legacy' or setup['service'] == (setup['area_type'] != 'room'))

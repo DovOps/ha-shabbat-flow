@@ -12,6 +12,7 @@ WEB = Path(__file__).parent / 'web'
 MAX_BODY = 128 * 1024
 STATIC = {'/':('index.html','text/html'),'/app.mjs':('app.mjs','text/javascript'),'/model.mjs':('model.mjs','text/javascript'),'/style.css':('style.css','text/css')}
 
+STATIC['/flexible.mjs']=('flexible.mjs','text/javascript')
 STATIC['/ha-icons.mjs']=('ha-icons.mjs','text/javascript')
 STATIC['/time-input.mjs']=('time-input.mjs','text/javascript')
 STATIC['/thermal-report.mjs']=('thermal-report.mjs','text/javascript')
@@ -48,8 +49,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.permitted():
             return
-        if self.path in STATIC:
-            filename,mime=STATIC[self.path]
+        static_path=self.path.split('?',1)[0]
+        if static_path in STATIC:
+            filename,mime=STATIC[static_path]
             self.reply(200,(WEB/filename).read_bytes(),mime)
         elif self.path=='/logo.png':
             self.reply(200,(ROOT/'assets/logo.png').read_bytes(),'image/png')

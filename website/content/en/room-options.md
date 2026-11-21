@@ -128,3 +128,17 @@ Choose **After sunrise** or **Local time of day** for nap start and late wake-up
 Offsets use **HH:MM**: `06:00` after candles is six hours later; `-01:00` relative to sunrise is one hour earlier. `00:30` is thirty minutes. Clock-time fields use the local time zone. Review the full schedule for overlaps; independent meal or room demands can keep a light on.
 
 Icons use HA area/entity assignments when available. Standalone examples use decorative fallback symbols; labels are never replaced by icons.
+
+## Flexible activities and comfort (0.17)
+In the dated planner, open **Activities, fans and comfort**. Existing saved choices are unchanged until you edit and save the plan.
+
+- **Meal duration preset:** choose Very early/short, Family or Entertaining/guests, then edit duration and cleanup. The meal start stays as configured; Custom restores the original meal times.
+- **Activity window:** choose a room, lights and optional HVAC for recreation or bedroom playtime. Multiple windows are allowed. Use local times or candle-lighting/sunrise/sunset offsets; alternatively follow a meal including cleanup. Playtime overlapping sleep requires explicit review.
+- **Hallway/service lighting:** start with night-only, daytime or whole-period timings. Release may request Off or defer to an existing automation. Excluding a device does not turn it off.
+- **Load replacement:** removes all other plan demands for that device across the period. Add every desired replacement window, including sleep, before saving. Use this for a secondary circuit that should follow only selected meals or activities.
+- **Bathroom daylight:** mark suitability in room setup, then explicitly choose a daylight break. The app does not infer windows or change an existing policy automatically.
+- **Independent fan or outlet:** import a device from HA into this plan, choose its room and semantic type, and add a window. Fans and appliances are preview/track-only; declaring resume behavior does not qualify hardware for control.
+- **Temperature-gated HVAC:** select a comparison target, cooling/heating interpretation and sensor. The default candidate is the A/C room reading. The target is only a comparison, never a thermostat command. Explicitly replace other demands first. Missing evidence is Unknown; conditional windows are not guaranteed On bars. Observation records shadow decisions without actuating devices, and measurement freshness remains unverified.
+- **Feedback:** classify exceptional periods, intended new behavior, configuration differences, comfort issues or missing evidence. Notes travel with the saved/exported plan; they do not automatically alter future plans.
+
+Save a new dated plan and inspect the full preview before starting observation. This release does not enable live control.

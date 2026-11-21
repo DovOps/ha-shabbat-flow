@@ -624,3 +624,24 @@ test('home overview renders concurrent run links and distinguishes API failure f
  context.activityError=false;context.activityData={runs:[]};context.renderActivity();assert.equal(all().filter(n=>n.text==='activity_none').length,2);
  context.localStorage.getItem=()=>{throw Error('unavailable');};context.renderActivity();assert.ok(all().some(n=>n.text==='activity_draft_unavailable'));
 });
+
+// Flexible planning choices never mutate existing saved drafts implicitly.
+test('flexible meal presets are explicit and immutable',async()=>{
+ const {mealPreset,emptyFlex,words}=await import('../src/shabbat_flow/web/flexible.mjs');
+ const bundle={config:{},plan:{meals:[{id:'dinner',start:'2027-01-08T18:00:00+02:00',end:'2027-01-08T21:00:00+02:00'}]}};
+ const old=structuredClone(bundle),next=mealPreset(bundle,'dinner','early');
+ assert.deepEqual(bundle,old);assert.equal(next.plan.flex.meals[0].duration,90);assert.equal(next.plan.meals[0].end,old.plan.meals[0].end);
+ assert.deepEqual(mealPreset(next,'dinner','custom').plan.flex.meals,[]);
+ assert.deepEqual(Object.keys(words.en).sort(),Object.keys(words.he).sort());assert.deepEqual(emptyFlex().windows,[]);
+});
+
+test('activity day copy remaps meal bindings and preserves anchor offsets',async()=>{
+ const {mealPreset,emptyFlex,effectiveMealEnd}=await import('../src/shabbat_flow/web/flexible.mjs');
+ const original=structuredClone(period),meal=original.plan.meals.find(m=>m.segment==='day_1');
+ original.plan.flex=emptyFlex();original.plan.flex.windows.push({id:'activity_1',segment:'day_1',room:'room_a',start:meal.start,end:meal.end,meal:meal.id,timing:{start:{anchor:'candle_lighting',offset_minutes:30}}});
+ const chosen=mealPreset(original,meal.id,'early'),copied=copyPreviousDay(chosen,'day_2');
+ const window=copied.plan.flex.windows.find(w=>w.segment==='day_2'),nextMeal=copied.plan.meals.find(m=>m.id===window.meal);
+ assert.equal(nextMeal.segment,'day_2');assert.deepEqual(window.timing,original.plan.flex.windows[0].timing);
+ assert.equal(+new Date(effectiveMealEnd(copied,nextMeal))-+new Date(nextMeal.start),120*60000);
+ assert.equal(chosen.plan.flex.windows.length,1);
+});

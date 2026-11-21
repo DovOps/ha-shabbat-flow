@@ -1,3 +1,4 @@
+import {renderFlexible,renderFlexibleSummary,effectiveMealEnd} from './flexible.mjs';
 import {formatOffset,offsetControl} from './time-input.mjs';
 import {itemIcon,loadIcons} from './ha-icons.mjs';
 import {renderObservationPrint} from './thermal-report.mjs';
@@ -9,7 +10,7 @@ import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
 import {markDayHomeFromUse,setMealChoice,lateWakeTime,addNap,restDefaults,napBathroomTargets,afternoonActivity,zonedISO,actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
 const householdMode=new URLSearchParams(location.search).get('household')==='1';
-let observationPrint=null;
+let observationPrint=null,flexInventory=null;
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
 const draftKey=householdMode?'shabbat-flow-household-draft-v2':PERIOD_DRAFT_KEY;
 const $=id=>document.getElementById(id);
@@ -125,6 +126,7 @@ function render(){
     review.append(button('apply_copy',()=>{const candidate=pendingCopy.candidate;candidate.plan.language=lang();applyChange(candidate);}),button('cancel_copy',()=>{pendingCopy=null;render();}));main.append(review);
   }
   root.append(main);
+  root.append(renderFlexible({bundle,segment,node,lang,changed,render,inventory:flexInventory}));
   for(const purpose of ['sleeping','recreation']){
     const panel=section(purpose),tiles=node('div',undefined,'room-tiles');
     for(const [room,label] of Object.entries(bundle.config.rooms)){
@@ -167,7 +169,7 @@ function render(){
   const mealPanel=section('meals_title'),mealTiles=node('div',undefined,'room-tiles');
   for(const meal of meals){
     const tile=node('div',undefined,'room-tile');tile.append(node('h3',catalogs[lang()]['meal_'+meal.kind]??meal.kind),
-      field('meal_choice',meal.choice,v=>applyChange(setMealChoice(bundle,meal.id,v)),options(meal.kind==='afternoon'?['none','hosting']:['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(meal.end)}`,'hint'));
+      field('meal_choice',meal.choice,v=>applyChange(setMealChoice(bundle,meal.id,v)),options(meal.kind==='afternoon'?['none','hosting']:['away','family','hosting','none','unset'])),node('p',`${safeTime(meal.start)} — ${safeTime(effectiveMealEnd(bundle,meal))}`,'hint'));
     tile.append(node('p',`${t('meal_rooms')}: ${meal.groups.map(id=>bundle.config.groups[id]?.label[lang()]??id).join(', ')||t('meal_rooms_none')}`,'hint'));
     const custom=node('details');custom.append(node('summary',t('adjust_window')));windowFields(custom,meal);tile.append(custom);if(meal.kind==='afternoon'){tile.append(node('p',t(segment.id===bundle.plan.snapshot.segments.at(-1).id?'afternoon_help':'afternoon_manual'),'hint'));const groups=node('details');groups.append(node('summary',t('meal_rooms')));const candidates=[...new Set(bundle.plan.meals.filter(m=>m.kind==='daytime').flatMap(m=>m.groups))];for(const id of candidates){const label=node('label',undefined,'toggle');label.append(node('span',bundle.config.groups[id].label[lang()]));const input=node('input');input.type='checkbox';input.checked=meal.groups.includes(id);input.addEventListener('change',()=>{meal.groups=input.checked?[...meal.groups,id]:meal.groups.filter(v=>v!==id);changed();});label.append(input);groups.append(label);}tile.append(groups,button('remove_item',()=>remove(bundle.plan.meals,meal)));}mealTiles.append(tile);
   }
@@ -243,6 +245,7 @@ function renderTimeline(){
   const root=$('timeline');root.replaceChildren();if(!result)return;
   if(!result.complete){for(const issue of result.issues){const p=node('p',t('issue_'+issue.code));p.append(node('bdi',' · '+(issue.id??issue.room)));root.append(p);}return;}
   for(const warning of result.warnings??[]){const text=node('p',t(warning.code),'hint');text.append(node('bdi',' · '+(bundle.config.groups[warning.group]?.label[lang()]??warning.group)));root.append(text);}
+  root.append(renderFlexibleSummary({bundle,result,node,lang}));
   root.append(renderHvacMap({bundle,result,node,t,lang}));
   root.append(renderLightingMap({bundle,result,node,t,lang}));
   root.append(node('p',`${t('event_count')}: ${result.events.length}`));
@@ -251,7 +254,7 @@ function renderTimeline(){
     const row=node('div',undefined,'event');const time=node('time',localTime(event.local,lang(),bundle.plan.snapshot.timezone));time.dateTime=event.local;
     const load=Object.values(bundle.config.loads).find(v=>v.physical_id===event.physical_id);
     const description=node('div',load?.label[lang()]??event.physical_id);description.prepend(itemIcon(event.physical_id,load?.kind?.startsWith('hvac')?'mdi:thermostat':'mdi:lightbulb-outline'));
-    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${reason.kind==='nap'?t('naps_title')+' · ':reason.kind==='overnight_hvac'?t('wake_heading')+' · ':''}${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${bundle.config.groups[reason.group].label[lang()]} `));description.append(reasons);
+    const reasons=node('small');for(const reason of event.reasons)reasons.append(node('bdi',`${reason.kind==='nap'?t('naps_title')+' · ':reason.kind==='overnight_hvac'?t('wake_heading')+' · ':''}${dayLabel(bundle.plan.snapshot.segments.find(v=>v.id===reason.segment),0)} · ${(bundle.config.groups[reason.group]?.label[lang()]??bundle.config.rooms[load?.display?.room]?.[lang()]??reason.kind)} `));description.append(reasons);
     const action=event.action,badge=actionBadge(event);let value=t(badge.key);
     if(badge.preserve)description.append(node('small',t('power_only_preview')));
     if(action.temperature!==undefined)value+=` · ${action.temperature}°${action.unit} · ${catalogs[lang()]['fan_'+action.fan_mode]??action.fan_mode}`;
@@ -283,6 +286,7 @@ async function boot(){
     $('delete').addEventListener('click',()=>{revision++;try{localStorage.removeItem(draftKey);message('deleted');}catch(e){error(e);}});
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+    if(householdMode){try{const r=await fetch('/api/v2/household');if(r.ok)flexInventory=(await r.json()).inventory;}catch{}}
     render();
     if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{observationPrint=data;printReport();window.print();}});
   }catch(e){$('status').textContent='Unable to load preview. / לא ניתן לטעון תצוגה מקדימה.';}

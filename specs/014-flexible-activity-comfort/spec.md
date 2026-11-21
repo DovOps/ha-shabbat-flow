@@ -1,6 +1,6 @@
 # Feature 014: flexible activities, comfort policies and independent loads
 
-Status: requirements and staged implementation plan; not implemented or deployed. Extends features 002/003/004/009/010/011. Household feedback and observed data stay outside this repository. No live-device activation is authorized by this specification.
+Status: 0.17.0 planning and shadow-observation implementation; deployment verification recorded separately. Live execution remains deferred. Extends features 002/003/004/009/010/011. Household feedback and observed data stay outside this repository. No live-device activation is authorized by this specification.
 
 ## Outcome
 Plan the intended household experience rather than reproduce every observed switch transition. An exceptional short dinner must not silently change ordinary meal defaults. Separate meal style/duration, room activities, lighting layers, fans and HVAC demand. Model additional outlet loads without treating all outlets like lights.
@@ -39,5 +39,16 @@ Plan the intended household experience rather than reproduce every observed swit
 7. A heating appliance on an outlet cannot inherit light recovery semantics. Unsupported fan/appliance control is blocked, while preview remains available.
 8. Conditional report bars cannot masquerade as fixed On forecasts; interrupted hourly evidence produces unknown decisions. English/Hebrew views expose the same policies.
 
-## Remaining product decisions
-Exact meal preset durations/buffers; threshold/hysteresis/dwell defaults; sensor freshness contracts; manual override and end-of-window conditional release; fan/outlet capability tests. Resolve and document these before corresponding live implementation. Scheduling UI and fixed preview need not wait for conditional-control qualification.
+## 0.17.0 implementation decisions
+- Additive `plan.flex.version = 1`; no extension means unchanged compilation. Weekly activity choices are saved with the dated plan. Existing room setup remains reusable; no automatic migration or saving.
+- Explicit meal presets: Early 90 minutes plus 30 cleanup, Family 180 plus 60, Hosting 240 plus 60. Custom preserves original end. Every duration is editable; selecting a preset never rewrites the original meal start.
+- Activity windows use local timestamps or persisted candle/sunrise/sunset/segment-end offsets. Meal-linked windows follow meal end including cleanup and are skipped for away/none meals. Per-load replacement removes other demands across the entire period, with a visible warning; exclusion issues no Off.
+- Service windows support night/day/whole-period starting presets. Release can request Off, defer to existing automation, or leave unchanged. Final shutoff remains controlled by the existing opt-in setting. Playtime overlapping sleep requires explicit review; contradictory fixed actions still fail compilation.
+- Bathroom daylight suitability is a saved setup field. Existing daylight policies remain until explicitly edited; suitability is not inferred and does not silently rewrite a policy.
+- Comfort defaults are explicit Cooling, 23 C comparison, 1 C tolerance, 0.5 C return band, 15-minute On and 10-minute Off dwell. They are editable examples, not household preferences. Thermostat-copy freezes the available inventory reading into the plan; no setpoint command. Conditional loads require explicit replacement; overlapping fixed/conditional or multiple conditional windows on the same unit are rejected.
+- Observer uses existing bounded ticks; records decision/reason changes and hourly evidence, capped at 20,000 records. Missing/unavailable/restored readings and recovery gaps produce Unknown. Provider measurement freshness is unverified and is displayed as such. Planner-controlled activity signals produce Unknown instead of reinforcing demand. No conditional action is eligible for live execution.
+- Fans/appliances are independent binary track-only mappings. Initial-state and resume metadata are planning declarations, not hardware qualification. No speed/mode/cycle changes.
+- Feedback classifications are dated plan metadata and appear in exported summaries. They do not automatically adjust schedules or implement the full longitudinal feedback service.
+
+## Remaining qualification
+Provider freshness, manual-hold semantics, live recovery, HVAC native resume and fan/outlet hardware behavior remain Feature 010 qualification work. No live control is exposed by this release. Full mobile/PDF device acceptance and household acceptance remain separate from automated tests and local desktop visual checks.
