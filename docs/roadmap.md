@@ -116,3 +116,6 @@ Feature 016 implemented and locally tested. PDFs are generated on demand from JS
 Feature 017 adds optional room Fans mappings and configurable entity/device label filtering. New dated plans inherit fan loads; explicit activity windows define their timing, separately from HVAC. Migration leaves old setups unselected and old plans untouched. Native fan and switch domains supported; preview/observation only. See checkpoint 026 for verification and deployment status.
 
 0.19.2 installed and live-read verified after one restart. Existing saved setups preserved; Fans selector available with no automatic assignments. See checkpoint 026.
+
+## Exact-plan weekday rehearsal — 0.21.0
+Feature 019 implements supervised immediate tests of actual compiled plan moments, area/device selection, read-only simulation, context-aware restore and private feedback/export. Current live adapter remains qualified binary lighting only. Pending: browser acceptance, deployment, owner-supervised hardware rehearsal, then a separately approved limited weekend pilot. Room-level weekend control/observe allocation and qualified HVAC/fan/appliance actuation remain future work.

@@ -326,3 +326,30 @@ class ExecutionView(BaseView):
         except (ValueError,TypeError,KeyError,PlanError) as exc:
             code=str(exc) if str(exc).startswith('execute_') else 'execute_invalid'
             return self.response({'error':code},409 if code in ('execute_stale','execute_overlap') else 400)
+
+
+class RehearsalView(BaseView):
+    url='/api/shabbat_flow/rehearsal'
+    name='api:shabbat_flow:rehearsal'
+
+    async def get(self,request):
+        self.check(request)
+        return self.response(self.hass.data[DOMAIN]['rehearsal'].listing())
+
+    async def post(self,request):
+        self.check(request)
+        try:
+            p=await read_body(request);service=self.hass.data[DOMAIN]['rehearsal'];op=p.get('op')
+            if op=='catalog' and set(p)=={'op','bundle'}:
+                from .engine.rehearsal import catalog
+                return self.response(await self.hass.async_add_executor_job(catalog,p['bundle']))
+            if op=='review' and set(p)=={'op','bundle','selection'}:return self.response(await service.review_test(p['bundle'],p['selection']))
+            if op=='apply' and set(p)=={'op','payload'}:return self.response(await service.apply(p['payload'],getattr(request['hass_user'],'id',None)))
+            if op in ('export','restore_review') and set(p)=={'op','id'} and isinstance(p['id'],str):
+                return self.response(service.export(p['id']) if op=='export' else await service.restore_review(p['id']))
+            if op=='stop' and set(p)=={'op','id','revision'} and isinstance(p['id'],str) and type(p['revision']) is int:return self.response(await service.disarm(p['id'],p['revision']))
+            if op=='feedback' and set(p)=={'op','id','value'} and isinstance(p['id'],str):return self.response(await service.feedback(p['id'],p['value']))
+            raise ValueError('rehearsal_invalid')
+        except (ValueError,TypeError,KeyError,PlanError) as exc:
+            code=str(exc) if str(exc).startswith(('rehearsal_','execute_')) else 'rehearsal_invalid'
+            return self.response({'error':code},409 if code=='execute_stale' else 400)

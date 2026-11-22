@@ -206,6 +206,8 @@ class Executor:
             if report['source_fingerprint']!=r['source_fingerprint'] or any(l['reasons'] for l in report['loads'] if l['physical_id'] in r['included']) or any(report['mapping'].get(i)!=r['mapping'][i] for i in r['included']):raise ValueError('execute_stale')
             for old in self.data['runs'].values():
                 if old['status'] in ACTIVE and instant(old['start'])<instant(r['end']) and instant(old['end'])>instant(r['start']) and set(old['included'])&set(r['included']):raise ValueError('execute_overlap')
+            rehearsal=self.hass.data['shabbat_flow'].get('rehearsal')
+            if rehearsal and rehearsal.overlaps(r['included'],instant(r['start']),instant(r['end'])):raise ValueError('execute_overlap')
             observer=self.hass.data['shabbat_flow']['observer']
             observation=await observer.start(r['bundle'],DEFAULT_POLICY,'execution-'+rid,r['actor'],now)
             data=deepcopy(self.data);r=data['runs'][rid];r.update(status='armed',revision=revision+1,armed_revision=revision,observer_id=observation['id'],armed_at=now.isoformat())
@@ -238,6 +240,8 @@ class Executor:
         approved=any(room.get('enabled') and room.get('setup',{}).get('status','ready')=='ready' and any(entry and entry.id in room['roles'][role] for role in ('main_lights','night_lights')) for room in rooms)
         return bool(approved and entry and entry.id==target['registry_id'] and entry.platform==target['platform'] and entry.disabled_by is None and all(target.get(k)==v for k,v in self.target_identity(target).items()))
 
+    def dispatch_guard(self,r,physical):return None
+
     async def dispatch(self,rid,physical,event,key,now,correction=False):
         now=max(now,now_utc())
         async with self.lock:
@@ -245,11 +249,15 @@ class Executor:
             observer=self.hass.data['shabbat_flow']['observer']
             if observer.error or observer.closed:self.error='execute_observer';return
             data=deepcopy(self.data);r=data['runs'][rid]
-            if r['status'] not in ACTIVE or physical in r['blocked'] or (now>instant(r['end']) and not (not correction and instant(event['utc'])==instant(r['end']) and now<=instant(r['end'])+timedelta(seconds=120))) or not self.valid_target(r,physical):return
+            if r['status'] not in ACTIVE or physical in r['blocked'] or (now>instant(r['end']) and not (not correction and instant(event['utc'])==instant(r['end']) and now<=instant(r['end'])+timedelta(seconds=120))):return
+            if not self.valid_target(r,physical):
+                r['blocked'][physical]='execute_mapping';await self.commit(data);return
             if not correction and (now-instant(event['utc'])).total_seconds()>120:
                 r['blocked'][physical]='execute_missed';await self.commit(data);return
             if source_scope(self.hass)['fingerprint']!=r['source_fingerprint']:
                 r['blocked'][physical]='execute_source_changed';await self.commit(data);return
+            guard=self.dispatch_guard(r,physical)
+            if guard:r['blocked'][physical]=guard;await self.commit(data);return
             state=reading(self.hass,r['mapping'][physical]);wanted=event['action']['state']
             if state['state']=='unknown':r['blocked'][physical]='execute_unavailable';await self.commit(data);return
             record={'event_id':event['id'],'physical_id':physical,'wanted':wanted,'scheduled_at':event['utc'],'at':now.isoformat(),'correction':correction,'status':'already_correct' if state['state']==wanted else 'dispatching'}
@@ -262,8 +270,9 @@ class Executor:
             if self.closed:return
             if (max(now,now_utc())-instant(event['utc'])).total_seconds()>120 and not correction:
                 data=deepcopy(self.data);data['runs'][rid]['ledger'][key]['status']='not_dispatched';data['runs'][rid]['blocked'][physical]='execute_missed';await self.commit(data);return
-            if not self.valid_target(r,physical) or source_scope(self.hass)['fingerprint']!=r['source_fingerprint']:
-                data=deepcopy(self.data);data['runs'][rid]['ledger'][key]['status']='not_dispatched';data['runs'][rid]['blocked'][physical]='execute_source_changed';await self.commit(data);return
+            guard=self.dispatch_guard(r,physical)
+            if guard or not self.valid_target(r,physical) or source_scope(self.hass)['fingerprint']!=r['source_fingerprint']:
+                data=deepcopy(self.data);data['runs'][rid]['ledger'][key]['status']='not_dispatched';data['runs'][rid]['blocked'][physical]=guard or 'execute_source_changed';await self.commit(data);return
             latest=reading(self.hass,r['mapping'][physical])
             if latest['state']!=state['state']:
                 data=deepcopy(self.data)

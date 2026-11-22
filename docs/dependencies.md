@@ -83,3 +83,6 @@ Embedded DejaVu Sans 2.37 regular/bold supports both default languages. Official
 
 ## Feature 018 — explicitly authorized native lighting execution
 The owner requested implementation and deployment of a separate armable execution path. It uses existing HA built-in services, contexts, registries, UTC timers and standard-library atomic storage. No external package or copied integration is added. Only individually reviewed lighting On/Off targets are eligible; native HVAC qualification remains pending. Deployment is not approval or arming of a household plan.
+
+## Feature 019 — exact-plan rehearsal
+Reuses the approved native lighting adapter and HA service/context APIs, standard-library persistence and existing frontend. No new dependency or third-party implementation. Simulation never calls devices; immediate supervised tests require explicit reviewed target confirmation and cannot arm a weekend schedule.

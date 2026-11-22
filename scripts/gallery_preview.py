@@ -36,6 +36,16 @@ def report_fixture():return {'run':deepcopy(report_run),'performance':report_mod
 class GalleryHandler(Handler):
     def do_POST(self):
         if not self.permitted(): return
+        if self.path=='/api/v2/rehearsal':
+            body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))))
+            from shabbat_flow.rehearsal import catalog,project
+            if body.get('op')=='catalog':self.reply(200,catalog(body['bundle']));return
+            if body.get('op')=='review':
+                b=body['bundle'];selection=body['selection'];r=project(b,selection['at'],selection['mode'],selection['areas'])
+                r.update(selection=selection,review_digest='fictional-review',reviewed_at=datetime.now(timezone.utc).isoformat(),can_apply=False,restore_of=None,unknown_sources=[],mapping={},source_fingerprint='fictional')
+                for row in r['rows']:row.update(entity_id='light.example',before={'state':'off','context_id':None},reasons=[row['reason']] if row['reason'] else [],writers=[])
+                self.reply(200,r);return
+            self.reply(400,{'error':'fixture_read_only'});return
         if self.path=='/api/v2/execution':
             body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))))
             if body.get('op')!='review':self.reply(400,{'error':'fixture_read_only'});return
@@ -61,8 +71,11 @@ class GalleryHandler(Handler):
         path=self.path.split('?')[0]
         if path in ('/execution-demo','/execution-demo.mjs'):
             sample=json.loads((ROOT/'examples/period-preview.json').read_text())
+            room=next(iter(sample['config']['rooms']))
+            for load in sample['config']['loads'].values():load.setdefault('display',{'room':room,'role':'main_lights','area_type':'room'})
             code='sessionStorage.setItem("shabbat-flow-household-workspace",'+json.dumps(json.dumps(sample))+');location.replace("/period.html?household=1")'
             self.reply(200,code.encode() if path.endswith('.mjs') else b'<script type="module" src="/execution-demo.mjs"></script>','text/javascript' if path.endswith('.mjs') else 'text/html; charset=utf-8');return
+        if path=='/api/v2/rehearsal':self.reply(200,{'error':None,'runs':[]});return
         if path=='/api/v2/execution':self.reply(200,{'error':None,'runs':[]});return
         if path=='/api/v2/observe':self.reply(200,{'study_sources':study_sources,'runs':example_runs if activity_examples else [],'thermal_sources':{'climates':[],'weather':[]}})
         elif path=='/api/v2/household':self.reply(200,fixture)

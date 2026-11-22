@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from .const import DOMAIN, PANEL, STATIC, VERSION
-from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView
+from .api import PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView, RehearsalView
 
 ROOT = Path(__file__).parent
 
@@ -39,6 +39,10 @@ async def async_setup_entry(hass, entry):
     if 'executor' not in data or data['executor'].closed:
         data['executor']=Executor(hass)
         await data['executor'].load()
+    from .rehearsal import Rehearsal
+    if 'rehearsal' not in data or data['rehearsal'].closed:
+        data['rehearsal']=Rehearsal(hass)
+        await data['rehearsal'].load()
     from .pdf_store import PdfStore
     data["pdf"] = PdfStore(hass)
     try: await data["pdf"].tidy()
@@ -46,7 +50,7 @@ async def async_setup_entry(hass, entry):
     if not data.get("registered"):
         sample, catalogs = await hass.async_add_executor_job(load_assets)
         await hass.http.async_register_static_paths([StaticPathConfig(STATIC, str(ROOT / "www"), False)])
-        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView):
+        for view in (PreviewView, SampleView, CatalogView, CalendarView, HouseholdView, HouseholdPlanView, UpcomingView, ObserveView, PdfView, ExecutionView, RehearsalView):
             hass.http.register_view(view(hass))
         data.update(registered=True, sample=sample, catalogs=catalogs)
     data["entry"] = entry
@@ -69,6 +73,8 @@ async def async_options_updated(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
+    rehearsal=hass.data.get(DOMAIN,{}).get('rehearsal')
+    if rehearsal:await rehearsal.close()
     executor=hass.data.get(DOMAIN,{}).get('executor')
     if executor:await executor.close()
     observer = hass.data.get(DOMAIN, {}).get("observer")

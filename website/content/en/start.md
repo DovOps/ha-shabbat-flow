@@ -47,3 +47,9 @@ Selecting rooms in use, naps or meals at home sets the simple day-level **Someon
 
 ## Optional lighting control pilot
 After preview, open **Schedule and observe**. Review the exact dates and device subset, record weekday On/Off verification, approve, then schedule explicitly. Only reviewed lighting controls can run; HVAC, fans and appliances remain excluded. Existing automation conflicts block control. Devices already in the required state receive no command. Save and Preview do not activate anything. Nobody home automatically makes meals Away; all-away plans cannot arm. Check the execution status and linked report afterwards. This is a limited pilot requiring device qualification, not full-house live validation.
+
+## Test the actual plan on a weekday
+
+In 0.21.0, preview your saved weekend plan and choose **Rehearse this exact plan**. Select an actual scenario/time and areas. **Run this transition only** uses actions at that moment; **Set up this moment** uses the latest known planned state. Simulate first, inspect the targets and exclusions, then explicitly apply eligible lighting changes while present to supervise. Shared bathrooms need separate selection. Tests never arm the weekend schedule.
+
+Refresh results, record feedback and export the plan plus rehearsal JSON. **Review restore** offers only confirmed changes that have not been changed externally afterward. No automatic restore or restart replay. Real tests require an inactive Jewish Calendar observance signal; HVAC, fans and appliances remain simulation-only. Installation and owner hardware acceptance are separate rollout steps.

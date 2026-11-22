@@ -701,3 +701,10 @@ test('away defaults meals and returning home asks fresh choices',()=>{
  assert.ok(normalized.plan.meals.filter(m=>m.segment==='day_1').every(m=>m.choice==='away'||m.choice==='none'));
  assert.deepEqual(Object.keys(executionWords.en).sort(),Object.keys(executionWords.he).sort());
 });
+
+const {rehearsalWords}=await import('../src/shabbat_flow/web/rehearsal.mjs');
+test('rehearsal strings cover both default languages and keep explicit control boundaries',()=>{
+ assert.deepEqual(Object.keys(rehearsalWords.en).sort(),Object.keys(rehearsalWords.he).sort());
+ assert.match(rehearsalWords.en.intro,/never schedules the weekend/);
+ assert.match(rehearsalWords.en.apply,/now/);
+});
