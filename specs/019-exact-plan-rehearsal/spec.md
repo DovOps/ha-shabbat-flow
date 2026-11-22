@@ -1,6 +1,6 @@
 # Feature 019 — rehearse the exact dated plan
 
-Status: implemented and automatically tested; installation and visual/hardware acceptance pending. Installation never applies a rehearsal or arms a plan.
+Status: implemented, automatically tested and deployed; desktop EN/HE simulation verified, physical hardware/mobile acceptance pending. Installation never applies a rehearsal or arms a plan.
 
 ## Functional requirements
 - RH-FR-001: Rehearse a complete upcoming or saved plan without changing its dates, anchors, settings or execution ledger. Freeze its full bundle/digest into each applied test. Editing the draft invalidates a pending review.

@@ -95,3 +95,6 @@ GO-FR-001–009 and GO-NFR-001–004 are implemented for a deliberately limited 
 
 ## Feature 019 — exact-plan rehearsal (0.21.0)
 RH-FR-001–008 and RH-NFR-001–003 implemented with deterministic compiled moments, explicit area/device scope, simulation, separately confirmed binary-lighting tests, independent persisted evidence, reviewed context-aware restore, and feedback/export. HVAC/fans/appliances remain simulation-only. No automatic replay, restoration or weekend activation. Automated verification is complete; UI visual acceptance, installation and owner-supervised hardware tests remain pending. See Feature 019 verification and checkpoint 028.
+
+
+Deployment verified after access was restored: 71 packaged files byte-verified, three existing saved-data files preserved unchanged, on-host integration/storage backup, and one HA restart. The versioned 0.21.0 UI loaded with all 20 saved rooms ready. Exact-plan scenario discovery and read-only simulation succeeded against an existing saved plan; no rehearsal was applied and no control run was scheduled. Fictional EN/HE layout, area selection, simulation and keyboard activation were checked. Owner-supervised physical tests and mobile acceptance remain pending. Both GitHub checks and website publication passed for the implementation commit.

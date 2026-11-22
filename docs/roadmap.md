@@ -119,3 +119,6 @@ Feature 017 adds optional room Fans mappings and configurable entity/device labe
 
 ## Exact-plan weekday rehearsal — 0.21.0
 Feature 019 implements supervised immediate tests of actual compiled plan moments, area/device selection, read-only simulation, context-aware restore and private feedback/export. Current live adapter remains qualified binary lighting only. Pending: browser acceptance, deployment, owner-supervised hardware rehearsal, then a separately approved limited weekend pilot. Room-level weekend control/observe allocation and qualified HVAC/fan/appliance actuation remain future work.
+
+
+Deployment verified after access was restored: 71 packaged files byte-verified, three existing saved-data files preserved unchanged, on-host integration/storage backup, and one HA restart. The versioned 0.21.0 UI loaded with all 20 saved rooms ready. Exact-plan scenario discovery and read-only simulation succeeded against an existing saved plan; no rehearsal was applied and no control run was scheduled. Fictional EN/HE layout, area selection, simulation and keyboard activation were checked. Owner-supervised physical tests and mobile acceptance remain pending. Both GitHub checks and website publication passed for the implementation commit.
