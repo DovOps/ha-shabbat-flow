@@ -160,7 +160,8 @@ export function addNap(bundle,segmentId,room){
  if(!profiles.length)throw new Error('invalid_mapping');
  const [id,profile]=profiles.find(([,p])=>p.label.en==='Standard')??profiles[0],d=restDefaults(profile),zone=next.plan.snapshot.timezone;
  const start=d.nap_start_mode==='clock'?+new Date(restClockTime(seg,d.nap_start_time,zone)):+new Date(seg.sunrise)+d.nap_after_sunrise*60000;
- const end=d.nap_end_mode==='period_end'?+new Date(seg.end):d.nap_end_mode==='clock'?+new Date(restClockTime(seg,d.nap_end_time,zone)):start+d.nap_duration*60000;
+ let end=d.nap_end_mode==='period_end'?+new Date(seg.end):d.nap_end_mode==='clock'?+new Date(restClockTime(seg,d.nap_end_time,zone)):start+d.nap_duration*60000;
+ if(!d.nap_end_mode||d.nap_end_mode==='duration')end=Math.min(end,+new Date(seg.end));
  if(!(start<end&&start>=+new Date(seg.start)&&end<=+new Date(seg.end)))throw new Error('invalid_time');
  const naps=next.plan.naps??=[];naps.push({id:nextId('nap',naps),room,profile:id,segment:segmentId,start:zonedISO(start,zone),end:zonedISO(end,zone),lead_minutes:d.lead_minutes,bathroom_targets:[]});return markDayHomeFromUse(next,segmentId);
 }

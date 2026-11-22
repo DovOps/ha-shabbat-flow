@@ -19,3 +19,5 @@ Status: implemented, automatically tested and deployed; desktop EN/HE simulation
 
 ## Boundaries
 Room-level execution-mode selection for a future weekend remains a separate follow-up; this feature scopes immediate rehearsals only. Rehearsals do not mark native hardware qualified automatically. No dynamic thermostat control or appliance execution is introduced. Existing plan observations continue independently; rehearsal evidence records point transitions rather than pretending to be a full thermal study.
+
+Feature 020 extends the original lighting-only immediate rehearsal boundary to explicitly reviewed HVAC power and room fans with captured/current settings. Scheduled execution and appliance exclusions remain unchanged. See Feature 020 for the superseding preservation contract.

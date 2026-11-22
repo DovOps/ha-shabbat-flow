@@ -49,7 +49,7 @@ def source_scope(hass):
             if node.get('enabled') is False: return
             service = node.get('action', node.get('service'))
             if service is not None:
-                if not isinstance(service, str) or service not in {d+'.'+s for d in ('light','switch','climate','fan','homeassistant') for s in ('turn_on','turn_off','toggle')}:
+                if not isinstance(service, str) or service not in ({'climate.'+s for s in ('set_hvac_mode','set_temperature','set_fan_mode','set_preset_mode','set_swing_mode','set_swing_horizontal_mode')}|{'fan.'+s for s in ('set_percentage','set_preset_mode','set_direction','oscillate')}|{d+'.'+s for d in ('light','switch','climate','fan','homeassistant') for s in ('turn_on','turn_off','toggle')}):
                     unknown.append(True); return
                 selection = node.get('target', {})
                 data = node.get('data', node.get('service_data', {}))
@@ -242,6 +242,10 @@ class Executor:
 
     def dispatch_guard(self,r,physical):return None
 
+    def service_command(self,r,physical,wanted):
+        entity=r['mapping'][physical]['entity_id']
+        return entity.split('.')[0],'turn_'+wanted,{'entity_id':entity}
+
     async def dispatch(self,rid,physical,event,key,now,correction=False):
         now=max(now,now_utc())
         async with self.lock:
@@ -281,9 +285,9 @@ class Executor:
                     data['runs'][rid]['ledger'][key]['status']='not_dispatched';data['runs'][rid]['blocked'][physical]='execute_unavailable'
                 await self.commit(data);return
             self.inflight.add((rid,key))
-            target=r['mapping'][physical]['entity_id'];domain=target.split('.')[0]
+            domain,service,service_data=self.service_command(r,physical,wanted)
             # No yield between the final lifecycle check and starting the explicit service call.
-            call=self.hass.services.async_call(domain,'turn_'+wanted,{'entity_id':target},blocking=True,context=context)
+            call=self.hass.services.async_call(domain,service,service_data,blocking=True,context=context)
         try:
             async with asyncio.timeout(10):await call
             outcome='acknowledged'

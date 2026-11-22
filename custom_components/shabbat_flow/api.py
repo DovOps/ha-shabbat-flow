@@ -340,6 +340,7 @@ class RehearsalView(BaseView):
         self.check(request)
         try:
             p=await read_body(request);service=self.hass.data[DOMAIN]['rehearsal'];op=p.get('op')
+            if op=='capture' and set(p)=={'op','bundle','physical_id'}:return self.response(await service.capture(p['bundle'],p['physical_id']))
             if op=='catalog' and set(p)=={'op','bundle'}:
                 from .engine.rehearsal import catalog
                 return self.response(await self.hass.async_add_executor_job(catalog,p['bundle']))

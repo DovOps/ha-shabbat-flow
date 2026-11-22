@@ -1,0 +1,17 @@
+# Feature 020 — nap feedback and climate/fan rehearsal
+
+Status: implemented and tested; deployment pending; scheduled execution remains lighting-only.
+
+## Functional requirements
+- CF-FR-001: Adding a bedroom nap uses that bedroom's defaults. If a duration would extend beyond the selected day, shorten it to that day's end and show an adjacent explanation with editable dated times. Invalid clock-based windows show an accessible error beside the button, not only at the page top. Do not change permanent room defaults or existing naps.
+- CF-FR-002: Exact-plan rehearsals may explicitly include registered HVAC and independently mapped room fans, alongside lighting. Existing scheduled execution is unchanged; appliances and ambiguous/group/template targets remain excluded. A fan must have a compiled plan event; a room assignment alone does not invent timing.
+- CF-FR-003: Add explicit read-only Capture current settings for HVAC/fans. Persist a bounded private baseline tied to registry identity; require a known active HVAC mode, supported modes and valid target temperature/range. An off HVAC unit without a valid captured mode cannot be tested On. Display the captured mode, current target and baseline source before confirmation. Never infer heat/cool from a default mode list or desired plan temperature.
+- CF-FR-004: HVAC rehearsal tests power only, even when a plan describes temperature settings: show this distinction. Off uses explicit Off; On uses the reviewed active/captured mode. Never send target-temperature, fan-mode or preset changes to climate entities. Verify that target/settings remain unchanged; report settings drift as failure without automatic correction or retry. A matching unit receives no command.
+- CF-FR-005: Native fans use explicit power services and preserve reviewed speed/preset when turning On; require a valid current or captured active baseline for an off native fan. Switch-backed room fans support binary power only. No fan speed is derived from HVAC. Observe state/settings confirmation and context.
+- CF-FR-006: Preserve all rehearsal ownership, admin, inactive-observance, snapshot/identity, stale-review, concurrent-run, stop/restart and persistence safeguards. Capture never controls devices and invalidates the pending review. Check settings drift immediately before dispatch, not sensor temperature drift. Restore uses original known power and settings only if the test still owns the resulting state/context/settings.
+- CF-FR-007: EN/HE descriptions, exclusions, capture status and settings evidence in review/results/JSON. No hardware test is automatically run or marked qualified during installation.
+
+## Nonfunctional requirements
+- CF-NFR-001: No new dependencies, arbitrary service calls, automatic thermostat adjustment or broadened scheduled execution. Baselines maximum 100, expire for On use after 90 days; never store credentials or unrelated attributes.
+- CF-NFR-002: Tests cover short winter duration clipping, invalid clock feedback, independent rooms, missing/changed baselines, power On/Off/no-op, mode/target preservation, fan speed/preset, settings drift, unknown targets, restore and existing lighting regressions on both supported HA versions.
+- CF-NFR-003: Capture/review/physical apply are visibly distinct; interface keeps the new nap in view and gives keyboard/screen-reader feedback. Deployment preserves saved setups and leaves control unarmed.

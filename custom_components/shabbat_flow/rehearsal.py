@@ -9,6 +9,9 @@ from .execution import Executor, ACTIVE, DEFAULT_RECOVERY, now_utc
 from .ownership import instant
 from .engine.schedule import digest
 from .engine.rehearsal import catalog, project
+from .rehearsal_devices import snapshot, power, eligible, active_baseline, command, matches
+from .household import internal_id
+from homeassistant.helpers import entity_registry as er
 from .reminders import status as calendar_status
 
 
@@ -17,6 +20,7 @@ def read_store(path):
     if path.stat().st_size>50*1024*1024:raise ValueError('execute_store')
     envelope=json.loads(path.read_text());data=envelope['data']
     if digest(data)!=envelope['checksum'] or data['schema_version']!=1 or len(data['runs'])>20:raise ValueError('execute_store')
+    if not isinstance(data.get('baselines',{}),dict) or len(data.get('baselines',{}))>100:raise ValueError('execute_store')
     for rid,r in data['runs'].items():
         if rid!=r['id'] or digest(r['bundle'])!=r['snapshot_hash'] or r['kind'] not in ('rehearsal','restore'):raise ValueError('execute_store')
         if r['status'] not in ACTIVE|{'completed','disarmed','interrupted'}:raise ValueError('execute_store')
@@ -46,18 +50,55 @@ class Rehearsal(Executor):
         return any((r['status'] in ACTIVE or any(k[0]==r['id'] for k in self.inflight)) and set(physical)&set(r['included']) and start<=instant(r['end']) and end>=instant(r['start']) for r in self.data['runs'].values())
 
     def public(self,r):
-        return {**super().public(r),**{k:deepcopy(r[k]) for k in ('kind','selection','before','feedback','restore_of') if k in r}}
+        return {**super().public(r),**{k:deepcopy(r[k]) for k in ('kind','selection','before','contracts','feedback','restore_of') if k in r}}
 
     def export(self,rid):
         if rid not in self.data['runs']:raise ValueError('execute_missing')
         r=self.data['runs'][rid]
         return {**self.public(r),'bundle':deepcopy(r['bundle']),'limitations':['rehearsal_not_weekend_activation','point_observations_not_continuous_study','unselected_devices_not_failures']}
 
+    def extra_role(self,bundle,physical,target):
+        if not target:return None
+        entry=er.async_get(self.hass).async_get(target['entity_id'])
+        if not entry or entry.platform in ('group','template'):return None
+        state=self.hass.states.get(entry.entity_id)
+        if state and state.attributes.get('entity_id'):return None
+        aliases=[l for l in bundle['config']['loads'].values() if l['physical_id']==physical]
+        roles={l.get('display',{}).get('role') for l in aliases}
+        role=next(iter(roles)) if len(roles)==1 else None
+        if role not in ('hvac','fan') or (role=='hvac' and entry.domain!='climate') or (role=='fan' and entry.domain not in ('fan','switch')):return None
+        if any(l['kind'] not in (('hvac','hvac_power') if role=='hvac' else ('binary',)) for l in aliases):return None
+        return role if any(room.get('enabled') and room.get('setup',{}).get('status','ready')=='ready' and entry.id in room.get('roles',{}).get('hvac' if role=='hvac' else 'fans',[]) for room in self.hass.data['shabbat_flow']['household']['rooms'].values()) else None
+
+    def valid_target(self,r,physical):
+        target=r['mapping'][physical]
+        if not self.extra_role(r['bundle'],physical,target):return super().valid_target(r,physical)
+        entry=er.async_get(self.hass).async_get(target['entity_id'])
+        return bool(entry and entry.id==target['registry_id'] and entry.disabled_by is None and entry.platform==target['platform'] and all(target.get(k)==v for k,v in self.target_identity(target).items()))
+
+    def service_command(self,r,physical,wanted):
+        contract=r.get('contracts',{}).get(physical)
+        return command(contract,wanted,r['mapping'][physical]['entity_id']) if contract else super().service_command(r,physical,wanted)
+
+    async def capture(self,bundle,physical):
+        base=await self.hass.data['shabbat_flow']['executor'].review(bundle)
+        target=base['mapping'].get(physical)
+        if not self.extra_role(bundle,physical,target):raise ValueError('execute_unsupported')
+        state=self.hass.states.get(target['entity_id']);baseline=active_baseline(state,target,now_utc())
+        contract,reason=eligible(self.hass,target,baseline,now_utc(),'on')
+        if reason:raise ValueError(reason)
+        async with self.lock:
+            if self.error or self.closed:raise ValueError('execute_store')
+            data=deepcopy(self.data);baselines=data.setdefault('baselines',{})
+            if physical not in baselines and len(baselines)>=100:del baselines[min(baselines,key=lambda k:instant(baselines[k]['at']))]
+            baselines[physical]=baseline;await self.commit(data);self.reviews.clear()
+        return {'captured':True,'settings':contract}
+
     def dispatch_guard(self,r,physical):
         if not calendar_status(self.hass)['issur_off']:return 'rehearsal_observance'
         state=self.hass.states.get(r['mapping'][physical]['entity_id'])
         before=r['before'][physical]
-        if not state or state.state!=before['state'] or state.context.id!=before['context_id']:return 'rehearsal_intervened'
+        if not state or state.state!=before['state'] or state.context.id!=before['context_id'] or snapshot(state)['settings']!=before.get('settings',{}):return 'rehearsal_intervened'
         executor=self.hass.data['shabbat_flow']['executor']
         if any((old['status'] in ACTIVE or any(k[0]==old['id'] for k in executor.inflight)) and physical in old['included'] and instant(old['start'])<=now_utc()+timedelta(minutes=2) and instant(old['end'])>=now_utc() for old in executor.data['runs'].values()):return 'execute_overlap'
         return None
@@ -75,15 +116,31 @@ class Rehearsal(Executor):
             physical=row['physical_id'];load=by_id[physical];reasons=list(load['reasons'])
             if row['reason']:reasons.append(row['reason'])
             event=row['event'];state=self.hass.states.get(load['entity_id']) if load['entity_id'] else None
-            before={'state':state.state if state else 'unknown','context_id':state.context.id if state else None}
+            before=snapshot(state);target=base['mapping'].get(physical);role=self.extra_role(bundle,physical,target)
+            contract=None;capture_available=bool(role and state and power(state.state,state.domain)=='on')
+            if role and event:
+                wanted=event['action'].get('state') or ('off' if event['action'].get('mode')=='off' else 'on')
+                if wanted in ('on','off') and event['action']['type'] in ('state','hvac','hvac_power'):
+                    reasons=[r for r in reasons if r not in ('execute_unsupported','execute_no_events','execute_service')]
+                    contract,reason=eligible(self.hass,target,self.data.get('baselines',{}).get(physical),now_utc(),wanted)
+                    if reason:reasons.append(reason)
+                    event={**event,'original_action':deepcopy(event['action']),'action':{'type':'state','state':wanted}}
+            if not contract and not role and target:contract={'domain':target['entity_id'].split('.')[0],'settings':{}}
+
             if original:
                 attempt=next((a for a in original['ledger'].values() if a.get('physical_id')==physical and a['status']=='confirmed'),None)
-                if physical not in original['included'] or not attempt or not state or state.context.id!=attempt.get('context_id') or state.state!=attempt['wanted'] or base['mapping'].get(physical)!=original['mapping'].get(physical) or base['source_fingerprint']!=original['source_fingerprint']:
+                if physical not in original['included'] or not attempt or not state or state.context.id!=attempt.get('context_id') or power(state.state,state.domain)!=attempt['wanted'] or not matches(original.get('contracts',{}).get(physical,{'domain':state.domain,'settings':{}}),attempt['wanted'],state) or base['mapping'].get(physical)!=original['mapping'].get(physical) or base['source_fingerprint']!=original['source_fingerprint']:
                     reasons.append('rehearsal_intervened')
-                elif original['before'][physical]['state'] in ('on','off'):
-                    event={**event,'action':{'type':'state','state':original['before'][physical]['state']}}
+                elif power(original['before'][physical]['state'],state.domain) in ('on','off'):
+                    wanted=power(original['before'][physical]['state'],state.domain)
+                    event={**event,'action':{'type':'state','state':wanted}}
+                    if role:
+                        prior={**original['before'][physical],'target':target,'at':original['start']}
+                        contract,reason=eligible(self.hass,target,prior if wanted=='on' else None,now_utc(),wanted)
+                        reasons=[r for r in reasons if r not in ('rehearsal_capture_on','rehearsal_settings_unknown')]
+                        if reason:reasons.append(reason)
                 else:reasons.append('rehearsal_unknown')
-            rows.append({**row,'event':event,'entity_id':load['entity_id'],'before':before,'reasons':sorted(set(reasons)),'writers':load['writers']})
+            rows.append({**row,'event':event,'entity_id':load['entity_id'],'before':before,'reasons':sorted(set(reasons)),'writers':load['writers'],'contract':contract,'capture_available':capture_available})
         result={'snapshot_hash':digest(bundle),'selection':deepcopy(selection),'timezone':projection['timezone'],'related_areas':projection['related_areas'],'areas':projection['areas'],'rows':rows,'mapping':base['mapping'],'source_fingerprint':base['source_fingerprint'],'unknown_sources':base['unknown_sources'],'can_apply':calendar_status(self.hass)['issur_off'],'restore_of':restore_of}
         result['review_digest']=digest(result)
         # Expiry is explicit but is not part of the digest (repeat read must remain comparable).
@@ -133,7 +190,7 @@ class Rehearsal(Executor):
                 if not removable:raise ValueError('execute_limit')
                 oldest=min(removable,key=lambda r:instant(r['start']));del data['runs'][oldest['id']]
             events=[{**deepcopy(by_id[p]['event']),'source_utc':by_id[p]['event']['utc'],'utc':now.isoformat()} for p in included]
-            r={'id':rid,'kind':'restore' if payload['restore_of'] else 'rehearsal','restore_of':payload['restore_of'],'status':'running','revision':1,'request_id':request,'identity':identity,'actor':actor,'bundle':deepcopy(payload['bundle']),'snapshot_hash':report['snapshot_hash'],'selection':deepcopy(payload['selection']),'included':sorted(included),'excluded':sorted(set(by_id)-set(included)),'mapping':{p:report['mapping'][p] for p in included},'source_fingerprint':report['source_fingerprint'],'before':{p:by_id[p]['before'] for p in included},'events':events,'start':now.isoformat(),'end':end.isoformat(),'ledger':{},'blocked':{},'changed':{},'recovery':deepcopy(DEFAULT_RECOVERY),'observer_id':None,'feedback':'','qualifications':deepcopy(notes),'attestations':deepcopy(attest)}
+            r={'id':rid,'kind':'restore' if payload['restore_of'] else 'rehearsal','restore_of':payload['restore_of'],'status':'running','revision':1,'request_id':request,'identity':identity,'actor':actor,'bundle':deepcopy(payload['bundle']),'snapshot_hash':report['snapshot_hash'],'selection':deepcopy(payload['selection']),'included':sorted(included),'excluded':sorted(set(by_id)-set(included)),'mapping':{p:report['mapping'][p] for p in included},'source_fingerprint':report['source_fingerprint'],'before':{p:by_id[p]['before'] for p in included},'contracts':{p:by_id[p]['contract'] for p in included},'events':events,'start':now.isoformat(),'end':end.isoformat(),'ledger':{},'blocked':{},'changed':{},'recovery':deepcopy(DEFAULT_RECOVERY),'observer_id':None,'feedback':'','qualifications':deepcopy(notes),'attestations':deepcopy(attest)}
             data['runs'][rid]=r;await self.commit(data)
             task=self.hass.async_create_background_task(self.run(rid),'shabbat_flow_rehearsal')
             self.tasks.add(task);task.add_done_callback(self.tasks.discard)
@@ -151,10 +208,18 @@ class Rehearsal(Executor):
                         if not record or record['status'] in ('already_correct','not_dispatched'):return
                         if self.closed or r['status'] not in ACTIVE:return
                         state=self.hass.states.get(r['mapping'][p]['entity_id'])
-                        if state and state.state==record['wanted']:
+                        if state and power(state.state,state.domain)==record['wanted']:
                             data=deepcopy(self.data);attempt=data['runs'][rid]['ledger'][key]
+                            contract=r.get('contracts',{}).get(p,{'domain':state.domain,'settings':{}})
+                            attempt['observed']=snapshot(state)
+                            if not matches(contract,record['wanted'],state):
+                                attempt['status']='settings_changed';data['runs'][rid]['blocked'][p]='rehearsal_settings_changed';await self.commit(data);return
                             attempt['status']='confirmed' if record['status']=='acknowledged' and state.context.id==record.get('context_id') else 'satisfied_uncertain'
-                            attempt['confirmed_at']=now_utc().isoformat();await self.commit(data);return
+                            attempt['confirmed_at']=now_utc().isoformat()
+                            if attempt['status']=='confirmed' and power(r['before'][p]['state'],state.domain)=='on' and self.extra_role(r['bundle'],p,r['mapping'][p]):
+                                baselines=data.setdefault('baselines',{})
+                                if p in baselines or len(baselines)<100:baselines[p]={**deepcopy(r['before'][p]),'target':deepcopy(r['mapping'][p]),'at':now_utc().isoformat()}
+                            await self.commit(data);return
                         if (now_utc()-instant(record['at'])).total_seconds()>=30:break
                     await asyncio.sleep(1)
                 async with self.lock:

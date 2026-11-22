@@ -414,7 +414,9 @@
     "error_activity_sleep_conflict": "Playtime overlaps sleeping. Adjust the window or explicitly allow the overlap.",
     "error_gated_needs_replacement": "Replace the selected HVAC plan demands before using temperature gating, then define every desired HVAC window.",
     "error_conditional_overlap": "Conditional windows overlap for the same HVAC unit. Combine them or adjust the times.",
-    "meals_away_auto": "Nobody home: meals are Away and afternoon hosting is off. Set Someone home to plan meals here."
+    "meals_away_auto": "Nobody home: meals are Away and afternoon hosting is off. Set Someone home to plan meals here.",
+    "nap_add_error": "Could not add this nap: check the room’s nap start/end defaults and the selected day. The end must follow the start within this day.",
+    "nap_clipped": "This duration was shortened to the end of this Shabbat / holiday day. Review or edit the times below; room defaults are unchanged."
   },
   "he": {
     "period_notice": "אב־טיפוס רב־יומי · לוח זמנים ובית לדוגמה · ללא שליטה במכשירים.",
@@ -831,6 +833,8 @@
     "error_activity_sleep_conflict": "זמן המשחק חופף לשינה. יש להתאים שעות או לאשר חפיפה במפורש.",
     "error_gated_needs_replacement": "יש להחליף את דרישות המיזוג הקיימות לפני בחירת תנאי טמפרטורה ולהגדיר את כל החלונות הרצויים.",
     "error_conditional_overlap": "חלונות מותנים חופפים לאותה יחידת מיזוג. יש לאחד או להתאים שעות.",
-    "meals_away_auto": "אף אחד לא בבית: הארוחות מחוץ לבית ואירוח אחר הצהריים כבוי. בחרו שיש מישהו בבית כדי לתכנן ארוחות."
+    "meals_away_auto": "אף אחד לא בבית: הארוחות מחוץ לבית ואירוח אחר הצהריים כבוי. בחרו שיש מישהו בבית כדי לתכנן ארוחות.",
+    "nap_add_error": "לא ניתן להוסיף מנוחה: בדקו את ברירות המחדל של תחילת וסיום המנוחה ואת היום שנבחר. הסיום חייב להיות אחרי ההתחלה ובתוך היום.",
+    "nap_clipped": "משך המנוחה קוצר לסוף יום השבת / החג הזה. בדקו או ערכו את הזמנים להלן; ברירות המחדל של החדר לא השתנו."
   }
 }

@@ -98,3 +98,7 @@ RH-FR-001–008 and RH-NFR-001–003 implemented with deterministic compiled mom
 
 
 Deployment verified after access was restored: 71 packaged files byte-verified, three existing saved-data files preserved unchanged, on-host integration/storage backup, and one HA restart. The versioned 0.21.0 UI loaded with all 20 saved rooms ready. Exact-plan scenario discovery and read-only simulation succeeded against an existing saved plan; no rehearsal was applied and no control run was scheduled. Fictional EN/HE layout, area selection, simulation and keyboard activation were checked. Owner-supervised physical tests and mobile acceptance remain pending. Both GitHub checks and website publication passed for the implementation commit.
+
+
+## Feature 020 — nap feedback and HVAC/fan rehearsal (0.22.0)
+CF-FR-001–007 / CF-NFR-001–003 implement visible short-day nap clipping, adjacent timing errors, explicit private mode/speed capture and rehearsal-only HVAC/fan power with settings verification and reviewed restore. Scheduled eligibility stays lighting-only. Fan assignments require explicit activity events. No automatic hardware qualification, thermostat calibration or appliance actuation. Deployment and acceptance evidence: checkpoint 029.

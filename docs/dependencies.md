@@ -86,3 +86,6 @@ The owner requested implementation and deployment of a separate armable executio
 
 ## Feature 019 — exact-plan rehearsal
 Reuses the approved native lighting adapter and HA service/context APIs, standard-library persistence and existing frontend. No new dependency or third-party implementation. Simulation never calls devices; immediate supervised tests require explicit reviewed target confirmation and cannot arm a weekend schedule.
+
+## Feature 020 — explicitly requested rehearsal HVAC/fans
+Owner requested supervised HVAC/fan tests preserving current settings. Reuses installed HA climate/fan services and capability constants; no new package. This extends only immediate rehearsal, not scheduled execution. Current-state baseline capture is read-only with respect to devices.

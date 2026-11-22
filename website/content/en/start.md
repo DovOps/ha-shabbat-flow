@@ -53,3 +53,8 @@ After preview, open **Schedule and observe**. Review the exact dates and device 
 In 0.21.0, preview your saved weekend plan and choose **Rehearse this exact plan**. Select an actual scenario/time and areas. **Run this transition only** uses actions at that moment; **Set up this moment** uses the latest known planned state. Simulate first, inspect the targets and exclusions, then explicitly apply eligible lighting changes while present to supervise. Shared bathrooms need separate selection. Tests never arm the weekend schedule.
 
 Refresh results, record feedback and export the plan plus rehearsal JSON. **Review restore** offers only confirmed changes that have not been changed externally afterward. No automatic restore or restart replay. Real tests require an inactive Jewish Calendar observance signal; HVAC, fans and appliances remain simulation-only. Installation and owner hardware acceptance are separate rollout steps.
+
+## HVAC/fan rehearsal and short-day naps (0.22.0)
+Immediate rehearsals include HVAC power and mapped room fans. If a unit is Off with no known mode/speed, turn it on in HA with your preferred settings and use **Capture current settings (no device changes)**. Review again before applying. No climate temperature or fan-mode commands are sent; device-side setting resets are reported as failures. Fans need explicit activity windows. Weekend scheduled control remains lighting-only.
+
+New duration-based naps are shortened visibly at the day's end when needed. Invalid clock choices show feedback next to Add nap. Room defaults and existing naps are preserved.

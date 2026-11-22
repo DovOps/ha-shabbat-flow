@@ -69,12 +69,14 @@ class GalleryHandler(Handler):
     def do_GET(self):
         if not self.permitted(): return
         path=self.path.split('?')[0]
-        if path in ('/execution-demo','/execution-demo.mjs'):
+        if path in ('/execution-demo','/execution-demo.mjs','/rehearsal-demo','/rehearsal-demo.mjs'):
             sample=json.loads((ROOT/'examples/period-preview.json').read_text())
+            if path.startswith('/rehearsal-demo'):
+                for profile in sample['config']['profiles'].values():profile['rest_defaults']={'nap_after_sunrise':480,'nap_duration':180,'lead_minutes':60,'late_wake_after_sunrise':240,'nap_start_mode':'clock','nap_start_time':'16:00'}
             room=next(iter(sample['config']['rooms']))
             for load in sample['config']['loads'].values():load.setdefault('display',{'room':room,'role':'main_lights','area_type':'room'})
             code='sessionStorage.setItem("shabbat-flow-household-workspace",'+json.dumps(json.dumps(sample))+');location.replace("/period.html?household=1")'
-            self.reply(200,code.encode() if path.endswith('.mjs') else b'<script type="module" src="/execution-demo.mjs"></script>','text/javascript' if path.endswith('.mjs') else 'text/html; charset=utf-8');return
+            self.reply(200,code.encode() if path.endswith('.mjs') else ('<script type="module" src="'+('/rehearsal-demo.mjs' if path.startswith('/rehearsal-demo') else '/execution-demo.mjs')+'"></script>').encode(),'text/javascript' if path.endswith('.mjs') else 'text/html; charset=utf-8');return
         if path=='/api/v2/rehearsal':self.reply(200,{'error':None,'runs':[]});return
         if path=='/api/v2/execution':self.reply(200,{'error':None,'runs':[]});return
         if path=='/api/v2/observe':self.reply(200,{'study_sources':study_sources,'runs':example_runs if activity_examples else [],'thermal_sources':{'climates':[],'weather':[]}})

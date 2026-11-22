@@ -708,3 +708,10 @@ test('rehearsal strings cover both default languages and keep explicit control b
  assert.match(rehearsalWords.en.intro,/never schedules the weekend/);
  assert.match(rehearsalWords.en.apply,/now/);
 });
+
+test('duration nap clips at the day boundary without changing room defaults or other rooms',()=>{
+ const b=structuredClone(period),profile=Object.values(b.config.profiles).find(p=>p.room==='room_a'&&p.label.en==='Standard');
+ profile.rest_defaults={...restDefaults(profile),nap_start_mode:'clock',nap_start_time:'16:00',nap_end_mode:'duration',nap_duration:180};
+ const original=structuredClone(b);const next=addNap(b,'day_1','room_a'),nap=next.plan.naps.at(-1);
+ assert.equal(nap.end,next.plan.snapshot.segments[0].end);assert.equal(nap.room,'room_a');assert.deepEqual(b,original);assert.equal(profile.rest_defaults.nap_duration,180);
+});

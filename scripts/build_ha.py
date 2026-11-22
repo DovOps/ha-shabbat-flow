@@ -58,7 +58,7 @@ def archive():
     output = ROOT/'dist'/f'shabbat-flow-{version}.zip'
     output.parent.mkdir(exist_ok=True)
     # Exact source allowlist plus generated assets: no logs/private/temp files.
-    names = set(generated()) | {'rehearsal.py','execution.py','pdf_render.py','pdf_store.py','fonts/DejaVuSans.ttf','fonts/DejaVuSans-Bold.ttf','fonts/LICENSE','reports.py','comfort.py','__init__.py','api.py','observe.py','notifications.py','reminders.py','dependencies.py','study.py','thermal.py','ownership.py','upcoming.py','household.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
+    names = set(generated()) | {'rehearsal_devices.py','rehearsal.py','execution.py','pdf_render.py','pdf_store.py','fonts/DejaVuSans.ttf','fonts/DejaVuSans-Bold.ttf','fonts/LICENSE','reports.py','comfort.py','__init__.py','api.py','observe.py','notifications.py','reminders.py','dependencies.py','study.py','thermal.py','ownership.py','upcoming.py','household.py','const.py','config_flow.py','manifest.json','strings.json','translations/en.json','translations/he.json'}
     with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:
         for name in sorted(names):
             info = zipfile.ZipInfo('custom_components/shabbat_flow/'+name, date_time=(2026,1,1,0,0,0))
