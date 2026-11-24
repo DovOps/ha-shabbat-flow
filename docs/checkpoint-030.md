@@ -6,4 +6,4 @@ Shared English/Hebrew guide covers setup, exact-plan preview, observation, weekd
 
 Installed as a static-only patch on 0.22.0, with on-host backups, previous-file hash guards and byte verification. No restart, storage writes or device calls. The guide loads directly and refreshed entry pages contain its navigation; old cached panel HTML may still require refresh. No household screenshots or test details enter the public repository.
 
-Public publication: main-branch Pages workflow pending completion at this checkpoint.
+Public publication: GitHub Pages and checks succeeded for implementation commit `266df1d` (website run `45351233834`). The English/Hebrew adoption playbook is published. A follow-up fixes the standalone guide return link to reopen the HA panel, with a versioned guide-module reference; installed and visually verified without restart.

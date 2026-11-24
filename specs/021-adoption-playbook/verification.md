@@ -6,3 +6,5 @@
 - Publication: pushed through the existing main-branch GitHub Pages workflow; completion recorded in checkpoint 030.
 
 Owner-supervised hardware acceptance, phone app new-tab behavior and actual printing are not certified by documentation verification.
+
+Standalone help return navigation opens the full HA panel, not an unconnected iframe page. Versioned module references prevent stale script/HTML combinations. Installed return link and complete guide content visually verified.
