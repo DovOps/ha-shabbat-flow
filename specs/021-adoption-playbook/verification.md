@@ -1,0 +1,8 @@
+# Verification
+- AP-FR-001/003–005: shared English/Hebrew content and generated public pages checked for locale keys, equal paragraph/section coverage and stable anchors. Brochure and getting-started links included; current control limits stated.
+- AP-FR-002 / AP-NFR-001–002: app guide, navigation and section links visually checked in English/Hebrew; public guides visually checked in both languages. Help opens separately; guide has no HA API transport or action handlers. Print styling provided. A requested mobile viewport override did not change the observed viewport, so physical phone/print acceptance remains pending.
+- AP-NFR-003: 94 core and 68 JavaScript tests pass; generated package parity, repository hygiene and whitespace checks pass. Both website locales build; 218 pages and 11,590 project-relative links/assets verified before final evidence-only updates.
+- HA installation: six guide/navigation/rehearsal static files installed with prior-hash guards, on-host backup and byte verification, followed by eight HTML/module cache-reference updates (one overlapping guide file). No backend restart, storage changes, device calls or plan activation. Installed guide opened successfully. Updated navigation verified on a freshly requested page; a previously cached panel still used old HTML, so direct guide access is available while cached entry points refresh.
+- Publication: pushed through the existing main-branch GitHub Pages workflow; completion recorded in checkpoint 030.
+
+Owner-supervised hardware acceptance, phone app new-tab behavior and actual printing are not certified by documentation verification.

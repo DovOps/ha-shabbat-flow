@@ -1,0 +1,2 @@
+# Analysis
+Help must not navigate away from an unsaved plan. Separate-tab links retain the current editor. A static guide cannot attest to household readiness, so gates are owner-reviewed instructions, not persisted completion badges. Restore is per rehearsal, context-qualified and not a global undo. HVAC/fan rehearsal does not broaden scheduled eligibility. Shared localized data keeps public and bundled instructions aligned; no household data is used.

@@ -61,6 +61,7 @@ export function setupRehearsal({root,getBundle,isReady,lang}){
   const checks=[];for(const [id,name]of Object.entries(info.areas)){const c=check(label(name));c.input.onchange=()=>{if(c.input.checked)selected.add(id);else selected.delete(id);review.replaceChildren();};checks.push(c.input);c.input.value=id;choices.append(c.box);}
   choices.append(button('all',()=>{for(const c of checks){c.checked=true;selected.add(c.value);}review.replaceChildren();}),button('clear',()=>{for(const c of checks)c.checked=false;selected.clear();review.replaceChildren();}),button('simulate',async()=>{same();const report=await api({op:'review',bundle:frozen,selection:{at:moment.value,mode:mode.value,areas:[...selected]}});await showReview(report,frozen);}));
  }
+ const guide=el('a',lang()==='he'?'מדריך חזרה ושחזור (בלשונית חדשה)':'Rehearsal & restore guide (new tab)');guide.href='./guide.html?lang='+lang()+'#rehearse';guide.target='_blank';guide.rel='noopener';root.append(guide);
  root.append(el('h2',t('title')),el('p',t('intro')),button('load',async()=>{if(!isReady())throw Error('rehearsal_incomplete');frozen=structuredClone(getBundle());identity=JSON.stringify(frozen);info=await api({op:'catalog',bundle:frozen});showChoices();}),button('refresh',refresh),status,choices,review,history);
  refresh().catch(e=>{status.textContent=t(e.message);status.className='error';});
 }

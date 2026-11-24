@@ -13,6 +13,7 @@ const config = {
     colorMode: {defaultMode:'light',disableSwitch:true},
     navbar: {title:'',logo:{alt:'ShabbatFlow',src:'img/logo.png'},items:[
       {to:'/docs/start',label:'Get started',position:'right'},
+      {to:'/docs/adoption',label:'Adoption playbook',position:'right'},
       {to:'/gallery',label:'Gallery',position:'right'},
       {to:'/docs/contributing',label:'Developer guide',position:'right'},
       {to:'/docs/specifications',label:'Specifications',position:'right'},

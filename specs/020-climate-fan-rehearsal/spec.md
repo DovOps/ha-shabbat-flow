@@ -1,6 +1,6 @@
 # Feature 020 — nap feedback and climate/fan rehearsal
 
-Status: implemented and tested; deployment pending; scheduled execution remains lighting-only.
+Status: implemented and tested; deployed with read-only UI verification; owner-supervised hardware acceptance pending; scheduled execution remains lighting-only.
 
 ## Functional requirements
 - CF-FR-001: Adding a bedroom nap uses that bedroom's defaults. If a duration would extend beyond the selected day, shorten it to that day's end and show an adjacent explanation with editable dated times. Invalid clock-based windows show an accessible error beside the button, not only at the page top. Do not change permanent room defaults or existing naps.

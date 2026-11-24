@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const site=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),repo=path.resolve(site,'..');
 const list=async(dir)=>{const out=[];for(const e of await fs.readdir(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())out.push(...await list(p));else if(e.name.endsWith('.md'))out.push(p);}return out.sort();};
+const adoption=JSON.parse(await fs.readFile(path.join(repo,'src/shabbat_flow/web/adoption-guide.json'),'utf8'));
 const specs=await list(path.join(repo,'specs'));
 const maintained=['requirements-status.md','roadmap.md','dependencies.md','setup-tips.md','dry-run-to-live.md'].map(n=>path.join(repo,'docs',n));
 const version=JSON.parse(await fs.readFile(path.join(repo,'custom_components/shabbat_flow/manifest.json'),'utf8')).version;
@@ -14,6 +15,9 @@ for(const lang of ['en','he']){
  if(lang==='he')await fs.writeFile(path.join(path.dirname(dest),'current.json'),JSON.stringify({'sidebar.docs.category.Technical reference · English':{message:'מקור טכני · אנגלית'}}));
  await fs.rm(dest,{recursive:true,force:true});await fs.mkdir(dest,{recursive:true});
  for(const f of await list(path.join(site,'content',lang)))await fs.copyFile(f,path.join(dest,path.basename(f)));
+ const guide=adoption[lang];
+ const guideBody=`# ${guide.title}\n\n${guide.intro}\n\n> ${guide.scope}\n\n`+guide.sections.map(s=>`## ${s.title} {#${s.id}}\n\n${s.body.join('\n\n')}\n\n**${guide.gate}:** ${s.gate}\n`).join('\n');
+ await fs.writeFile(path.join(dest,'adoption.md'),guideBody);
  for(const source of [...specs,...maintained]){
   const rel=path.relative(repo,source).split(path.sep).join('/'),target=path.join(dest,'reference',rel);
   let body=await fs.readFile(source,'utf8');

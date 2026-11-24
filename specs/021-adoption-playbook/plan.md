@@ -1,0 +1,2 @@
+# Implementation plan
+Author shared localized guide data in the existing web source. Render a bundled guide page with local navigation, section anchors and print styling; expose it through common navigation and rehearsal help in a separate tab. Generate Docusaurus adoption pages from the same data and link the brochure/getting-started/sidebar. No new package or execution changes. Build and verify locale parity, packaging, links and responsive EN/HE views. Publish the website using existing GitHub Pages; record HA installation independently.

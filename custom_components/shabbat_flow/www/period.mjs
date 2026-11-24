@@ -1,4 +1,4 @@
-import {setupRehearsal,rehearsalWords} from './rehearsal.mjs';
+import {setupRehearsal,rehearsalWords} from './rehearsal.mjs?v=adoption-1';
 import {setupExecution,executionWords} from './execution.mjs';
 import {savedPdf,pdfWords} from './pdf-download.mjs';
 import {reviewWords} from './review-ui.mjs';

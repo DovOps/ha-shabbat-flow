@@ -89,3 +89,6 @@ Reuses the approved native lighting adapter and HA service/context APIs, standar
 
 ## Feature 020 — explicitly requested rehearsal HVAC/fans
 Owner requested supervised HVAC/fan tests preserving current settings. Reuses installed HA climate/fan services and capability constants; no new package. This extends only immediate rehearsal, not scheduled execution. Current-state baseline capture is read-only with respect to devices.
+
+## Feature 021 — adoption guide
+Uses bundled static HTML/CSS/JavaScript and localized JSON; the existing Docusaurus build generates public guide pages from the same content. No new dependencies, external help host, execution scope or tracking.

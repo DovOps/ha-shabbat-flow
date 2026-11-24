@@ -1,0 +1,176 @@
+{
+  "en": {
+    "title": "From first plan to a confident rollout",
+    "intro": "Practice before you depend on it. During Shabbat or Yom Tov, correcting an unexpected device change may not be an option. Use a gradual adoption process: understand the plan, observe, rehearse on a weekday, restore, and approve only a small tested scope. This guide supports preparation; it does not certify your installation or make religious decisions.",
+    "nav": "Guide",
+    "contents": "In this guide",
+    "print": "Print / save this guide",
+    "home": "House setup",
+    "study": "Climate Study",
+    "settings": "Settings",
+    "scope": "Current scope: preview and observation do not control devices. Supervised rehearsal can test qualified lights, HVAC power and room fans. Scheduled execution is a separately approved lighting-only pilot. HVAC, fans and appliances are not yet qualified for scheduled control.",
+    "gate": "Before moving on",
+    "sections": [
+      {
+        "id": "setup",
+        "title": "1. Map the house and choose a small starting area",
+        "body": [
+          "In House setup, verify areas, main/background lights, HVAC and fans. Use labels to narrow device lists, then review the actual selections. Link shared bathrooms explicitly; they are separate areas in rehearsal.",
+          "Start with one familiar room. Configure separate lighting and HVAC timings, bedroom wake-up and nap windows, and fan activity windows. Assigning a fan alone does not schedule it. Leave unsupported appliances outside the control pilot.",
+          "In Settings, check Jewish Calendar and the mapped active-observance signal. Review local timezone, candle lighting and the full continuous observance period. Existing automation conflicts must be resolved through an explicit ownership decision; the guide never disables them."
+        ],
+        "gate": "You recognize every selected load, the relevant calendar anchors and who already controls it."
+      },
+      {
+        "id": "preview",
+        "title": "2. Build the real plan and inspect every change",
+        "body": [
+          "Choose actual rooms in use, meals, naps and daytime activities. Keep the real weekend dates. Preview the full period and check lighting and HVAC timelines plus the event list, including Existing Automation entries.",
+          "Check candle-lighting setup, bedroom preconditioning, night/background changeover, morning, bathroom daylight breaks, naps and any afternoon hosting. Include the start state and end-of-period policy. A timeline is an intention, not proof that the device works.",
+          "Save the draft explicitly and export the plan. A browser draft, a server-side observation and an approved scheduled run are different records. Saving or previewing does not arm a schedule. A later plan edit needs a fresh review."
+        ],
+        "gate": "The listed actions match what you want, including exceptions and devices that should stay untouched."
+      },
+      {
+        "id": "observe",
+        "title": "3. Observe without device control",
+        "body": [
+          "Use Observe this plan to retain the exact preview and compare expected states with sampled activity. Confirm that observation is scheduled or running in the app; a saved browser draft alone does not start it.",
+          "Alternatively, run a Climate Study during ordinary use. Compare measured room/outdoor temperature, target, mode and activity. Device activity suggests use; it does not establish occupancy or who operated a switch.",
+          "After completion, use Reports to download retained JSON/PDF evidence and record differences. Missing samples remain unknown. If nobody will operate devices, observation can check what happened but cannot demonstrate that the proposed commands work."
+        ],
+        "gate": "You understand important differences and data gaps. Observation has not been mistaken for a successful physical test."
+      },
+      {
+        "id": "rehearse",
+        "title": "4. Rehearse the exact plan on a weekday",
+        "body": [
+          "Allow time to walk around and restore before you leave. Note or photograph the original power, HVAC mode/target and fan settings. Physical tests require a known inactive Jewish Calendar observance signal, no overlapping armed run on those devices and a valid ownership review.",
+          "Open Rehearse this exact plan, then Load scenarios from this preview. Select one area and a plan moment. Run this transition only uses events at that instant. Set up this moment uses the last known planned state up to that instant; unknown prior states stay untouched. Dates stay unchanged: Apply test now acts now, not at the future plan time.",
+          "Click Simulate / review changes. Simulation makes no device changes. Read the exact actions and exclusions; a scenario title is only a hint. If a unit is already in the requested state, it receives no command. For an Off test, arrange for the device to be On beforehand and record that as the test starting state.",
+          "If an off HVAC unit has no known active-mode baseline, turn it on in HA with your preferred mode/temperature, then Capture current settings (no device changes). Return it to its original power state and simulate again. A native fan may similarly need capture while running. Switch-backed fans are power-only. Capture remembers how to turn on; it is not a whole-house restore point.",
+          "Select only the intended devices, confirm that you are supervising and choose Apply test now. Reviews expire after two minutes; refresh if needed. HVAC rehearsal sends power/mode commands without changing temperature, preset or fan mode. Native fans preserve reviewed speed/preset. If the device resets settings, the result is a failure, with no automatic correction.",
+          "Refresh results and verify physically: correct load, correct power, preserved settings and acceptable behavior. Test bedtime preconditioning, morning, nap start/end and relevant light changes separately. Restore each test before the next one. Export results and record expected versus actual behavior."
+        ],
+        "gate": "Each selected device and scenario has been checked physically. Blocked, skipped, unknown or failed results are not passes."
+      },
+      {
+        "id": "restore",
+        "title": "5. Restore and verify before the next test",
+        "body": [
+          "Open Review restore for the completed or stopped test, review the eligible devices and explicitly apply restoration. Restore targets the state immediately before that test, not necessarily the state before your entire afternoon of testing.",
+          "Only confirmed changes still owned by that test can be restored. A manual change, another automation, changed settings/context or an uncertain result may cause a skip. Verify every result; use your original notes to restore skipped devices manually in HA.",
+          "Stop prevents remaining commands; it does not undo commands already issued. Restart interrupts a test without automatic replay or restoration. Do not leave a test unattended or assume that closing the page restores the room."
+        ],
+        "gate": "The room is back to its intended ordinary state, including HVAC mode/target, fan settings and lights."
+      },
+      {
+        "id": "rollout",
+        "title": "6. Approve a limited rollout when ready",
+        "body": [
+          "Choose a small, tested lighting subset for the initial scheduled pilot. Review the exact final plan, existing automation conflicts, required start states and exclusions. Preset the rest of the house as appropriate; observation can continue without controlling those devices.",
+          "Use the separate Schedule and observe lighting-pilot flow, approve the exact eligible devices and explicitly schedule. Confirm the app shows the intended run and time. Previewing, saving, observing and rehearsing never perform this step for you.",
+          "Do not include HVAC/fans in scheduled rollout merely because rehearsal passed: their scheduled execution remains unqualified. If a necessary test fails, ownership is unresolved or the plan changes without rechecking, keep that load out of the pilot. Do not turn the first observance into the first hardware test."
+        ],
+        "gate": "You have deliberately approved only supported, tested devices and have a practical plan for everything outside that scope."
+      },
+      {
+        "id": "review",
+        "title": "7. Review, adjust and repeat",
+        "body": [
+          "After the period, open Reports for observation evidence and owner feedback; retain rehearsal JSON separately from rehearsal history. Download the relevant JSON/PDF before retention expires. Compare timings and actual states, not only whether a command was issued.",
+          "Ask: Which rooms were used? Were meals shorter or longer? Were lights comfortable at night and morning? Was HVAC/fan comfort acceptable? Did anything fail, change unexpectedly or remain unknown? Could another automation explain a difference?",
+          "Classify each follow-up as a plan/settings adjustment, a device/integration problem or a product requirement. Change one small set of assumptions, then preview and rehearse affected transitions again. Optional Codex/AI review can help interpret your exports and propose changes; it does not automatically change settings or approve control."
+        ],
+        "gate": "Evidence and family feedback inform the next plan; changes are reviewed rather than silently learned or applied."
+      }
+    ]
+  },
+  "he": {
+    "title": "מהתוכנית הראשונה להפעלה בטוחה יותר",
+    "intro": "מתרגלים לפני שמסתמכים על המערכת. בשבת או בחג ייתכן שלא תהיה אפשרות לתקן שינוי לא צפוי במכשיר. מתקדמים בהדרגה: מבינים את התוכנית, צופים, מתרגלים ביום חול, משחזרים ומאשרים רק היקף קטן שנבדק. המדריך מסייע בהכנה; הוא אינו אישור לתקינות ההתקנה או פסיקה הלכתית.",
+    "nav": "מדריך",
+    "contents": "במדריך זה",
+    "print": "הדפסה / שמירת המדריך",
+    "home": "הגדרת הבית",
+    "study": "מחקר אקלים",
+    "settings": "הגדרות",
+    "scope": "היקף נוכחי: תצוגה מקדימה ותצפית אינן שולטות במכשירים. חזרה בפיקוח מאפשרת לבדוק תאורה מתאימה, הפעלה וכיבוי של מיזוג ומאווררי חדר. ביצוע מתוזמן הוא ניסוי תאורה בלבד, באישור נפרד. מיזוג, מאווררים ומכשירי חשמל עדיין אינם מאושרים לשליטה מתוזמנת.",
+    "gate": "לפני שממשיכים",
+    "sections": [
+      {
+        "id": "setup",
+        "title": "1. מיפוי הבית ובחירת אזור קטן להתחלה",
+        "body": [
+          "בהגדרת הבית בדקו אזורים, תאורה ראשית ורקע, מיזוג ומאווררים. תוויות מצמצמות את הרשימות; בדקו את הבחירות בפועל. קשרו חדרי רחצה משותפים במפורש; בחזרה הם אזורים נפרדים.",
+          "התחילו בחדר מוכר אחד. הגדירו זמני תאורה ומיזוג נפרדים, זמני יקיצה ומנוחה וחלונות פעילות למאוורר. שיוך מאוורר לבדו אינו מתזמן אותו. השאירו מכשירים שאינם נתמכים מחוץ לניסוי השליטה.",
+          "בהגדרות בדקו את Jewish Calendar ואת אות איסור המלאכה שנבחר. בדקו אזור זמן, הדלקת נרות וכל תקופת החג הרצופה. התנגשויות עם אוטומציות קיימות דורשות החלטה מפורשת על אחריות השליטה; המדריך אינו מבטל אותן."
+        ],
+        "gate": "אתם מזהים כל התקן שנבחר, את זמני העוגן ומי כבר שולט בו."
+      },
+      {
+        "id": "preview",
+        "title": "2. הכנת התוכנית האמיתית ובדיקת כל שינוי",
+        "body": [
+          "בחרו חדרים בשימוש, ארוחות, מנוחות ופעילות יום בפועל. השאירו את תאריכי סוף השבוע האמיתיים. הציגו את התקופה כולה ובדקו צירי זמן של תאורה ומיזוג ואת רשימת האירועים, כולל אוטומציות קיימות.",
+          "בדקו הכנה להדלקת נרות, הכנת מיזוג בחדרי שינה, מעבר לתאורת לילה ורקע, בוקר, הפסקות אור יום ברחצה, מנוחות ואירוח אחר הצהריים. כללו מצב התחלתי ומדיניות לסוף התקופה. ציר הזמן הוא כוונה, לא הוכחה שהמכשיר פועל.",
+          "שמרו טיוטה במפורש וייצאו את התוכנית. טיוטה בדפדפן, תצפית בשרת והרצה מתוזמנת מאושרת הן רשומות שונות. שמירה או תצוגה מקדימה אינן מפעילות לוח זמנים. עריכה נוספת מחייבת בדיקה חדשה."
+        ],
+        "gate": "הפעולות ברשימה תואמות לרצונכם, כולל חריגים ומכשירים שלא צריכים להשתנות."
+      },
+      {
+        "id": "observe",
+        "title": "3. תצפית ללא שליטה במכשירים",
+        "body": [
+          "השתמשו בתצפית על התוכנית כדי לשמור את התצוגה המדויקת ולהשוות מצבים צפויים לפעילות שנדגמה. ודאו באפליקציה שהתצפית מתוזמנת או פועלת; טיוטה שמורה בדפדפן אינה מתחילה אותה.",
+          "אפשר גם להפעיל מחקר אקלים בזמן שימוש רגיל. השוו טמפרטורת חדר וחוץ, יעד, מצב ופעילות. פעילות מכשיר עשויה לרמוז על שימוש; היא אינה מוכיחה נוכחות או מי הפעיל מתג.",
+          "בסיום הורידו ראיות JSON/PDF שמורות מתוך דוחות ותעדו הבדלים. דגימות חסרות נשארות לא ידועות. אם איש אינו מפעיל מכשירים, תצפית יכולה לבדוק מה קרה אך אינה מוכיחה שהפקודות המוצעות עובדות."
+        ],
+        "gate": "אתם מבינים את ההבדלים החשובים ואת פערי הנתונים. תצפית אינה נחשבת לבדיקה פיזית מוצלחת."
+      },
+      {
+        "id": "rehearse",
+        "title": "4. חזרה על התוכנית המדויקת ביום חול",
+        "body": [
+          "השאירו זמן לסיור בבית ולשחזור לפני היציאה. רשמו או צלמו מצבי הפעלה, מצב ויעד מיזוג והגדרות מאוורר. בדיקות פיזיות דורשות אות איסור מלאכה ידוע וכבוי, היעדר הרצה מאושרת חופפת לאותם מכשירים ובדיקת אחריות שליטה תקפה.",
+          "פתחו חזרה על התוכנית המדויקת וטענו תרחישים מהתצוגה. בחרו אזור אחד ורגע בתוכנית. הפעלת המעבר בלבד משתמשת באירועים באותו רגע. הכנת המצב לרגע זה משתמשת במצב המתוכנן הידוע האחרון עד אז; מצבים קודמים לא ידועים אינם משתנים. התאריכים נשארים: החלת בדיקה עכשיו פועלת עכשיו, לא בזמן העתידי בתוכנית.",
+          "לחצו על הדמיה ובדיקת שינויים. הדמיה אינה משנה מכשירים. קראו את הפעולות והחריגים המדויקים; כותרת התרחיש היא רק רמז. מכשיר שכבר במצב המבוקש אינו מקבל פקודה. לבדיקת כיבוי, הכינו מכשיר דולק מראש ותעדו זאת כמצב ההתחלתי של הבדיקה.",
+          "אם למיזוג כבוי אין מצב פעיל שמור, הפעילו אותו ב־HA במצב ובטמפרטורה הרצויים ולחצו על לכידת הגדרות נוכחיות ללא שינוי מכשירים. החזירו למצב ההפעלה המקורי ובצעו הדמיה מחדש. גם מאוורר מקורי עשוי להזדקק ללכידה בזמן פעולה. מאוורר המחובר למתג הוא הפעלה וכיבוי בלבד. הלכידה זוכרת כיצד להפעיל; היא אינה נקודת שחזור לכל הבית.",
+          "בחרו רק מכשירים רצויים, אשרו שאתם מפקחים והחילו בדיקה עכשיו. הבדיקה המקדימה תקפה לשתי דקות; רעננו לפי הצורך. חזרת המיזוג שולחת פקודות הפעלה/מצב בלי לשנות טמפרטורה, תבנית או מצב מאוורר. מאווררים מקוריים שומרים מהירות/תבנית שנבדקו. איפוס הגדרות על ידי המכשיר נחשב כישלון ללא תיקון אוטומטי.",
+          "רעננו תוצאות ובדקו פיזית: ההתקן הנכון, מצב ההפעלה הנכון, שמירת הגדרות והתנהגות תקינה. בדקו בנפרד הכנה לשינה, בוקר, התחלה וסיום מנוחה ומעברי תאורה רלוונטיים. שחזרו כל בדיקה לפני הבאה. ייצאו תוצאות ותעדו ציפייה מול ביצוע."
+        ],
+        "gate": "כל מכשיר ותרחיש שנבחרו נבדקו פיזית. חסימה, דילוג, אי־ודאות או כישלון אינם הצלחה."
+      },
+      {
+        "id": "restore",
+        "title": "5. שחזור ואימות לפני הבדיקה הבאה",
+        "body": [
+          "פתחו בדיקת שחזור עבור בדיקה שהסתיימה או נעצרה, בדקו אילו מכשירים זכאים ואשרו שחזור במפורש. השחזור מכוון למצב שמיד לפני אותה בדיקה, ולא בהכרח למצב שלפני כל סדרת הבדיקות.",
+          "אפשר לשחזר רק שינויים מאומתים שעדיין שייכים לבדיקה זו. שינוי ידני, אוטומציה אחרת, שינוי הגדרות/הקשר או תוצאה לא ודאית עלולים לגרום לדילוג. בדקו כל תוצאה; השתמשו ברישום המקורי כדי לשחזר ידנית ב־HA מכשירים שדולגו.",
+          "עצירה מונעת פקודות שנותרו; היא אינה מבטלת פקודות שכבר נשלחו. אתחול קוטע בדיקה ללא חידוש או שחזור אוטומטיים. אל תשאירו בדיקה ללא השגחה ואל תניחו שסגירת העמוד משחזרת את החדר."
+        ],
+        "gate": "החדר חזר למצב הרגיל הרצוי, כולל מצב ויעד מיזוג, הגדרות מאוורר ותאורה."
+      },
+      {
+        "id": "rollout",
+        "title": "6. אישור הפעלה מצומצמת כשמוכנים",
+        "body": [
+          "בחרו קבוצת תאורה קטנה שנבדקה לניסוי המתוזמן הראשון. סקרו את התוכנית הסופית המדויקת, התנגשויות עם אוטומציות קיימות, מצבים התחלתיים וחריגים. הכינו מראש את יתר הבית לפי הצורך; תצפית יכולה להמשיך ללא שליטה במכשירים אלה.",
+          "השתמשו בתהליך הנפרד לתזמון ותצפית בניסוי התאורה, אשרו מכשירים מתאימים במדויק ותזמנו במפורש. ודאו שהאפליקציה מציגה את ההרצה והזמן הרצויים. תצוגה מקדימה, שמירה, תצפית וחזרה אינן מבצעות שלב זה עבורכם.",
+          "אל תכללו מיזוג או מאווררים בהפעלה מתוזמנת רק מפני שהחזרה הצליחה: הביצוע המתוזמן שלהם עדיין אינו מאושר. אם בדיקה הכרחית נכשלת, אחריות השליטה לא הוסדרה או התוכנית השתנתה בלי בדיקה חוזרת, השאירו את ההתקן מחוץ לניסוי. הבדיקה הפיזית הראשונה לא צריכה להיות בשבת או בחג."
+        ],
+        "gate": "אישרתם במכוון רק מכשירים נתמכים שנבדקו, ויש תוכנית מעשית לכל מה שמחוץ להיקף זה."
+      },
+      {
+        "id": "review",
+        "title": "7. סקירה, התאמה וחזרה",
+        "body": [
+          "אחרי התקופה פתחו דוחות לראיות התצפית ולמשוב; שמרו בנפרד JSON של חזרות מתוך היסטוריית החזרות. הורידו JSON/PDF רלוונטיים לפני תום השמירה. השוו זמנים ומצבים בפועל, ולא רק אם נשלחה פקודה.",
+          "שאלו: באילו חדרים השתמשו? האם הארוחות היו קצרות או ארוכות יותר? האם התאורה הייתה נוחה בלילה ובבוקר? האם המיזוג והמאוורר היו נוחים? האם משהו נכשל, השתנה באופן לא צפוי או נשאר לא ידוע? האם אוטומציה אחרת מסבירה הבדל?",
+          "סווגו כל המשך טיפול כהתאמת תוכנית/הגדרות, בעיית מכשיר/שילוב או דרישת מוצר. שנו מעט הנחות בכל פעם, הציגו מחדש ותרגלו שוב מעברים שהושפעו. סקירה אופציונלית באמצעות Codex/AI יכולה לעזור לפרש ייצוא ולהציע שינויים; היא אינה משנה הגדרות או מאשרת שליטה אוטומטית."
+        ],
+        "gate": "ראיות ומשוב המשפחה מנחים את התוכנית הבאה; שינויים נבדקים ולא נלמדים או מוחלים בשקט."
+      }
+    ]
+  }
+}

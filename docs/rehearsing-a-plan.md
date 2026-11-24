@@ -27,3 +27,5 @@ HVAC tests are power-only even if your plan has temperature presets. Review show
 Native fans preserve reviewed speed/preset; off fans need a capture while running. Switch-backed fans are power-only. Assign fans in room setup and give them explicit activity windows to produce events. Assignment alone does not create a schedule. Tests do not automatically qualify devices for scheduled control.
 
 New duration-based naps that exceed a short planning day end at that day's boundary, with an adjacent explanation. Invalid explicit clock windows show an error beside Add nap. Permanent defaults and existing naps remain unchanged.
+
+The shared adoption playbook is bundled as **Guide** in app navigation and linked next to rehearsal controls. The public version is available at https://dovops.io/ha-shabbat-flow/docs/adoption/ . Source: `src/shabbat_flow/web/adoption-guide.json`; update English and Hebrew together. Help opens separately to preserve unsaved plan edits.

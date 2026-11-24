@@ -20,5 +20,8 @@
   },
   "item.label.Gallery": {
     "message": "גלריה"
+  },
+  "item.label.Adoption playbook": {
+    "message": "מדריך אימוץ והפעלה"
   }
 }

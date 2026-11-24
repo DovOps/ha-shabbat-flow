@@ -58,3 +58,7 @@ Refresh results, record feedback and export the plan plus rehearsal JSON. **Revi
 Immediate rehearsals include HVAC power and mapped room fans. If a unit is Off with no known mode/speed, turn it on in HA with your preferred settings and use **Capture current settings (no device changes)**. Review again before applying. No climate temperature or fan-mode commands are sent; device-side setting resets are reported as failures. Fans need explicit activity windows. Weekend scheduled control remains lighting-only.
 
 New duration-based naps are shortened visibly at the day's end when needed. Invalid clock choices show feedback next to Add nap. Room defaults and existing naps are preserved.
+
+## Practice before your first rollout
+
+Follow the [adoption playbook](adoption.md): map the house, preview, observe, rehearse on a weekday, restore, and approve a small tested lighting subset. It explains what each action changes and what still needs qualification. In HA, open **Guide** in the top navigation or the rehearsal help link; help opens separately so your draft remains open.

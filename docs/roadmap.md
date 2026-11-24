@@ -128,3 +128,6 @@ Deployment verified after access was restored: 71 packaged files byte-verified, 
 CF-FR-001–007 / CF-NFR-001–003 implement visible short-day nap clipping, adjacent timing errors, explicit private mode/speed capture and rehearsal-only HVAC/fan power with settings verification and reviewed restore. Scheduled eligibility stays lighting-only. Fan assignments require explicit activity events. No automatic hardware qualification, thermostat calibration or appliance actuation. Deployment and acceptance evidence: checkpoint 029.
 
 0.22.0 installed and read-only verified: nap creation with boundary feedback, HVAC planned-state review and missing-baseline safeguard. Saved data preserved; no devices actuated or schedules armed. Owner-supervised HVAC/fan preservation and restore acceptance remain pending.
+
+## Feature 021 — adoption playbook
+AP-FR-001–005 / AP-NFR-001–003: shared EN/HE public and bundled guide, app navigation/contextual rehearsal help, gradual adoption gates, explicit capture/restore semantics and current eligibility limits implemented. Installed as a 0.22.0 static documentation patch without restart, saved-data changes or device control. Cached entry pages may need refresh; direct guide verified. Phone/print acceptance remains pending. See checkpoint 030.
