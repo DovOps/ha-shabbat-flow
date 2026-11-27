@@ -47,6 +47,15 @@ def source_scope(hass):
                 return
             if not isinstance(node, dict): unknown.append(True); return
             if node.get('enabled') is False: return
+            # HA device actions carry a registry entry ID rather than a service target.
+            if node.get('domain') in ('light','switch','climate','fan') and node.get('type') in ('turn_on','turn_off','toggle') and 'entity_id' in node:
+                value=node['entity_id']
+                registry=er.async_get(hass)
+                entry=registry.async_get(value) if isinstance(value,str) else None
+                if entry is None and isinstance(value,str):entry=next((e for e in registry.entities.values() if e.id==value),None)
+                if entry and entry.domain==node['domain']:targets.add(entry.entity_id)
+                else:unknown.append(True)
+                return
             service = node.get('action', node.get('service'))
             if service is not None:
                 if not isinstance(service, str) or service not in ({'climate.'+s for s in ('set_hvac_mode','set_temperature','set_fan_mode','set_preset_mode','set_swing_mode','set_swing_horizontal_mode')}|{'fan.'+s for s in ('set_percentage','set_preset_mode','set_direction','oscillate')}|{d+'.'+s for d in ('light','switch','climate','fan','homeassistant') for s in ('turn_on','turn_off','toggle')}):

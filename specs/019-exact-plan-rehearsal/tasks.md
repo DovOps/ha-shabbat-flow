@@ -12,3 +12,6 @@
 - [x] Verify local regression: 94 Python tests, 70 web tests, package consistency and repository hygiene pass.
 - [ ] Browser keyboard/RTL rendering acceptance for selection follow-up.
 - [x] Owner lifted deployment pause; installed 0.22.1 package with backup and byte verification. Installed bulk-selection, exclusions, count and blocked-Apply behavior verified read-only.
+
+- [x] Implement supervised rehearsal without qualification forms; same-device writer warnings and native device-action resolution.
+- [x] Verify regression and installed read-only UI; owner performs hardware acceptance separately.

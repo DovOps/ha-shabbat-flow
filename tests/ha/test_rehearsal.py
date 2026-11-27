@@ -123,3 +123,22 @@ async def test_restart_invalidates_unapplied_review(host,monkeypatch):
     restarted=Rehearsal(f[0]);await restarted.load()
     with pytest.raises(ValueError,match='execute_stale'):await restarted.apply(payload,'owner')
     assert not f[5]
+
+@pytest.mark.asyncio
+async def test_supervised_rehearsal_warns_only_same_target_and_needs_no_notes(host,monkeypatch):
+    from types import SimpleNamespace
+    f,s,report,payload=await fixture(host,monkeypatch)
+    hass,x,b,p,e,c,now,base=f
+    raw={'actions':[{'action':'light.turn_on','target':{'entity_id':e.entity_id}}]}
+    hass.states.async_set('automation.same_device','on',{'friendly_name':'Same device schedule'})
+    hass.states.async_set('automation.other_unknown','on')
+    hass.data['automation']=SimpleNamespace(get_entity=lambda eid:SimpleNamespace(raw_config=raw if eid=='automation.same_device' else {'actions':[{'action':'script.other'}]}))
+    report=await s.review_test(b,payload['selection'])
+    assert report['rows'][0]['writers']==['automation.same_device']
+    assert report['rows'][0]['writer_names']==['Same device schedule']
+    assert 'execute_writer' not in report['rows'][0]['reasons']
+    payload.update(review_digest=report['review_digest'],reviewed_at=report['reviewed_at'],qualifications={},attestations={})
+    run=await s.apply(payload,'owner');await finish(s)
+    assert len(c)==1
+    assert s.data['runs'][run['id']]['automation_warnings'][p]==['automation.same_device']
+    assert not x.data['runs']

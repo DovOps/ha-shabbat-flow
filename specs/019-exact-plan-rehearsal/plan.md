@@ -5,4 +5,6 @@
 4. Synthetic behavioral/fault tests, regression, visual review and documentation.
 5. Signed checkpoint, unarmed deployment with backup; verify installed UI without device commands.
 
-Device selection follow-up: group eligible/excluded rows, add explicit scoped bulk controls, derive Apply readiness from selection/notes/consent, retain server safeguards; test invalid and blocked selections. No deployment during owner rehearsal.
+Device selection follow-up: group eligible/excluded rows, add explicit scoped bulk controls, derive Apply readiness from selection/consent, retain server safeguards; test invalid and blocked selections. Deploy only when no rehearsal is actively applying.
+
+Supervised-state-test simplification: remove rehearsal-only mandatory notes and attestations, retain actual writer names as warnings, preserve source fingerprint and all non-writer guards. Resolve native device-action targets, test separation from scheduled execution, and deploy with no test actuation.

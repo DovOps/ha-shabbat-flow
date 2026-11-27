@@ -139,3 +139,5 @@ Rehearsal selection follow-up (RH-FR-009–011, RH-NFR-004): local implementatio
 CF-FR-008–009 / CF-NFR-004: remembered-power policy implemented in 0.22.1 alongside existing captured/current preservation. Explicit mode/temperature editing remains specified for a later implementation.
 
 0.22.1 deployed and read-only verified after one restart: remembered-settings selection works for an Off HVAC target, eligible-device bulk controls and exclusions behave as specified. No test/control run activated; hardware acceptance remains owner-supervised.
+
+0.22.2 / RH-FR-012 and RH-NFR-005: supervised rehearsal removes explanation forms and treats resolved same-device writers as warnings. Scheduled activation safeguards unchanged. Implemented and deployed in 0.22.2; 94 core/70 web and 50 HA rehearsal/execution tests on each supported version pass. Installed read-only powder-room review verified without forms or unrelated automation entries.

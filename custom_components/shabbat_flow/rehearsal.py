@@ -115,7 +115,7 @@ class Rehearsal(Executor):
         if restore_of and (not original or original['status'] in ACTIVE or original['kind']!='rehearsal'):raise ValueError('rehearsal_restore')
         if original and (digest(bundle)!=original['snapshot_hash'] or selection!=original['selection']):raise ValueError('execute_stale')
         for row in projection['rows']:
-            physical=row['physical_id'];load=by_id[physical];reasons=list(load['reasons'])
+            physical=row['physical_id'];load=by_id[physical];reasons=[reason for reason in load['reasons'] if reason!='execute_writer']
             if row['reason']:reasons.append(row['reason'])
             event=row['event'];state=self.hass.states.get(load['entity_id']) if load['entity_id'] else None
             before=snapshot(state);target=base['mapping'].get(physical);role=self.extra_role(bundle,physical,target)
@@ -144,7 +144,7 @@ class Rehearsal(Executor):
                         reasons=[r for r in reasons if r not in ('rehearsal_capture_on','rehearsal_settings_unknown')]
                         if reason:reasons.append(reason)
                 else:reasons.append('rehearsal_unknown')
-            rows.append({**row,'event':event,'entity_id':load['entity_id'],'before':before,'reasons':sorted(set(reasons)),'writers':load['writers'],'contract':contract,'capture_available':capture_available})
+            rows.append({**row,'writer_names':[self.hass.states.get(w).attributes.get('friendly_name',w) if self.hass.states.get(w) else w for w in load['writers']],'event':event,'entity_id':load['entity_id'],'before':before,'reasons':sorted(set(reasons)),'writers':load['writers'],'contract':contract,'capture_available':capture_available})
         result={'snapshot_hash':digest(bundle),'selection':deepcopy(selection),'timezone':projection['timezone'],'related_areas':projection['related_areas'],'areas':projection['areas'],'rows':rows,'mapping':base['mapping'],'source_fingerprint':base['source_fingerprint'],'unknown_sources':base['unknown_sources'],'can_apply':calendar_status(self.hass)['issur_off'],'restore_of':restore_of}
         result['review_digest']=digest(result)
         # Expiry is explicit but is not part of the digest (repeat read must remain comparable).
@@ -166,7 +166,7 @@ class Rehearsal(Executor):
         included=payload['included'];request=payload['request_id'];notes=payload['qualifications'];attest=payload['attestations']
         if not isinstance(included,list) or not 0<len(included)<=100 or any(not isinstance(p,str) for p in included) or len(set(included))!=len(included):raise ValueError('rehearsal_invalid')
         if not isinstance(request,str) or not 8<=len(request)<=100:raise ValueError('rehearsal_invalid')
-        if not isinstance(notes,dict) or set(notes)!=set(included) or any(not isinstance(n,str) or not 10<=len(n)<=1000 for n in notes.values()):raise ValueError('execute_qualification')
+        if not isinstance(notes,dict) or not set(notes)<=set(included) or any(not isinstance(n,str) or len(n)>1000 for n in notes.values()):raise ValueError('execute_qualification')
         if not isinstance(attest,dict) or len(attest)>200 or any(not isinstance(n,str) or not 10<=len(n)<=1000 for n in attest.values()):raise ValueError('execute_attestation')
         identity=digest({k:v for k,v in payload.items() if k!='reviewed_at'})
         executor=self.hass.data['shabbat_flow']['executor']
@@ -183,8 +183,6 @@ class Rehearsal(Executor):
             if not report['can_apply']:raise ValueError('rehearsal_observance')
             by_id={r['physical_id']:r for r in report['rows']}
             if any(p not in by_id or by_id[p]['reasons'] for p in included):raise ValueError('execute_blocked')
-            expected={s['id']+'|'+p for s in report['unknown_sources'] for p in included}
-            if set(attest)!=expected:raise ValueError('execute_attestation')
             end=now+timedelta(minutes=2)
             if self.overlaps(included,now,end) or any((r['status'] in ACTIVE or any(k[0]==r.get('id') for k in executor.inflight)) and set(included)&set(r['included']) and instant(r['start'])<=end and instant(r['end'])>=now for r in executor.data['runs'].values()):raise ValueError('execute_overlap')
             rid=uuid4().hex;data=deepcopy(self.data)
@@ -194,7 +192,7 @@ class Rehearsal(Executor):
                 if not removable:raise ValueError('execute_limit')
                 oldest=min(removable,key=lambda r:instant(r['start']));del data['runs'][oldest['id']]
             events=[{**deepcopy(by_id[p]['event']),'source_utc':by_id[p]['event']['utc'],'utc':now.isoformat()} for p in included]
-            r={'id':rid,'kind':'restore' if payload['restore_of'] else 'rehearsal','restore_of':payload['restore_of'],'status':'running','revision':1,'request_id':request,'identity':identity,'actor':actor,'bundle':deepcopy(payload['bundle']),'snapshot_hash':report['snapshot_hash'],'selection':deepcopy(payload['selection']),'included':sorted(included),'excluded':sorted(set(by_id)-set(included)),'mapping':{p:report['mapping'][p] for p in included},'source_fingerprint':report['source_fingerprint'],'before':{p:by_id[p]['before'] for p in included},'contracts':{p:by_id[p]['contract'] for p in included},'events':events,'start':now.isoformat(),'end':end.isoformat(),'ledger':{},'blocked':{},'changed':{},'recovery':deepcopy(DEFAULT_RECOVERY),'observer_id':None,'feedback':'','qualifications':deepcopy(notes),'attestations':deepcopy(attest)}
+            r={'id':rid,'kind':'restore' if payload['restore_of'] else 'rehearsal','restore_of':payload['restore_of'],'status':'running','revision':1,'request_id':request,'identity':identity,'actor':actor,'bundle':deepcopy(payload['bundle']),'snapshot_hash':report['snapshot_hash'],'selection':deepcopy(payload['selection']),'included':sorted(included),'excluded':sorted(set(by_id)-set(included)),'mapping':{p:report['mapping'][p] for p in included},'source_fingerprint':report['source_fingerprint'],'before':{p:by_id[p]['before'] for p in included},'contracts':{p:by_id[p]['contract'] for p in included},'events':events,'start':now.isoformat(),'end':end.isoformat(),'ledger':{},'blocked':{},'changed':{},'recovery':deepcopy(DEFAULT_RECOVERY),'observer_id':None,'feedback':'','automation_warnings':{p:by_id[p]['writers'] for p in included if by_id[p]['writers']},'unresolved_sources':deepcopy(report['unknown_sources']),'qualifications':deepcopy(notes),'attestations':deepcopy(attest)}
             data['runs'][rid]=r;await self.commit(data)
             task=self.hass.async_create_background_task(self.run(rid),'shabbat_flow_rehearsal')
             self.tasks.add(task);task.add_done_callback(self.tasks.discard)

@@ -728,17 +728,13 @@ test('planner blockers retain affected room context for a missing inventory entr
  assert.equal(plannerIssueDetails([{code:'missing_entity',id:'orphan'}],inv,rooms)[0].name,'orphan');
 });
 
-test('rehearsal readiness excludes blocked devices and requires explicit selection, notes and consent',async()=>{
+test('supervised rehearsal readiness needs only eligible selection and consent',async()=>{
  const {rehearsalSelectionState:state}=await import('../src/shabbat_flow/web/rehearsal.mjs');
- const entry=(checked,disabled=false,note='Verified device settings')=>({choice:{checked,disabled},note:{value:note},attest:new Map()});
- const a=entry(false),blocked=entry(true,true);
- assert.equal(state([a,blocked],true,true).reason,'select_devices');
- a.choice.checked=true;assert.equal(state([a,blocked],true,true).count,1);
- assert.equal(state([a],true,true).canApply,true);
- assert.equal(state([a],true,false).reason,'consent_needed');
- a.note.value=' short ';assert.equal(state([a],true,true).reason,'notes_needed');
- a.note.value='Verified device settings';a.attest.set('source',{value:''});assert.equal(state([a],true,true).reason,'notes_needed');
- a.attest.get('source').value='Verified no competing access';assert.equal(state([a],true,true).canApply,true);
- assert.equal(state([a],false,true).reason,'rehearsal_observance');
+ const entry=(checked,disabled=false)=>({choice:{checked,disabled}});
+ assert.equal(state([entry(false),entry(true,true)],true,true).reason,'select_devices');
+ assert.equal(state([entry(true),entry(true,true)],true,true).count,1);
+ assert.equal(state([entry(true)],true,true).canApply,true);
+ assert.equal(state([entry(true)],true,false).reason,'consent_needed');
+ assert.equal(state([entry(true)],false,true).reason,'rehearsal_observance');
  assert.equal(state(Array.from({length:101},()=>entry(true)),true,true).reason,'selection_limit');
 });

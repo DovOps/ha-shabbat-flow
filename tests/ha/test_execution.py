@@ -175,3 +175,15 @@ async def test_control_report_pdf_both_languages(host,monkeypatch):
     for language in ('en','he'):
         pdf=await hass.async_add_executor_job(render_pdf,data,language,"report")
         assert pdf.startswith(b'%PDF-')
+
+@pytest.mark.asyncio
+async def test_device_action_registry_target_is_resolved_without_global_unknown(host,monkeypatch):
+    from types import SimpleNamespace
+    f=await prepared(host,monkeypatch);hass,x,b,p,e,c,now,report=f
+    raw={'actions':[{'domain':'light','type':'turn_on','entity_id':e.id,'device_id':'example_device'}]}
+    hass.states.async_set('automation.device_action','on')
+    hass.data['automation']=SimpleNamespace(get_entity=lambda eid:SimpleNamespace(raw_config=raw))
+    scope=source_scope(hass)
+    assert scope['sources'][0]['targets']==[e.entity_id]
+    assert not scope['sources'][0]['unknown']
+    assert 'execute_writer' in (await x.review(b,now))['loads'][0]['reasons']
