@@ -145,3 +145,6 @@ CF-FR-008–009 / CF-NFR-004: remembered-power policy implemented in 0.22.1 alon
 
 ## Feature 022 — armable workflow, stage 1
 AW-FR-001–004 and applicable AW-NFR-001/002/004 are implemented and locally verified: grouped planner commands, a mobile drawer collapsed by default with per-tab preference, and separate read-only draft/control/observation/climate status. Compact status avoids inventory discovery and reports the next pending control event. This checkpoint is not deployed and changes no saved household observations or activation state. Scheduled control remains lighting-only. Evidence reuse, target-aware unattended conflict review, frozen-draft comparison, qualified scheduled HVAC/fans and unified outcomes remain staged work. See Feature 022 verification and checkpoint 033.
+
+
+Stage 1 deployed as 0.22.3 after owner authorization: 77 installed files verified, four stores unchanged during installation, on-host backup and one HA restart. Installed planner shows the same scheduled observation and no active/pending control. No household settings, observation or activation changed. Later stages remain pending.

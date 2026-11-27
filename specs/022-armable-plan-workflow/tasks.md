@@ -10,4 +10,5 @@
 - [ ] Stage 3: timed execution, restart/recovery and intervention regressions.
 - [ ] Stage 4: unified reports/disarm UX and adoption/brochure updates.
 - [ ] Owner-supervised weekday timed pilot; no automatic household activation.
-- [ ] Separately coordinated deployment preserving active observations.
+- [x] Stage 1 separately authorized deployment; scheduled observation preserved.
+- [ ] Separately coordinate deployment of later stages.
