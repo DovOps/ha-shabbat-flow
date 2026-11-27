@@ -187,3 +187,30 @@ async def test_device_action_registry_target_is_resolved_without_global_unknown(
     assert scope['sources'][0]['targets']==[e.entity_id]
     assert not scope['sources'][0]['unknown']
     assert 'execute_writer' in (await x.review(b,now))['loads'][0]['reasons']
+
+@pytest.mark.asyncio
+async def test_compact_control_listing_reports_next_pending_event_without_history(host,monkeypatch):
+    f=await prepared(host,monkeypatch);hass,x,b,p,e,c,now,report=f
+    run=await approved(f);r=x.data['runs'][run['id']]
+    listing=x.listing()['runs'][0]
+    assert listing['status']=='approved' and listing['next_event']['entity_id']==e.entity_id
+    assert 'events' not in listing and 'ledger' not in listing
+    r['blocked'][p]='execute_unavailable'
+    assert x.listing()['runs'][0]['next_event'] is None
+    r['blocked'].clear();r['status']='disarmed'
+    assert x.listing()['runs'][0]['next_event'] is None
+    assert not c
+
+@pytest.mark.asyncio
+async def test_status_overview_is_admin_read_only_and_skips_inventory_discovery(host,monkeypatch):
+    from aiohttp import web
+    from custom_components.shabbat_flow.api import ObserveView
+    f=await prepared(host,monkeypatch);hass,x,b,p,e,c,now,report=f
+    await approved(f)
+    monkeypatch.setattr('custom_components.shabbat_flow.study.sources',lambda hass:(_ for _ in ()).throw(AssertionError('no inventory discovery')))
+    view=ObserveView(hass)
+    with pytest.raises(web.HTTPForbidden):await view.post(Request(b'{"op":"status"}',admin=False))
+    data=decoded(await view.post(Request(b'{"op":"status"}')))
+    assert data['study_sources']=={} and data['weather_sources']==[]
+    assert data['execution']['runs'][0]['status']=='approved'
+    assert not c

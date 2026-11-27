@@ -1,0 +1,27 @@
+# Feature 022 — armable plans and clear operational status
+
+Status: staged implementation. No household activation authorized. Observation-only runs and drafts must remain unchanged during development. Feature 018 remains the deployed lighting-only scheduler until explicitly superseded by tested stages below.
+
+## Functional requirements
+- AW-FR-001: Planner actions follow Edit → Preview → Rehearse → Review and arm, with observation-only as an independent path. Save/preview/navigation never activate control or schedule observation. Group secondary actions rather than rendering a flat row of every command.
+- AW-FR-002: The sticky planner action bar is a native collapsible disclosure. Initially collapse on mobile (600 CSS px or less); retain the user's preference for this browser tab. A collapsed bar keeps a labeled Actions control and draft readiness visible. All actions remain reachable by keyboard. Collapse after mobile section-navigation commands; do not collapse automatically during form input.
+- AW-FR-003: Show a read-only plan-page overview separating browser draft readiness, scheduled control, plan observations and climate studies. Display authoritative persisted statuses and local dates, controlled/excluded device counts, next pending event where available, and attention indicators. Distinguish approved-but-not-armed from armed/running. Unknown status must not be presented as no active run.
+- AW-FR-004: Link overview to existing control review/disarm management and retained reports. Refresh on explicit request, visible-page polling and focus without re-rendering unrelated input fields or modifying runs. Preserve prior data with a visible stale/error warning after a failed refresh.
+- AW-FR-005: Extend scheduled control to explicitly qualified HVAC power and independent room fans. Support device-remembered power and captured-setting preservation; bind policy/capabilities/baseline to review identity. Never infer a heat/cool mode. Explicit temperature-setting profiles and outlet appliances remain excluded until separately implemented and qualified.
+- AW-FR-006: Reuse persisted successful rehearsal evidence after owner confirmation, tied to physical mapping/provider, tested On/Off behavior and settings policy. Rehearsal alone never arms a plan. Invalidate incompatible/stale evidence and show missing coverage rather than asking for repeated prose by default.
+- AW-FR-007: Replace unrelated per-device automation questionnaires for scheduled review with bounded target-aware conflict analysis. Same-target unattended ownership conflicts require an explicit resolution; leave-under-existing-automation is an exclusion, not silent dual control. No automation is disabled or edited automatically. Unresolved reach remains visibly uncertain and cannot be cleared by guessed relevance.
+- AW-FR-008: Provide one readiness checklist and final included/excluded-device summary with dates, deadline, policies, rehearsal coverage and conflict outcomes. Approval and arming remain distinct authenticated actions. Support a room/device pilot subset; never arm an all-away plan.
+- AW-FR-009: Clearly distinguish the editable draft from the immutable armed snapshot. Detect and show un-applied draft changes using authoritative digests; viewing the armed plan opens its frozen snapshot. Editing a draft does not mutate, replace or disarm an active run.
+- AW-FR-010: Keep next actions, failures/skips/blocks, direct disarm, execution ledger, linked observation report and JSON/PDF exports discoverable. Disarm has explicit scope and leaves current physical states unchanged. Per-period feedback proposes future changes without applying them.
+
+## Nonfunctional requirements
+- AW-NFR-001: EN/HE parity, RTL, keyboard-operable disclosures, visible focus, labeled controls and touch targets. At 360px width the collapsed sticky action bar must not consume more than 80 CSS px at normal text size. Expanded menus are bounded and scrollable, do not cover focused controls, and are absent from PDF/print.
+- AW-NFR-002: Overview is read-only with compact responses, no full inventories/histories, one request in flight, at most one visible-page poll per 30 seconds, focus refresh throttled to five seconds. Failures retain prior evidence with explicit staleness; no status inferred solely from wall-clock time.
+- AW-NFR-003: Persist immutable approvals, intent-before-dispatch and context-confirmed outcomes. Extend restart, missed-event, manual-intervention, capability-drift, idempotency and bounded-recovery tests before qualifying scheduled HVAC/fans. No tight-loop retries or replay of old transitions.
+- AW-NFR-004: Use fictional fixtures and no new dependencies. No production arming, device tests, saved observation changes or restarts as part of development. Deploy separately when appropriate; record stage-specific test/deployment evidence rather than claiming the whole feature complete.
+
+## Acceptance stages
+1. Clear commands and read-only status: mobile disclosure, independent observe/control states, counts/next action, stale handling. No added actuation support.
+2. Qualification and conflict review: evidence reuse, actual target reach, immutable snapshot/draft comparison, readiness checklist.
+3. Scheduled HVAC/fan adapters and recovery: service-spy verification on supported HA versions, then owner-supervised timed weekday pilot.
+4. Final activation UX, reports, adoption guide/brochure and owner acceptance. No automatic promotion of drafts or observation runs.

@@ -15,7 +15,7 @@ def generated():
         files['engine/'+name] = (ROOT/'src/shabbat_flow'/name).read_bytes()
     files['engine/__init__.py'] = b'"""Generated pure planner engine; edit src/shabbat_flow instead."""\n'
     web = ROOT/'src/shabbat_flow/web'
-    for name in ('guide.html','guide.css','guide.mjs','adoption-guide.json','rehearsal.mjs','execution.mjs','pdf-download.mjs','reports.html','reports.mjs','review-ui.mjs','navigation.mjs','flexible.mjs','activity-model.mjs','time-input.mjs','ha-icons.mjs','settings.html','settings.mjs','observation.html','observation.mjs','notifications.mjs','study.html','study.mjs','period.mjs','thermal-report.mjs','observe.mjs','hvac-map.mjs','lighting-map.mjs','period-report.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json','household.mjs','household-model.mjs','household-i18n.json','tips.html'):
+    for name in ('guide.html','guide.css','guide.mjs','adoption-guide.json','rehearsal.mjs','execution.mjs','pdf-download.mjs','reports.html','reports.mjs','review-ui.mjs','navigation.mjs','flexible.mjs','activity-model.mjs','plan-status.mjs','time-input.mjs','ha-icons.mjs','settings.html','settings.mjs','observation.html','observation.mjs','notifications.mjs','study.html','study.mjs','period.mjs','thermal-report.mjs','observe.mjs','hvac-map.mjs','lighting-map.mjs','period-report.mjs','period-model.mjs','model.mjs','style.css','i18n.json','period-i18n.json','household.mjs','household-model.mjs','household-i18n.json','tips.html'):
         files['www/'+name] = (web/name).read_bytes()
     html = (web/'period.html').read_text()
     for name in ('style.css','period.mjs','logo.png'):

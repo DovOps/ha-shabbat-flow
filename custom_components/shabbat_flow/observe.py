@@ -358,9 +358,9 @@ class Observer:
              'performance':performance(r)['totals']}
             for r in sorted(self.data['runs'].values(),key=lambda r:r['start'],reverse=True)]}
 
-    def listing(self):
+    def listing(self,compact=False):
         from .study import sources
-        return {'execution':self.hass.data['shabbat_flow']['executor'].listing() if self.hass.data.get('shabbat_flow',{}).get('executor') else None,'study_sources':sources(self.hass),'mode':'observe','error':self.error,'weather_sources':weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
+        return {'execution':self.hass.data['shabbat_flow']['executor'].listing() if self.hass.data.get('shabbat_flow',{}).get('executor') else None,'study_sources':{} if compact else sources(self.hass),'mode':'observe','error':self.error,'weather_sources':[] if compact else weather_sources(self.hass),'runs':[{k:r[k] for k in ('id','status','created_at','start','end','snapshot_hash')} | {'kind':r.get('kind','plan'),'timezone':r['bundle']['plan']['snapshot']['timezone']} for r in self.data['runs'].values()]}
 
     def export(self,rid):
         if rid not in self.data['runs']: raise ValueError('observe_missing')

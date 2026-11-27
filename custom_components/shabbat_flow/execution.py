@@ -138,7 +138,15 @@ class Executor:
     def public(self,r):
         return {'timezone':r['bundle']['plan']['snapshot']['timezone'], **{k:deepcopy(r[k]) for k in ('id','status','revision','approval_digest','snapshot_hash','start','end','included','excluded','mapping','ledger','blocked','changed','recovery','observer_id','events') if k in r}}
 
-    def listing(self):return {'error':self.error,'runs':[{k:v for k,v in self.public(r).items() if k not in ('ledger','events','changed')} for r in self.data['runs'].values()]}
+    def listing(self):
+        runs=[]
+        for r in self.data['runs'].values():
+            row={'timezone':r['bundle']['plan']['snapshot']['timezone'],**{k:deepcopy(r[k]) for k in ('id','status','revision','approval_digest','snapshot_hash','start','end','included','excluded','mapping','blocked','recovery','observer_id') if k in r}}
+            pending=[e for e in r['events'] if e['id'] not in r['ledger'] and e['physical_id'] not in r['blocked']] if r['status'] in ('approved','armed','running') else []
+            event=min(pending,key=lambda e:e['utc']) if pending else None
+            row['next_event']={'utc':event['utc'],'entity_id':r['mapping'][event['physical_id']]['entity_id'],'state':event['action'].get('state',event['action'].get('mode'))} if event else None
+            runs.append(row)
+        return {'error':self.error,'runs':runs}
 
     async def review(self,bundle,now=None):
         now=now or now_utc()

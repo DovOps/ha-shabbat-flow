@@ -1,3 +1,4 @@
+import {setupPlanStatus,planStatusWords,commandBarOpen} from './plan-status.mjs';
 import {setupRehearsal,rehearsalWords} from './rehearsal.mjs?v=supervised-rehearsal-1';
 import {setupExecution,executionWords} from './execution.mjs';
 import {savedPdf,pdfWords} from './pdf-download.mjs';
@@ -14,7 +15,7 @@ import {request as fetch} from './transport.mjs';
 import {translate,localeMetadata,localTime} from './model.mjs';
 import {markDayHomeFromUse,setMealChoice,lateWakeTime,addNap,restDefaults,napBathroomTargets,afternoonActivity,zonedISO,actionBadge,PERIOD_DRAFT_KEY,parsePeriodDraft,availableProfiles,nextId,dayHomeState,setDayHome,setRoomChoice,copyPreviousDay,resolveWindowTime,localDateTimeValue,localDateTimeCandidates} from './period-model.mjs';
 const householdMode=new URLSearchParams(location.search).get('household')==='1';
-let observationPrint=null,flexInventory=null;
+let observationPrint=null,flexInventory=null,operationalStatus=null;
 let bundle,initial,catalogs,result=null,revision=0,lastMessage=null,activeDay=null,pendingCopy=null,calendarData=null;
 const draftKey=householdMode?'shabbat-flow-household-draft-v2':PERIOD_DRAFT_KEY;
 const $=id=>document.getElementById(id);
@@ -93,12 +94,13 @@ function dayLabel(segment,index){
 }
 function openAdvanced(){const details=$('advanced-setup');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});details.querySelector('summary').focus();}
 function workflow(){
+ const actionWords=planStatusWords[lang()];$('command-drawer-title').textContent=actionWords.actions;$('command-drawer-state').textContent=actionWords[result?.complete?'ready':'draft'];$('run-menu').textContent=actionWords.run_menu;operationalStatus?.render();
  $('native-print').textContent=pdfWords[lang()].print;$('native-print').disabled=!result?.complete;
  const words=reviewWords[lang()],ready=!!result?.complete;$('planner-title').textContent=words.plan_title;
  for(const [id,key]of [['workflow-title','next'],['workflow-help','guide'],['workflow-note','draft_note'],['more-menu','more'],['export-menu','exports']])$(id).textContent=words[key];
  $('rehearsal-jump').hidden=!householdMode;$('rehearsal-jump').textContent=rehearsalWords[lang()].title;
- $('execution-jump').hidden=!householdMode;$('execution-jump').textContent=executionWords[lang()].arm;
- $('workflow-state').textContent=words[ready?'ready':'dirty'];$('observe-jump').textContent='◉ '+words.observe;$('observe-jump').hidden=!householdMode;
+ $('execution-jump').hidden=!householdMode;$('execution-jump').textContent=actionWords.review_arm;
+ $('workflow-state').textContent=actionWords.draft_help;$('observe-jump').textContent='◉ '+words.observe;$('observe-jump').hidden=!householdMode;
  for(const [id,icon]of [['preview','▤'],['save','✓'],['export-pdf','▧'],['export','⇩']]){const b=$(id);b.textContent=icon+' '+t(b.dataset.i18n);}
 }
 function render(){
@@ -304,6 +306,12 @@ async function boot(){
     $('reset').addEventListener('click',()=>{const language=lang();bundle=structuredClone(initial);bundle.plan.language=language;changed();render();message('reset_done');});
     $('export').addEventListener('click',()=>{if(!result?.complete)return;const blob=new Blob([JSON.stringify({...bundle,preview:result},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const link=node('a');link.href=url;link.download='shabbat-flow-period-preview.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     if(householdMode){try{const r=await fetch('/api/v2/household');if(r.ok)flexInventory=(await r.json()).inventory;}catch{}}
+    const drawer=$('plan-command-drawer'),mobile=()=>window.matchMedia('(max-width:600px)').matches;
+    let savedBar=null;try{savedBar=sessionStorage.getItem('sf-command-bar');}catch{}
+    drawer.open=commandBarOpen(savedBar,mobile());let explicitBarToggle=false;drawer.querySelector('summary').addEventListener('click',()=>{explicitBarToggle=true;});drawer.addEventListener('toggle',()=>{if(!explicitBarToggle)return;explicitBarToggle=false;try{sessionStorage.setItem('sf-command-bar',drawer.open?'open':'closed');}catch{}});
+    $('plan-commands').addEventListener('click',event=>{if(mobile()&&['observe-jump','rehearsal-jump','execution-jump'].includes(event.target.closest('button')?.id)){explicitBarToggle=true;drawer.open=false;}});
+    if(householdMode)operationalStatus=setupPlanStatus({root:$('plan-operational-status'),lang});
+    window.addEventListener('pagehide',()=>operationalStatus?.dispose(),{once:true});
     render();
     if(householdMode){setupRehearsal({root:$('rehearsal-panel'),getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang});setupExecution({root:$('execution-panel'),getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang});}if(householdMode)setupObservation({root:$('observe-panel'),fetch,node,t,getBundle:()=>structuredClone(bundle),isReady:()=>!!result?.complete,lang,onPrint:data=>{savedPdf({kind:'report',id:data.run.id},lang());}});
   }catch(e){$('status').textContent='Unable to load preview. / לא ניתן לטעון תצוגה מקדימה.';}

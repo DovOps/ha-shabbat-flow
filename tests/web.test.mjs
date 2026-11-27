@@ -738,3 +738,18 @@ test('supervised rehearsal readiness needs only eligible selection and consent',
  assert.equal(state([entry(true)],false,true).reason,'rehearsal_observance');
  assert.equal(state(Array.from({length:101},()=>entry(true)),true,true).reason,'selection_limit');
 });
+
+test('planner command drawer defaults compact on mobile and honors tab preference',async()=>{
+ const {commandBarOpen,planStatusWords}=await import('../src/shabbat_flow/web/plan-status.mjs');
+ assert.equal(commandBarOpen(null,true),false);assert.equal(commandBarOpen(null,false),true);
+ assert.equal(commandBarOpen('open',true),true);assert.equal(commandBarOpen('closed',false),false);
+ assert.equal(commandBarOpen('invalid',true),false);
+ assert.deepEqual(Object.keys(planStatusWords.en).sort(),Object.keys(planStatusWords.he).sort());
+});
+test('operational overview separates observation from arming and trusts persisted statuses',async()=>{
+ const {operationalSummary}=await import('../src/shabbat_flow/web/plan-status.mjs');
+ const summary=operationalSummary({execution:{runs:[{id:'approved',status:'approved',start:'2020-01-01',end:'2020-01-02'},{id:'off',status:'disarmed',end:'2020-01-03'}]},runs:[{id:'observe',status:'scheduled',start:'2020-01-01'},{id:'climate',kind:'climate_study',status:'observing',start:'2020-01-02'}]});
+ assert.deepEqual(summary.control.active.map(r=>r.id),['approved']);assert.equal(summary.control.latest.id,'off');
+ assert.deepEqual(summary.observation.active.map(r=>r.id),['observe']);assert.deepEqual(summary.climate.active.map(r=>r.id),['climate']);
+ assert.equal(operationalSummary(null).control.active.length,0);
+});

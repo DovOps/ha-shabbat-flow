@@ -1,0 +1,13 @@
+# Tasks
+- [x] Specify FR/NFR, acceptance stages and activation boundaries.
+- [x] Stage 1: collapsible mobile toolbar and grouped actions.
+- [x] Stage 1: read-only status overview and compact next-action summaries.
+- [x] Stage 1: tests, EN/HE mobile review and documentation checkpoint.
+- [ ] Stage 2: rehearsal evidence reuse and validity checks.
+- [ ] Stage 2: target-aware scheduled conflict review and readiness checklist.
+- [ ] Stage 2: frozen plan view and authoritative draft difference indicator.
+- [ ] Stage 3: qualified scheduled HVAC and fan policies.
+- [ ] Stage 3: timed execution, restart/recovery and intervention regressions.
+- [ ] Stage 4: unified reports/disarm UX and adoption/brochure updates.
+- [ ] Owner-supervised weekday timed pilot; no automatic household activation.
+- [ ] Separately coordinated deployment preserving active observations.

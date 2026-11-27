@@ -54,6 +54,7 @@ class GalleryHandler(Handler):
             self.reply(200,{'has_home':any(a['state']=='home' for a in bundle['plan']['availability']),'start':snap['preparation_start'],'end':snap['end'],'deadline':snap['preparation_start'],'unknown_sources':[],'review_digest':'fictional','loads':[{'physical_id':k,'entity_id':'light.example_'+k,'name':v['label'],'reasons':[] if v['kind']=='binary' else ['execute_unsupported'],'writers':[],'first_event':next((e for e in preview['events'] if e['physical_id']==k),None),'last_event':next((e for e in reversed(preview['events']) if e['physical_id']==k),None)} for k,v in bundle['config']['loads'].items()]});return
         if self.path=='/api/v2/observe':
             body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))))
+            if body.get('op')=='status':self.reply(200,{'execution':{'error':None,'runs':[]},'runs':example_runs if activity_examples else []});return
             if body.get('op')=='reports':
                 self.reply(200,{'runs':[{'id':report_run['id'],'kind':'plan','status':'completed','start':report_run['start'],'end':report_run['end'],'timezone':'Asia/Jerusalem','reviewed':report_review['value'] is not None,'performance':report_model.performance(report_run)['totals']},*example_runs]});return
             if body.get('op')=='export' and body.get('id')==report_run['id']:self.reply(200,report_fixture());return
@@ -79,7 +80,7 @@ class GalleryHandler(Handler):
             self.reply(200,code.encode() if path.endswith('.mjs') else ('<script type="module" src="'+('/rehearsal-demo.mjs' if path.startswith('/rehearsal-demo') else '/execution-demo.mjs')+'"></script>').encode(),'text/javascript' if path.endswith('.mjs') else 'text/html; charset=utf-8');return
         if path=='/api/v2/rehearsal':self.reply(200,{'error':None,'runs':[]});return
         if path=='/api/v2/execution':self.reply(200,{'error':None,'runs':[]});return
-        if path=='/api/v2/observe':self.reply(200,{'study_sources':study_sources,'runs':example_runs if activity_examples else [],'thermal_sources':{'climates':[],'weather':[]}})
+        if path=='/api/v2/observe':self.reply(200,{'execution':{'error':None,'runs':[]},'study_sources':study_sources,'runs':example_runs if activity_examples else [],'thermal_sources':{'climates':[],'weather':[]}})
         elif path=='/api/v2/household':self.reply(200,fixture)
         elif path=='/api/v2/upcoming':self.reply(200,{'status':'unavailable','error':'calendar_unavailable'})
         elif path.startswith('/sample-'):

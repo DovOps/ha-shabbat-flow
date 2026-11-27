@@ -242,6 +242,8 @@ class ObserveView(BaseView):
             payload = await read_body(request)
             observer = self.hass.data[DOMAIN]['observer']
             op = payload.get('op')
+            if op=='status' and set(payload)=={'op'}:
+                return self.response(observer.listing(compact=True))
             if op=='reports' and set(payload)=={'op'}:
                 return self.response(observer.reports())
             if op=='review' and set(payload)=={'op','id','revision','value'} and isinstance(payload['id'],str):
