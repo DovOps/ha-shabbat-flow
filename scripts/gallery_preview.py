@@ -94,8 +94,13 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--port',type=int,default=8773)
     parser.add_argument('--activity-examples',action='store_true')
+    parser.add_argument('--missing-device',action='store_true')
     args=parser.parse_args()
     activity_examples=args.activity_examples
+    if args.missing_device:
+        missing=rooms['room_a']['roles']['main_lights'][0]
+        fixture['inventory']['entities']=[e for e in entities if e['id']!=missing]
+        fixture['issues']=[{'code':'missing_entity','id':missing}]
     if activity_examples:
         rooms['family_room']['setup']['status']='draft'
         rooms['bathroom']['roles']['main_lights']=[]

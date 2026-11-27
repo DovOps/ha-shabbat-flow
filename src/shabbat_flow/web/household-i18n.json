@@ -42,7 +42,7 @@
     "storage_failed": "HA could not save the setup. Your previous saved setup is unchanged.",
     "missing_area": "Mapped area removed",
     "missing_shared": "Configure the linked shared area and save it as ready, or remove the link.",
-    "missing_entity": "Mapped entity removed",
+    "missing_entity": "Mapped entity not found in inventory",
     "disabled_entity": "Mapped entity disabled",
     "binding_changed": "Area or capabilities changed; review and save to acknowledge",
     "unavailable_entity": "Mapped entity unavailable",
@@ -325,7 +325,11 @@
     "daylight_suitability_help": "Record this explicitly; daylight breaks are not inferred from room names. Existing timing remains unchanged until you edit the policy.",
     "fans": "Fans",
     "label_fans": "Fans label (optional)",
-    "fans_help": "Optional: select the fan controls for this room. Native fans and fan power switches are supported. No label is required; an optional Fans label narrows the list. New plans include these assignments. Choose operating windows separately under Activities, fans and comfort. Preview only; no speed changes or device control."
+    "fans_help": "Optional: select the fan controls for this room. Native fans and fan power switches are supported. No label is required; an optional Fans label narrows the list. New plans include these assignments. Choose operating windows separately under Activities, fans and comfort. Preview only; no speed changes or device control.",
+    "planner_blocked": "Cannot open planner — fix the following problems",
+    "planner_repair": "A mapped device is missing, disabled or unavailable. Check its integration in HA. If necessary, repair or re-interview it there, then Refresh inventory here. If you intentionally replaced it, review the affected room and save its new mapping. Nothing is removed automatically.",
+    "planner_review_room": "Review room",
+    "planner_check_calendar": "Review calendar and dates"
   },
   "he": {
     "language": "שפה",
@@ -370,7 +374,7 @@
     "storage_failed": "HA לא הצליח לשמור. ההגדרות השמורות הקודמות לא השתנו.",
     "missing_area": "אזור ממופה הוסר",
     "missing_shared": "הגדירו את האזור המשותף ושמרו אותו כמוכן, או הסירו את הקישור.",
-    "missing_entity": "ישות ממופה הוסרה",
+    "missing_entity": "ישות ממופה לא נמצאה ברשימת ההתקנים",
     "disabled_entity": "ישות ממופה הושבתה",
     "binding_changed": "האזור או היכולות השתנו; בדקו ושמרו לאישור",
     "unavailable_entity": "ישות ממופה אינה זמינה",
@@ -653,6 +657,10 @@
     "daylight_suitability_help": "יש להגדיר במפורש; אין הסקת אור יום משם החדר. הזמנים הקיימים אינם משתנים עד לעריכת המדיניות.",
     "fans": "מאווררים",
     "label_fans": "תווית מאווררים (רשות)",
-    "fans_help": "לבחירה: סמנו את בקרי המאווררים בחדר. ניתן לבחור ישויות מאוורר ומתגי חשמל של מאווררים. אין חובה בתווית; תווית מאווררים מצמצמת את הרשימה. השיוכים ייכללו בתוכניות חדשות. בחרו זמני פעולה בנפרד תחת פעילויות, מאווררים ונוחות. תצוגה בלבד; ללא שינוי מהירות או שליטה במכשירים."
+    "fans_help": "לבחירה: סמנו את בקרי המאווררים בחדר. ניתן לבחור ישויות מאוורר ומתגי חשמל של מאווררים. אין חובה בתווית; תווית מאווררים מצמצמת את הרשימה. השיוכים ייכללו בתוכניות חדשות. בחרו זמני פעולה בנפרד תחת פעילויות, מאווררים ונוחות. תצוגה בלבד; ללא שינוי מהירות או שליטה במכשירים.",
+    "planner_blocked": "לא ניתן לפתוח את המתכנן — יש לתקן את הבעיות הבאות",
+    "planner_repair": "מכשיר ממופה חסר, מושבת או אינו זמין. בדקו את השילוב שלו ב־HA. במידת הצורך תקנו או בצעו ראיון מחדש שם, ואז רעננו כאן את רשימת ההתקנים. אם החלפתם אותו במכוון, בדקו את החדר ושמרו את המיפוי החדש. דבר אינו מוסר אוטומטית.",
+    "planner_review_room": "בדיקת חדר",
+    "planner_check_calendar": "בדיקת לוח השנה והתאריכים"
   }
 }

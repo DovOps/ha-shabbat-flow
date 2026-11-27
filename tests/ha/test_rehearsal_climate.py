@@ -125,3 +125,36 @@ async def test_fan_preset_and_climate_writer_detection(host,monkeypatch):
     hass.states.async_set('automation.fixture','on',{'friendly_name':'Fixture'})
     hass.data['automation']=SimpleNamespace(get_entity=lambda eid:SimpleNamespace(raw_config={'triggers':[{'trigger':'time','at':'23:00'}],'actions':[{'action':'climate.set_temperature','target':{'entity_id':e.entity_id},'data':{'temperature':22}}]}))
     scope=source_scope(hass);assert e.entity_id in scope['sources'][0]['targets']
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('domain',['climate','fan'])
+async def test_remembered_native_power_no_capture_no_settings_arguments(host,monkeypatch,domain):
+    hass,x,b,p,e,c,now,s,payload,attrs=await climate_fixture(host,monkeypatch,domain)
+    hass.states.async_set(e.entity_id,'off',attrs)
+    async def native(call):
+        c.append(call)
+        hass.states.async_set(e.entity_id,('heat' if domain=='climate' else 'on') if call.service=='turn_on' else 'off',attrs,context=call.context)
+    for name in ('turn_on','turn_off'):hass.services.async_register(domain,name,native)
+    payload['selection']['settings_policy']='remembered'
+    report,payload=await reviewed(s,payload)
+    assert not report['rows'][0]['reasons']
+    assert report['rows'][0]['contract']['policy']=='remembered'
+    r=await s.apply(payload,'owner');await finish(s)
+    assert len(c)==1 and c[0].service=='turn_on' and dict(c[0].data)=={'entity_id':e.entity_id}
+    run=s.export(r['id']);assert not run['blocked']
+    assert next(iter(run['ledger'].values()))['observed']['state']==('heat' if domain=='climate' else 'on')
+    restore=await s.restore_review(r['id']);assert not restore['rows'][0]['reasons']
+    hass.states.async_set(e.entity_id,hass.states.get(e.entity_id).state,{**attrs,('temperature' if domain=='climate' else 'percentage'):26},context=hass.states.get(e.entity_id).context)
+    assert 'rehearsal_intervened' in (await s.restore_review(r['id']))['rows'][0]['reasons']
+
+@pytest.mark.asyncio
+async def test_remembered_requires_native_power_capability_and_policy_changes_invalidate_review(host,monkeypatch):
+    hass,x,b,p,e,c,now,s,payload,attrs=await climate_fixture(host,monkeypatch)
+    report,payload=await reviewed(s,payload)
+    payload['selection']['settings_policy']='remembered'
+    with pytest.raises(ValueError,match='execute_stale'):await s.apply(payload,'owner')
+    report,payload=await reviewed(s,payload)
+    assert 'execute_service' in report['rows'][0]['reasons']
+    payload['selection']['settings_policy']='guess'
+    with pytest.raises(ValueError,match='rehearsal_invalid'):await reviewed(s,payload)
+    assert not c

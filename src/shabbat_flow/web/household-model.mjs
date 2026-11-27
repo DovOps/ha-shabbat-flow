@@ -58,3 +58,13 @@ export function classifyRoom(room,kind){
 export function suggestedAreaTypes(area,filters){
  return [['bedroom','room'],['common_area','common'],['bathroom_area','bathroom'],['hallway_area','hallway']].filter(([role])=>filters[role]&&(area.labels??[]).includes(filters[role])).map(([,kind])=>kind);
 }
+
+// Missing inventory entries still retain their saved room role references.
+export function plannerIssueDetails(issues,inventory,rooms){
+ return issues.map(issue=>{
+  const entity=inventory.entities.find(e=>e.id===issue.id||e.entity_id===issue.id);
+  const id=entity?.id??issue.id;
+  const areas=Object.entries(rooms).filter(([aid,r])=>aid===id||r.shared_areas?.includes(id)||Object.values(r.roles??{}).some(ids=>ids.includes(id))).map(([aid])=>({id:aid,name:inventory.areas.find(a=>a.id===aid)?.name??aid}));
+  return {...issue,name:entity?.name??entity?.entity_id??issue.id,entity_id:entity?.entity_id??issue.id,areas};
+ });
+}

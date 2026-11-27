@@ -4,3 +4,5 @@
 3. Admin endpoints and authenticated bridge; EN/HE planner panel, area/device scopes and evidence export/feedback.
 4. Synthetic behavioral/fault tests, regression, visual review and documentation.
 5. Signed checkpoint, unarmed deployment with backup; verify installed UI without device commands.
+
+Device selection follow-up: group eligible/excluded rows, add explicit scoped bulk controls, derive Apply readiness from selection/notes/consent, retain server safeguards; test invalid and blocked selections. No deployment during owner rehearsal.

@@ -21,3 +21,9 @@ Status: implemented, automatically tested and deployed; desktop EN/HE simulation
 Room-level execution-mode selection for a future weekend remains a separate follow-up; this feature scopes immediate rehearsals only. Rehearsals do not mark native hardware qualified automatically. No dynamic thermostat control or appliance execution is introduced. Existing plan observations continue independently; rehearsal evidence records point transitions rather than pretending to be a full thermal study.
 
 Feature 020 extends the original lighting-only immediate rehearsal boundary to explicitly reviewed HVAC power and room fans with captured/current settings. Scheduled execution and appliance exclusions remain unchanged. See Feature 020 for the superseding preservation contract.
+
+## Device selection usability follow-up
+- RH-FR-009: Review and restore offer explicit Select all eligible devices and Clear device selection within the reviewed area/moment scope. Nothing is selected automatically; blocked targets are never selected by bulk actions. Display selected count.
+- RH-FR-010: Put ineligible devices in a collapsed, counted disclosure, retaining individual exclusion reasons and any capture-settings actions. Eligible targets remain visible.
+- RH-FR-011: Disable Apply until at least one and at most 100 eligible targets are selected, each required trimmed verification/conflict note has 10–1,000 characters, and supervision is confirmed. Show the outstanding prerequisite beside Apply. Selection never generates attestations or bypasses backend validation.
+- RH-NFR-004: Bulk selection and exclusions use keyboard-accessible native buttons/disclosure and localized EN/HE status messages; no selection action calls device services. Validation is recomputed on selection, notes and consent, including after request errors.

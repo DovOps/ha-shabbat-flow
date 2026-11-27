@@ -29,3 +29,10 @@ Native fans preserve reviewed speed/preset; off fans need a capture while runnin
 New duration-based naps that exceed a short planning day end at that day's boundary, with an adjacent explanation. Invalid explicit clock windows show an error beside Add nap. Permanent defaults and existing naps remain unchanged.
 
 The shared adoption playbook is bundled as **Guide** in app navigation and linked next to rehearsal controls. The public version is available at https://dovops.io/ha-shabbat-flow/docs/adoption/ . Source: `src/shabbat_flow/web/adoption-guide.json`; update English and Hebrew together. Help opens separately to preserve unsaved plan edits.
+
+## Choosing devices and remembered settings (0.22.1)
+After selecting the areas and moment, choose the HVAC/fan settings policy, then simulate. **Preserve reviewed current / captured settings** retains the existing strict workflow. **On/off using device’s remembered settings** requires no capture and sends only native power commands; the device chooses its resumed settings. Unsupported native power capabilities remain excluded. This is a rehearsal option, not a change to scheduled execution.
+
+Choose **Select all eligible devices**, or select individual devices. Excluded devices are in a counted expandable section with their reasons and capture actions. Complete each selected device’s verification/conflict notes and confirm supervision. Apply shows its remaining prerequisites and stays disabled until they are satisfied. Bulk selection never supplies verification notes for you.
+
+Results record actual reported settings. Restore remains separately reviewed: only confirmed changes still owned by the test qualify, and settings changes after a remembered-power test prevent restoration. An original active mode/settings must be known for restoring On. A future explicit mode/temperature editor is separately specified and not included in this release.

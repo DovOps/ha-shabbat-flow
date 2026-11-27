@@ -145,7 +145,7 @@ test('household polling preserves the form-bound draft until a redraw is needed'
   const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
   const refresh=source.slice(source.indexOf('async function refresh('),source.indexOf('async function save('));
   const initial={inventory:{revision:'a'},settings:{revision:0,rooms:{}}};
-  const context={updateRoomFeedback:()=>{},staleSettings:false,saveError:null,labelFilters:{...emptyLabelFilters(),bathroom:"draft_label"},emptyLabelFilters,data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
+  const context={updatePlannerFeedback:()=>{},updateRoomFeedback:()=>{},staleSettings:false,saveError:null,labelFilters:{...emptyLabelFilters(),bathroom:"draft_label"},emptyLabelFilters,data:structuredClone(initial),next:structuredClone(initial),draft:{room_a:{enabled:false}},dirty:false,saving:false,needsReview:false,offline:false,structuredClone,
     api:async()=>structuredClone(context.next),render:()=>{context.renders++;},renderRooms:()=>{context.renders++;},updateAvailability:()=>{},syncLabel:()=>{},status:value=>{context.message=value;},renders:0};
   runInNewContext(refresh,context);
   const boundRoom=context.draft.room_a;
@@ -165,9 +165,10 @@ test('open household planner shows local actionable errors and handles request l
   const code=source.slice(source.indexOf('function planProblems('),source.indexOf('async function boot('));
   const box={messages:[],replaceChildren(){this.messages=[];},append(p){this.messages.push(p);},focus(){this.focused=true;},scrollIntoView(){this.visible=true;}};
   const button={},topButton={},room={enabled:true,purposes:['sleeping'],roles:{main_lights:['fictional_light'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}};
-  const context={manualZone:null,manualCalendar:true,automatic:null,structuredClone,dirty:false,opening:false,observance:'',dateValues:{candles:'2027-01-08T16:00:00+02:00',sunrise:'',end:'2027-01-09T18:00:00+02:00'},kind:'shabbat',language:'en',catalogs:{en:{invalid_mapping:'Mapping issue',workspace_storage_failed:'Storage issue'}},data:{settings:{rooms:{},revision:1},inventory:{timezone:'Asia/Jerusalem',revision:'a'},issues:[]},
+  const context={offline:false,plannerFailure:null,plannerAttempted:false,plannerAnchor:"plan-top",manualZone:null,manualCalendar:true,automatic:null,structuredClone,dirty:false,opening:false,observance:'',dateValues:{candles:'2027-01-08T16:00:00+02:00',sunrise:'',end:'2027-01-09T18:00:00+02:00'},kind:'shabbat',language:'en',catalogs:{en:{invalid_mapping:'Mapping issue',workspace_storage_failed:'Storage issue'}},data:{settings:{rooms:{},revision:1},inventory:{timezone:'Asia/Jerusalem',revision:'a'},issues:[]},
     document:{querySelectorAll:()=>[button,topButton]},$:id=>id==='plan'?button:box,t:key=>key,el:(_,text)=>text,zonedISO:d=>d.toISOString(),api:async()=>{throw new Error('unexpected request');},sessionStorage:{setItem(){}},location:{href:''}};
   runInNewContext(code,context);
+  context.updatePlannerFeedback=(focus=false)=>{box.messages=Array.from(context.opening?['opening_plan']:context.plannerFailure??context.planProblems());if(focus){box.focus();box.scrollIntoView();}};
   await context.openPlan();assert.deepEqual(box.messages,['choose_observance','missing_sunrise','needs_roles']);assert.ok(box.focused&&box.visible);assert.equal(context.location.href,'');
   context.dirty=true;await context.openPlan();assert.ok(box.messages.includes('needs_save'));
   context.dirty=false;context.observance='israel';context.dateValues.sunrise='2027-01-09T06:00:00+02:00';context.data.settings.rooms={room_a:room};
@@ -185,10 +186,10 @@ test('automatic calendar passes the whole snapshot and refresh preserves manual 
  const code=source.slice(source.indexOf('function planProblems('),source.indexOf('async function boot('));
  const snapshot=structuredClone(period.plan.snapshot);snapshot.start='2099-01-01T16:00:00+02:00';
  const box={replaceChildren(){},append(){},focus(){},scrollIntoView(){}},button={};let received;
- const context={manualZone:null,manualCalendar:false,automatic:{status:'ready',snapshot},structuredClone,dirty:false,opening:false,language:'en',catalogs:{en:{}},
+ const context={offline:false,plannerFailure:null,plannerAttempted:false,plannerAnchor:"plan-top",manualZone:null,manualCalendar:false,automatic:{status:'ready',snapshot},structuredClone,dirty:false,opening:false,language:'en',catalogs:{en:{}},
  data:{settings:{revision:1,rooms:{a:{enabled:true,purposes:['sleeping'],roles:{main_lights:['load'],night_lights:[],hvac:[]},shared_areas:[],hvac:{mode:'none'}}}},inventory:{revision:'a'},issues:[]},
  document:{querySelectorAll:()=>[button]},$:id=>id==='plan'?button:box,t:v=>v,el:(_,v)=>v,api:async(_,body)=>{received=body;return {plan:{}};},sessionStorage:{setItem(){}},location:{href:''}};
- runInNewContext(code,context);await context.openPlan();assert.deepEqual(received.snapshot,snapshot);assert.notEqual(received.snapshot,snapshot);assert.equal(received.snapshot.segments.length,3);
+ runInNewContext(code,context);context.updatePlannerFeedback=()=>{};await context.openPlan();assert.deepEqual(received.snapshot,snapshot);assert.notEqual(received.snapshot,snapshot);assert.equal(received.snapshot.segments.length,3);
  context.automatic={status:'unavailable',error:'calendar_missing'};assert.ok(context.planProblems().includes('calendar_missing'));
  context.calendarLoading=false;context.dateValues={candles:'manual',sunrise:'manual',end:'manual'};context.manualCalendar=true;context.renderCalendar=()=>{};context.renderDates=()=>{};context.manualZone='Europe/London';
  runInNewContext(source.slice(source.indexOf('async function refreshCalendar('),source.indexOf('function renderDates(')),context);
@@ -201,7 +202,7 @@ test('wizard saves freeze controls, reject duplicate submits and preserve edits 
  const {runInNewContext}=await import('node:vm');
  const source=fs.readFileSync(new URL('../src/shabbat_flow/web/household.mjs',import.meta.url),'utf8');
  const controls=[{disabled:false},{disabled:true}],button={disabled:false};let resolve;
- const context={updateRoomFeedback:()=>{},staleSettings:false,offline:false,saveError:null,postShutoff:false,labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
+ const context={updatePlannerFeedback:()=>{},updateRoomFeedback:()=>{},staleSettings:false,offline:false,saveError:null,postShutoff:false,labelFilters:emptyLabelFilters(),emptyLabelFilters,needsReview:false,saving:false,dirty:true,draft:{example:{enabled:true}},data:{settings:{revision:3},inventory:{revision:'a'}},structuredClone,
   document:{querySelector:()=>null,querySelectorAll:()=>controls},$:()=>button,status:()=>{},fail:()=>{},wizardError:()=>{},catalogs:{en:{}},language:'en',api:()=>new Promise(r=>resolve=r)};
  runInNewContext(source.slice(source.indexOf('async function save('),source.indexOf('function planProblems(')),context);
  const pending=context.save();assert.ok(controls.every(c=>c.disabled));assert.equal(await context.save(),false);
@@ -714,4 +715,30 @@ test('duration nap clips at the day boundary without changing room defaults or o
  profile.rest_defaults={...restDefaults(profile),nap_start_mode:'clock',nap_start_time:'16:00',nap_end_mode:'duration',nap_duration:180};
  const original=structuredClone(b);const next=addNap(b,'day_1','room_a'),nap=next.plan.naps.at(-1);
  assert.equal(nap.end,next.plan.snapshot.segments[0].end);assert.equal(nap.room,'room_a');assert.deepEqual(b,original);assert.equal(profile.rest_defaults.nap_duration,180);
+});
+
+test('planner blockers retain affected room context for a missing inventory entry',async()=>{
+ const {plannerIssueDetails}=await import('../src/shabbat_flow/web/household-model.mjs');
+ const inv={areas:[{id:'room_a',name:'Room A'}],entities:[{id:'registry_b',entity_id:'switch.example_b',name:'Example B'}]};
+ const rooms={room_a:{roles:{main_lights:['registry_missing','registry_b']},shared_areas:[]}};
+ const details=plannerIssueDetails([{code:'missing_entity',id:'registry_missing'},{code:'unavailable_entity',id:'switch.example_b'}],inv,rooms);
+ assert.equal(details[0].entity_id,'registry_missing');assert.deepEqual(details[0].areas,[{id:'room_a',name:'Room A'}]);
+ assert.equal(details[1].name,'Example B');assert.equal(details[1].areas[0].id,'room_a');
+ assert.deepEqual(plannerIssueDetails([],inv,rooms),[]);
+ assert.equal(plannerIssueDetails([{code:'missing_entity',id:'orphan'}],inv,rooms)[0].name,'orphan');
+});
+
+test('rehearsal readiness excludes blocked devices and requires explicit selection, notes and consent',async()=>{
+ const {rehearsalSelectionState:state}=await import('../src/shabbat_flow/web/rehearsal.mjs');
+ const entry=(checked,disabled=false,note='Verified device settings')=>({choice:{checked,disabled},note:{value:note},attest:new Map()});
+ const a=entry(false),blocked=entry(true,true);
+ assert.equal(state([a,blocked],true,true).reason,'select_devices');
+ a.choice.checked=true;assert.equal(state([a,blocked],true,true).count,1);
+ assert.equal(state([a],true,true).canApply,true);
+ assert.equal(state([a],true,false).reason,'consent_needed');
+ a.note.value=' short ';assert.equal(state([a],true,true).reason,'notes_needed');
+ a.note.value='Verified device settings';a.attest.set('source',{value:''});assert.equal(state([a],true,true).reason,'notes_needed');
+ a.attest.get('source').value='Verified no competing access';assert.equal(state([a],true,true).canApply,true);
+ assert.equal(state([a],false,true).reason,'rehearsal_observance');
+ assert.equal(state(Array.from({length:101},()=>entry(true)),true,true).reason,'selection_limit');
 });

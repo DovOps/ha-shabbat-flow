@@ -49,3 +49,5 @@ Add localized inline selection descriptions and a linked guide. Keep icon metada
 0.16.3: Place checkbox first in DOM for climate rows and at logical start through shared flex ordering elsewhere. Keep icon/name adjacent and isolate mixed-direction names.
 
 0.16.4: Reuse the planner validation/navigation handler for both green shortcuts. Derive compact room-status links from shared room feedback. Add a pure activity-summary model and read the existing observer listing; distinguish browser-local saved draft from persisted observer runs, show timestamps/status/report links and explicit unavailable states. Resume browser drafts only on an explicit link. No new runtime dependency or device calls.
+
+Planner-blocker follow-up: project inventory issues onto saved room bindings; render matching top/bottom alert callouts with local room-review and refresh actions. Track explicit failed opening attempts separately from passive inventory updates and busy status. Recompute on refresh/save/language changes; focus only after explicit failed submission. Reuse existing feedback styles and add locale strings; no backend/device behavior changes.

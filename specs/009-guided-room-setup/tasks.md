@@ -72,3 +72,5 @@
 - [x] Implement localized UI and pure status model with read-only discovery.
 - [x] Verify models, UI behavior, packaging and compatibility; evidence in docs/checkpoint-022.md.
 - [x] Separately authorized HA installation and live validation; see checkpoint 022.
+
+- [ ] UI-FR-011–012/UI-NFR-005: prominent planner-blocker callouts, issue-to-room context, EN/HE, validation and deployment evidence.

@@ -105,7 +105,9 @@ class Rehearsal(Executor):
 
     async def review_test(self,bundle,selection,restore_of=None,issue=True):
         if self.error or self.closed:raise ValueError('execute_store')
-        if not isinstance(selection,dict) or set(selection)!={'at','mode','areas'}:raise ValueError('rehearsal_invalid')
+        if not isinstance(selection,dict) or set(selection) not in ({'at','mode','areas'},{'at','mode','areas','settings_policy'}):raise ValueError('rehearsal_invalid')
+        policy=selection.get('settings_policy','preserve')
+        if policy not in ('preserve','remembered'):raise ValueError('rehearsal_invalid')
         projection=await self.hass.async_add_executor_job(project,bundle,selection['at'],selection['mode'],selection['areas'])
         base=await self.hass.data['shabbat_flow']['executor'].review(bundle)
         by_id={l['physical_id']:l for l in base['loads']}
@@ -122,7 +124,7 @@ class Rehearsal(Executor):
                 wanted=event['action'].get('state') or ('off' if event['action'].get('mode')=='off' else 'on')
                 if wanted in ('on','off') and event['action']['type'] in ('state','hvac','hvac_power'):
                     reasons=[r for r in reasons if r not in ('execute_unsupported','execute_no_events','execute_service')]
-                    contract,reason=eligible(self.hass,target,self.data.get('baselines',{}).get(physical),now_utc(),wanted)
+                    contract,reason=eligible(self.hass,target,self.data.get('baselines',{}).get(physical),now_utc(),wanted,policy)
                     if reason:reasons.append(reason)
                     event={**event,'original_action':deepcopy(event['action']),'action':{'type':'state','state':wanted}}
             if not contract and not role and target:contract={'domain':target['entity_id'].split('.')[0],'settings':{}}
@@ -130,6 +132,8 @@ class Rehearsal(Executor):
             if original:
                 attempt=next((a for a in original['ledger'].values() if a.get('physical_id')==physical and a['status']=='confirmed'),None)
                 if physical not in original['included'] or not attempt or not state or state.context.id!=attempt.get('context_id') or power(state.state,state.domain)!=attempt['wanted'] or not matches(original.get('contracts',{}).get(physical,{'domain':state.domain,'settings':{}}),attempt['wanted'],state) or base['mapping'].get(physical)!=original['mapping'].get(physical) or base['source_fingerprint']!=original['source_fingerprint']:
+                    reasons.append('rehearsal_intervened')
+                elif original.get('contracts',{}).get(physical,{}).get('policy')=='remembered' and snapshot(state)!=attempt.get('observed'):
                     reasons.append('rehearsal_intervened')
                 elif power(original['before'][physical]['state'],state.domain) in ('on','off'):
                     wanted=power(original['before'][physical]['state'],state.domain)

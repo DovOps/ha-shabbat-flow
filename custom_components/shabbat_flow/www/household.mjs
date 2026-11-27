@@ -2,10 +2,11 @@ import {executionWords} from './execution.mjs';
 import {activitySummary} from './activity-model.mjs';
 import {offsetControl} from './time-input.mjs';
 import {haIcon} from './ha-icons.mjs';
-import {mealHvac,suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs';
+import {plannerIssueDetails,mealHvac,suggestedAreaTypes,areaType,isBathroom,classifyRoom,roomProblems,phases,labelRoles,emptyLabelFilters,roleCandidates,bathroomCandidates,suggestedPurposes,filteredAreas} from './household-model.mjs?v=planner-blockers-1';
 import {request} from './transport.mjs';
 import {localDateTimeCandidates,localDateTimeValue,zonedISO} from './period-model.mjs';
 let activityData=null,activityError=false,activityLoading=false;
+let plannerAttempted=false,plannerFailure=null,plannerAnchor='plan-top';
 let postShutoff=false,saveError=null,staleSettings=false;
 let catalogs,data,draft,calendar,dirty=false,language='en',saving=false,offline=false,needsReview=false,opening=false;
 const $=id=>document.getElementById(id),t=k=>catalogs[language][k]??k;
@@ -301,7 +302,7 @@ function renderCalendar(){
 async function refreshCalendar(){
  if(calendarLoading)return;calendarLoading=true;$('calendar-refresh').disabled=true;
  try{automatic=await api('upcoming');}catch{automatic={status:'unavailable',error:'calendar_unavailable'};}
- finally{calendarLoading=false;renderCalendar();}
+ finally{calendarLoading=false;renderCalendar();updatePlannerFeedback();}
 }
 function setManualCalendar(value){
  if(value&&!manualCalendar)manualZone=automatic?.snapshot?.timezone??data.inventory.timezone;
@@ -325,7 +326,7 @@ function renderDates(){
   else if([...s.options].some(o=>o.value==='israel'))s.onchange=()=>observance=s.value;
  }
 }
-function render(){document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';$('language').value=language;document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));renderRooms();renderDates();renderCalendar();renderActivity();syncLabel();if(dirty)status('dirty');else $('status').textContent='';}
+function render(){document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';$('language').value=language;document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=t(n.dataset.i18n));renderRooms();renderDates();renderCalendar();renderActivity();syncLabel();if(dirty)status('dirty');else $('status').textContent='';updatePlannerFeedback();}
 async function refresh(manual=false,discard=false){
  if(saving)return;
  try{const next=await api('household'),changedInventory=data&&next.inventory.revision!==data.inventory.revision;
@@ -333,8 +334,8 @@ async function refresh(manual=false,discard=false){
   if(!data||discard||!dirty){const iconChanged=data&&JSON.stringify([data.inventory.areas.map(a=>a.icon),data.inventory.entities.map(e=>e.icon)])!==JSON.stringify([next.inventory.areas.map(a=>a.icon),next.inventory.entities.map(e=>e.icon)]);const redraw=!data||discard||changedInventory||staleSaved||iconChanged;if(redraw){draft=structuredClone(next.settings.rooms);labelFilters={...emptyLabelFilters(),...next.settings.label_filters};postShutoff=next.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;}data=next;if(redraw)render();}
   else if(staleSaved){offline=false;staleSettings=true;status('stale_household');updateRoomFeedback();return;}
   else {data=next;if(manual){needsReview=false;saveError=null;renderRooms();status('inventory_reviewed');}else if(changedInventory){needsReview=true;status('changed');}}
-  offline=false;updateAvailability();syncLabel();updateRoomFeedback();
- }catch{offline=true;syncLabel();updateRoomFeedback();}
+  offline=false;if(manual)plannerFailure=null;updateAvailability();syncLabel();updateRoomFeedback();updatePlannerFeedback();
+ }catch{offline=true;syncLabel();updateRoomFeedback();updatePlannerFeedback();}
 }
 async function save(){if(document.querySelector('#rooms input:invalid')){document.querySelector('#rooms input:invalid').reportValidity();return false;}
  if(needsReview||staleSettings||offline){wizardError(needsReview?'changed':staleSettings?'stale_household':'offline_save');return false;}if(saving)return false;
@@ -342,12 +343,13 @@ async function save(){if(document.querySelector('#rooms input:invalid')){documen
  // Freeze controls while a write is pending so late edits cannot be lost.
  const controls=[...document.querySelectorAll('#rooms input,#rooms select,#rooms button,#language,#refresh,#discard')];
  const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
- try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;status('saved');updateRoomFeedback();return true;}
+ try{data=await api('household',{revision:data.settings.revision,inventory_revision:data.inventory.revision,rooms:payload,label_filters:structuredClone(labelFilters),post_shutoff:postShutoff});draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;dirty=false;needsReview=false;staleSettings=false;saveError=null;status('saved');plannerFailure=null;updateRoomFeedback();updatePlannerFeedback();return true;}
  catch(e){fail(e);wizardError(catalogs[language][e.message]?e.message:'error');return false;}
  finally{saving=false;$('save').disabled=false;controls.forEach((c,i)=>c.disabled=disabled[i]);}
 }
 function planProblems(){
  const problems=[];
+ if(offline)problems.push('offline');
  if(dirty)problems.push('needs_save');
  if(!manualCalendar){
   if(automatic?.status!=='ready')problems.push(automatic?.error??'calendar_unavailable');
@@ -366,16 +368,33 @@ function planProblems(){
  if(data.issues.length)problems.push('invalid_mapping');
  return problems;
 }
-function planFeedback(keys){
- const box=$('plan-status');box.replaceChildren();
- for(const key of keys)box.append(el('p',t(key)));
- box.focus({preventScroll:true});box.scrollIntoView({block:'nearest'});
+function updatePlannerFeedback(focus=false){
+ if(!data||!catalogs)return;
+ const keys=opening?['opening_plan']:plannerFailure??(plannerAttempted?planProblems():(data.issues.length?['invalid_mapping']:[]));
+ const details=keys.includes('invalid_mapping')?plannerIssueDetails(data.issues,data.inventory,data.settings.rooms):[];
+ for(const id of ['plan-status-top','plan-status']){
+  const box=$(id),signature=JSON.stringify([language,keys,details,opening]);if(box.dataset.signature===signature)continue;box.dataset.signature=signature;box.hidden=!keys.length;box.className=opening?'room-feedback draft':'room-feedback blocked';box.setAttribute('role',opening?'status':'alert');box.replaceChildren();
+  if(!keys.length)continue;
+  if(!opening)box.append(el('h3','⚠ '+t('planner_blocked')));
+  const list=el('ul');for(const key of [...new Set(keys)])list.append(el('li',t(key)));box.append(list);
+  const roomIds=new Set();
+  for(const issue of details){const line=el('p');line.append(document.createTextNode(t(issue.code)+' · '+issue.name+' · '));const code=el('bdi',issue.entity_id);line.append(code);if(issue.areas.length)line.append(document.createTextNode(' · '+issue.areas.map(a=>a.name).join(', ')));box.append(line);for(const area of issue.areas)roomIds.add(area.id);}
+  if(opening)continue;
+  if(details.some(i=>['missing_entity','disabled_entity','unavailable_entity'].includes(i.code)))box.append(el('p',t('planner_repair')));
+  const actions=el('div',undefined,'toolbar'),refreshButton=el('button',t('refresh'));refreshButton.type='button';refreshButton.onclick=async()=>{plannerFailure=null;await refresh(true);updatePlannerFeedback();};actions.append(refreshButton);
+  for(const aid of roomIds){if(!draft[aid])continue;const button=el('button',t('planner_review_room')+' · '+roomName(aid));button.type='button';button.onclick=()=>go('room',aid);actions.append(button);}
+  if(keys.some(k=>k.includes('calendar')||k.includes('sunrise')||k.includes('candles')||k.includes('date')||k==='choose_observance'||k==='missing_end')){const button=el('button',t('planner_check_calendar'));button.type='button';button.onclick=()=>{$('weekly-planning').hidden=false;$('calendar-refresh').focus();$('weekly-planning').scrollIntoView({block:'start'});};actions.append(button);}
+  box.append(actions);
+ }
+ if(focus){const box=$(plannerAnchor==='plan-top'?'plan-status-top':'plan-status');box.focus({preventScroll:true});box.scrollIntoView({block:'nearest'});}
 }
+function planFeedback(keys){plannerFailure=keys;updatePlannerFeedback(true);}
 function plannerButtons(busy){for(const b of document.querySelectorAll('[data-open-planner]')){b.disabled=busy;b.textContent=t(busy?'opening_plan':'open_plan');}}
-async function openPlan(){
+async function openPlan(event){
  if(opening)return;
- const problems=planProblems();if(problems.length){$('weekly-planning').hidden=false;return planFeedback(problems);}
- opening=true;plannerButtons(true);planFeedback(['opening_plan']);
+ plannerAnchor=event?.currentTarget?.id??'plan-top';plannerAttempted=true;plannerFailure=null;
+ const problems=planProblems();if(problems.length){$('weekly-planning').hidden=false;updatePlannerFeedback(true);return;}
+ opening=true;plannerButtons(true);updatePlannerFeedback();
  try{
   let snapshot;
   if(!manualCalendar)snapshot=structuredClone(automatic.snapshot);
@@ -391,10 +410,10 @@ async function openPlan(){
   try{sessionStorage.setItem('shabbat-flow-household-workspace',JSON.stringify(bundle));}catch{throw new Error('workspace_storage_failed');}
   location.href='./period.html?household=1';
  }catch(e){planFeedback([catalogs[language][e.message]?e.message:'error']);}
- finally{opening=false;plannerButtons(false);}
+ finally{opening=false;plannerButtons(false);updatePlannerFeedback(!!plannerFailure);}
 }
 async function boot(){try{
- catalogs=await (await fetch('./household-i18n.json')).json();language=navigator.language.startsWith('he')?'he':'en';
+ catalogs=await (await fetch('./household-i18n.json?v=planner-blockers-1')).json();language=navigator.language.startsWith('he')?'he':'en';
  data=await api('household');draft=structuredClone(data.settings.rooms);labelFilters={...emptyLabelFilters(),...data.settings.label_filters};postShutoff=data.settings.post_shutoff??false;const ids=selectedRooms();if(ids.length){activeRoom=ids.find(id=>setup(draft[id]).status!=='ready');stage=activeRoom?'room':'summary';}calendar=await api('calendar');
  try{automatic=await api('upcoming');}catch{automatic={status:'unavailable',error:'calendar_unavailable'};}
  dateValues.candles=calendar.values?.candle_lighting?.value??'';dateValues.end=calendar.values?.end?.value??'';

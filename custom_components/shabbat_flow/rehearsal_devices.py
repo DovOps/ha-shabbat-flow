@@ -2,6 +2,7 @@
 from copy import deepcopy
 import math
 from homeassistant.components.fan import FanEntityFeature
+from homeassistant.components.climate import ClimateEntityFeature
 from .ownership import instant
 
 CLIMATE_SETTINGS=('temperature','target_temp_low','target_temp_high','fan_mode','preset_mode','swing_mode','swing_horizontal_mode')
@@ -26,10 +27,15 @@ def active_baseline(state,target,now):
     return {'target':deepcopy(target),'at':now.isoformat(),**snap}
 
 
-def eligible(hass,target,baseline,now,wanted):
+def eligible(hass,target,baseline,now,wanted,policy="preserve"):
     """Return review contract, or an explicit reason. Never issue service calls."""
     state=hass.states.get(target['entity_id']);domain=target['entity_id'].split('.')[0];before=snapshot(state)
     if not state or state.state in ('unknown','unavailable') or state.attributes.get('restored'):return None,'execute_unavailable'
+    if policy=='remembered' and domain in ('climate','fan'):
+        feature=ClimateEntityFeature if domain=='climate' else FanEntityFeature
+        features=state.attributes.get('supported_features',0)
+        if any(not hass.services.has_service(domain,s) for s in ('turn_on','turn_off')) or not features & feature.TURN_ON or not features & feature.TURN_OFF:return None,'execute_service'
+        return {'domain':domain,'policy':'remembered','settings':{},'baseline_at':None},None
     active=before if power(before['state'],domain)=='on' else None
     if active is None and baseline and baseline['target']==target and 0<=(now-instant(baseline['at'])).total_seconds()<=90*86400:active=baseline
     if domain=='climate':
@@ -53,6 +59,7 @@ def eligible(hass,target,baseline,now,wanted):
 
 def command(contract,wanted,entity):
     domain=contract['domain'];data={'entity_id':entity}
+    if contract.get('policy')=='remembered':return domain,'turn_'+wanted,data
     if domain=='climate':return domain,'set_hvac_mode',{**data,'hvac_mode':contract['mode'] if wanted=='on' else 'off'}
     if domain=='fan' and wanted=='on':
         settings=contract['settings']
@@ -63,6 +70,7 @@ def command(contract,wanted,entity):
 
 def matches(contract,wanted,state):
     if state is None or power(state.state,contract['domain'])!=wanted:return False
+    if contract.get('policy')=='remembered':return True
     current=snapshot(state)['settings'];expected=contract['settings']
     if contract['domain']=='climate':
         return (wanted=='off' or state.state==contract['mode']) and all(current.get(k)==v for k,v in expected.items())

@@ -131,3 +131,11 @@ CF-FR-001–007 / CF-NFR-001–003 implement visible short-day nap clipping, adj
 
 ## Feature 021 — adoption playbook
 AP-FR-001–005 / AP-NFR-001–003: shared EN/HE public and bundled guide, app navigation/contextual rehearsal help, gradual adoption gates, explicit capture/restore semantics and current eligibility limits implemented. Installed as a 0.22.0 static documentation patch without restart, saved-data changes or device control. Cached entry pages may need refresh; direct guide verified. Phone/print acceptance remains pending. See checkpoint 030.
+
+Next UI checkpoint: prominent planner blockers at both Open planner buttons. Local implementation and automated checks completed; visual acceptance and installation remain pending. Do not deploy during the owner's active rehearsal.
+
+Rehearsal selection follow-up (RH-FR-009–011, RH-NFR-004): local implementation adds explicit eligible-device selection, collapsed exclusions and actionable Apply prerequisites. Included in 0.22.1; hardware acceptance remains owner-supervised.
+
+CF-FR-008–009 / CF-NFR-004: remembered-power policy implemented in 0.22.1 alongside existing captured/current preservation. Explicit mode/temperature editing remains specified for a later implementation.
+
+0.22.1 deployed and read-only verified after one restart: remembered-settings selection works for an Off HVAC target, eligible-device bulk controls and exclusions behave as specified. No test/control run activated; hardware acceptance remains owner-supervised.
